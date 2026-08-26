@@ -2,6 +2,7 @@ import type { AttendanceStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { evaluateFence, parseFence, parseScanLocation } from '../lib/geofence.js';
+import { buildSessionRoster, sessionAttendanceFlags } from '../lib/sessionRoster.js';
 import { hasModule, orgId } from '../lib/tenant.js';
 import { getSiteSettings } from './settingsController.js';
 import { dayStamp, jsToWeekday, newQrToken, QR_TTL_MS, qrImage, qrPayload } from '../lib/teaching.js';
@@ -66,35 +67,26 @@ const sessionPayload = async (
     status: string;
     class: { name: string; code: string; room: string };
   },
-  roster: {
-    id: string;
-    name: string;
-    title: string;
-    email: string;
-    status: AttendanceStatus | null;
-    location?: {
-      latitude: number;
-      longitude: number;
-      accuracy: number | null;
-      onCampus: boolean | null;
-      distanceMeters: number | null;
-    } | null;
-  }[]
-) => ({
-  id: session.id,
-  classId: session.classId,
-  slotId: session.slotId,
-  className: session.class.name,
-  classCode: session.class.code,
-  room: session.class.room,
-  date: session.date.toISOString().slice(0, 10),
-  status: session.status,
-  qrToken: session.qrToken,
-  qrPayload: qrPayload(session.qrToken),
-  qrImage: await qrImage(session.qrToken),
-  qrExpiresAt: session.qrExpiresAt.toISOString(),
-  roster,
-});
+  organizationId: string
+) => {
+  const flags = await sessionAttendanceFlags(organizationId);
+  return {
+    id: session.id,
+    classId: session.classId,
+    slotId: session.slotId,
+    className: session.class.name,
+    classCode: session.class.code,
+    room: session.class.room,
+    date: session.date.toISOString().slice(0, 10),
+    status: session.status,
+    qrToken: session.qrToken,
+    qrPayload: qrPayload(session.qrToken),
+    qrImage: await qrImage(session.qrToken),
+    qrExpiresAt: session.qrExpiresAt.toISOString(),
+    attendanceLocationEnabled: flags.attendanceLocationEnabled,
+    roster: await buildSessionRoster(session.classId, session.id, organizationId),
+  };
+};
 
 export const getTeaching = async (req: Request, res: Response) => {
   try {
@@ -213,35 +205,8 @@ export const deleteContent = async (req: Request, res: Response) => {
   }
 };
 
-const loadRoster = async (classId: string, sessionId: string) => {
-  const enrollments = await prisma.classEnrollment.findMany({
-    where: { classId, person: { active: true } },
-    include: { person: { select: { id: true, name: true, title: true, email: true } } },
-    orderBy: { person: { name: 'asc' } },
-  });
-  const marks = await prisma.sessionAttendance.findMany({ where: { sessionId } });
-  const byPerson = new Map(marks.map((item) => [item.personId, item]));
-  return enrollments.map((item) => {
-    const mark = byPerson.get(item.person.id);
-    return {
-      id: item.person.id,
-      name: item.person.name,
-      title: item.person.title,
-      email: item.person.email,
-      status: mark?.status || null,
-      location:
-        mark?.latitude != null && mark?.longitude != null
-          ? {
-              latitude: mark.latitude,
-              longitude: mark.longitude,
-              accuracy: mark.accuracy,
-              onCampus: mark.onCampus,
-              distanceMeters: mark.distanceMeters,
-            }
-          : null,
-    };
-  });
-};
+const loadRoster = (classId: string, sessionId: string, organizationId: string) =>
+  buildSessionRoster(classId, sessionId, organizationId);
 
 export { loadRoster, sessionPayload };
 
@@ -300,7 +265,7 @@ export const openSession = async (req: Request, res: Response) => {
           include: { class: { select: { name: true, code: true, room: true } } },
         });
 
-    res.status(existing ? 200 : 201).json(await sessionPayload(session, await loadRoster(section.id, session.id)));
+    res.status(existing ? 200 : 201).json(await sessionPayload(session, ctx.organizationId));
   } catch (err) {
     res.status(400).json({ message: 'Could not open an attendance session.', error: (err as Error).message });
   }
@@ -315,7 +280,7 @@ export const getSession = async (req: Request, res: Response) => {
       include: { class: { select: { name: true, code: true, room: true } } },
     });
     if (!session) return res.status(404).json({ message: 'Attendance session not found.' });
-    res.json(await sessionPayload(session, await loadRoster(session.classId, session.id)));
+    res.json(await sessionPayload(session, ctx.organizationId));
   } catch (err) {
     res.status(500).json({ message: 'Failed to load attendance session', error: (err as Error).message });
   }
@@ -336,7 +301,7 @@ export const refreshQr = async (req: Request, res: Response) => {
       data: { qrToken: newQrToken(), qrExpiresAt: new Date(Date.now() + QR_TTL_MS) },
       include: { class: { select: { name: true, code: true, room: true } } },
     });
-    res.json(await sessionPayload(updated, await loadRoster(updated.classId, updated.id)));
+    res.json(await sessionPayload(updated, ctx.organizationId));
   } catch (err) {
     res.status(400).json({ message: 'Could not refresh the QR code.', error: (err as Error).message });
   }
@@ -391,7 +356,7 @@ export const markSession = async (req: Request, res: Response) => {
         distanceMeters,
       },
     });
-    res.json(await sessionPayload(session, await loadRoster(session.classId, session.id)));
+    res.json(await sessionPayload(session, ctx.organizationId));
   } catch (err) {
     res.status(400).json({ message: 'Could not save the mark.', error: (err as Error).message });
   }
@@ -411,7 +376,7 @@ export const closeSession = async (req: Request, res: Response) => {
       data: { status: 'closed' },
       include: { class: { select: { name: true, code: true, room: true } } },
     });
-    res.json(await sessionPayload(updated, await loadRoster(updated.classId, updated.id)));
+    res.json(await sessionPayload(updated, ctx.organizationId));
   } catch (err) {
     res.status(400).json({ message: 'Could not close this session.', error: (err as Error).message });
   }

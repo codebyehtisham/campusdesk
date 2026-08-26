@@ -148,7 +148,9 @@ export default function AdminAttendance({ kind }) {
           <span className="eyebrow">Attendance</span>
           <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">{peopleLabel} register</h1>
           <p className="m-0 max-w-xl text-text-muted">
-            Mark daily attendance for {peopleLabel.toLowerCase()} on this register.
+            {isStaff
+              ? `Mark daily attendance for ${peopleLabel.toLowerCase()} on this register.`
+              : 'View class attendance by instructor. Student marks come from faculty QR sessions — org admins cannot edit them here.'}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -164,9 +166,11 @@ export default function AdminAttendance({ kind }) {
           <button type="button" className="btn btn-outline" onClick={openCreate}>
             {isStaff ? `Add ${peopleLabel.toLowerCase()}` : `Add ${peopleLabel.toLowerCase().replace(/s$/, '')}`}
           </button>
-          <button type="button" className="btn btn-primary" onClick={saveDay} disabled={saving || loading}>
-            {saving ? 'Saving…' : 'Save day'}
-          </button>
+          {isStaff && (
+            <button type="button" className="btn btn-primary" onClick={saveDay} disabled={saving || loading}>
+              {saving ? 'Saving…' : 'Save day'}
+            </button>
+          )}
           {!isStaff && (
             <Link to={`${ADMIN_BASE}/attendance/location`} className="btn btn-outline">
               Campus location
@@ -175,13 +179,23 @@ export default function AdminAttendance({ kind }) {
         </div>
       </div>
 
+      {!isStaff && <AdminAttendanceSessions date={date} />}
+
       <div className="mb-5 flex flex-wrap gap-2">
-        <span className="rounded-full bg-cardinal-pale px-3 py-1.5 text-xs font-bold text-cardinal">
-          Present {summary.present}/{summary.total}
-        </span>
-        <span className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-ink">
-          Marked {summary.marked}
-        </span>
+        {isStaff ? (
+          <>
+            <span className="rounded-full bg-cardinal-pale px-3 py-1.5 text-xs font-bold text-cardinal">
+              Present {summary.present}/{summary.total}
+            </span>
+            <span className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-ink">
+              Marked {summary.marked}
+            </span>
+          </>
+        ) : (
+          <span className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-ink">
+            {summary.total} on roster
+          </span>
+        )}
       </div>
 
       {error && (
@@ -215,23 +229,24 @@ export default function AdminAttendance({ kind }) {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {ATTENDANCE_STATUSES.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      disabled={!person.active}
-                      onClick={() => setStatus(person.id, item.key)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-bold ${
-                        person.status === item.key
-                          ? item.key === 'absent'
-                            ? 'border-crimson bg-crimson-pale text-crimson'
-                            : 'border-cardinal bg-cardinal-pale text-cardinal'
-                          : 'border-border bg-white text-ink'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  {isStaff &&
+                    ATTENDANCE_STATUSES.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        disabled={!person.active}
+                        onClick={() => setStatus(person.id, item.key)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-bold ${
+                          person.status === item.key
+                            ? item.key === 'absent'
+                              ? 'border-crimson bg-crimson-pale text-crimson'
+                              : 'border-cardinal bg-cardinal-pale text-cardinal'
+                            : 'border-border bg-white text-ink'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
                   <button type="button" className="text-xs font-bold text-crimson" onClick={() => setPendingDelete(person)}>
                     Remove
                   </button>
@@ -330,8 +345,6 @@ export default function AdminAttendance({ kind }) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!isStaff && <AdminAttendanceSessions date={date} />}
     </div>
   );
 }

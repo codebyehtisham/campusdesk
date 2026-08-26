@@ -3,7 +3,7 @@ import { prisma } from '../config/db.js';
 import { evaluateFence, parseFence, parseQrToken, parseScanLocation } from '../lib/geofence.js';
 import { hasModule, orgId } from '../lib/tenant.js';
 import { getSiteSettings } from './settingsController.js';
-import { loadRoster, sessionPayload } from './teachingController.js';
+import { sessionPayload } from './teachingController.js';
 
 const findStudentPerson = async (organizationId: string, email: string) =>
   prisma.attendancePerson.findFirst({
@@ -103,7 +103,7 @@ export const scanStudentAttendance = async (req: Request, res: Response) => {
       status: 'present',
       onCampus,
       distanceMeters,
-      session: await sessionPayload(session, await loadRoster(session.classId, session.id)),
+      session: await sessionPayload(session, organizationId),
     });
   } catch (err) {
     res.status(400).json({ message: 'Could not mark attendance.', error: (err as Error).message });
@@ -153,10 +153,16 @@ export const getAdminSession = async (req: Request, res: Response) => {
     if (!organizationId) return res.status(403).json({ message: 'Organisation required.' });
     const session = await prisma.attendanceSession.findFirst({
       where: { id: req.params.id, organizationId },
-      include: { class: { select: { name: true, code: true, room: true } } },
+      include: {
+        class: { select: { name: true, code: true, room: true } },
+        teacher: { select: { name: true, email: true } },
+      },
     });
     if (!session) return res.status(404).json({ message: 'Attendance session not found.' });
-    res.json(await sessionPayload(session, await loadRoster(session.classId, session.id)));
+    res.json({
+      ...(await sessionPayload(session, organizationId)),
+      teacherName: session.teacher.name || session.teacher.email,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load session.', error: (err as Error).message });
   }

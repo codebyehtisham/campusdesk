@@ -159,6 +159,11 @@ export const saveAttendanceDay = async (req: Request, res: Response) => {
     if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
     const kind = parseKind(req.body.kind);
     if (!kind) return res.status(400).json({ message: 'Choose student or staff attendance.' });
+    if (kind === 'student') {
+      return res.status(403).json({
+        message: 'Student attendance is marked by faculty during class sessions. View class scans instead.',
+      });
+    }
     if (!gate(req, res, kind)) return;
     const date = dayStart(req.body.date);
     const rawMarks: unknown[] = Array.isArray(req.body.marks) ? req.body.marks : [];

@@ -9,4 +9,9 @@ export const ATTENDANCE_STATUSES = [
   { key: 'leave', label: 'Leave' },
 ];
 
+export const SESSION_MARK_STATUSES = [
+  { key: 'present', label: 'Present' },
+  { key: 'absent', label: 'Absent' },
+];
+
 export const todayStamp = () => new Date().toISOString().slice(0, 10);

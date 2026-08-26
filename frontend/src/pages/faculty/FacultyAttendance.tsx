@@ -4,9 +4,9 @@ import api from '../../api/client';
 import { getStaff, signOutStaff } from '../../auth/staffSession';
 import { FACULTY_BASE } from '../../admin/paths';
 import { isTeacher, staffHome } from '../../data/roles';
-import { ATTENDANCE_STATUSES } from '../../data/attendance';
+import { SESSION_MARK_STATUSES } from '../../data/attendance';
 import { weekdayLabel } from '../../data/teaching';
-import LocationMatchBadge from '../../components/LocationMatchBadge';
+import AttendanceRecordRow, { AttendanceRecordHeader } from '../../components/AttendanceRecordRow';
 
 const staffReq = { authScope: 'staff' };
 
@@ -40,6 +40,7 @@ export default function FacultyAttendance() {
   const current = useMemo(() => classes.find((item) => item.id === classId), [classes, classId]);
   const todaySlots = (current?.slots || []).filter((slot) => slot.dayOfWeek === today.dayOfWeek);
   const expired = session && new Date(session.qrExpiresAt).getTime() < Date.now();
+  const locationEnabled = Boolean(session?.attendanceLocationEnabled);
 
   useEffect(() => {
     if (!isTeacher(staff?.role)) {
@@ -147,8 +148,8 @@ export default function FacultyAttendance() {
       <span className="eyebrow">Teaching</span>
       <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Class attendance</h1>
       <p className="mb-8 max-w-xl text-text-muted">
-        Choose a class from your timetable, generate a QR code for the room, and mark the roster. Students scan the QR
-        from the Campus Desk app — location badges show whether a present mark was on campus.
+        Open a session from your timetable, show the QR code, and mark present or absent. Final present is true only
+        when QR is present and the student is onsite (if campus location is enabled).
       </p>
 
       {error && (
@@ -229,40 +230,33 @@ export default function FacultyAttendance() {
                 {session.roster?.length === 0 ? (
                   <p className="m-0 text-sm text-text-muted">No students enrolled in this class yet.</p>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <>
+                    <AttendanceRecordHeader locationEnabled={locationEnabled} />
                     {session.roster.map((person) => (
-                      <article key={person.id} className="rounded-2xl border border-border px-4 py-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <strong className="block text-ink">{person.name}</strong>
-                            <small className="text-text-muted">{person.title || person.email}</small>
-                            {person.status === 'present' && (
-                              <div className="mt-2">
-                                <LocationMatchBadge location={person.location} status={person.status} />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {ATTENDANCE_STATUSES.map((status) => (
-                              <button
-                                key={status.key}
-                                type="button"
-                                disabled={session.status !== 'open'}
-                                onClick={() => mark(person.id, status.key)}
-                                className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                                  person.status === status.key
-                                    ? 'bg-cardinal text-white'
-                                    : 'border border-border text-text-muted'
-                                }`}
-                              >
-                                {status.label}
-                              </button>
-                            ))}
-                          </div>
+                      <div key={person.id} className="border-b border-border last:border-0">
+                        <AttendanceRecordRow person={person} locationEnabled={locationEnabled} />
+                        <div className="flex flex-wrap gap-2 pb-4">
+                          {SESSION_MARK_STATUSES.map((status) => (
+                            <button
+                              key={status.key}
+                              type="button"
+                              disabled={session.status !== 'open'}
+                              onClick={() => mark(person.id, status.key)}
+                              className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                                (person.qrStatus || person.status) === status.key ||
+                                (status.key === 'present' && person.status === 'present') ||
+                                (status.key === 'absent' && person.status && person.status !== 'present')
+                                  ? 'bg-cardinal text-white'
+                                  : 'border border-border text-text-muted'
+                              }`}
+                            >
+                              Mark {status.label}
+                            </button>
+                          ))}
                         </div>
-                      </article>
+                      </div>
                     ))}
-                  </div>
+                  </>
                 )}
               </section>
             )}
