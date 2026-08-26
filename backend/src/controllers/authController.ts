@@ -2,7 +2,17 @@ import type { Request, Response } from 'express';
 import type { Organization } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { getSiteSettings } from './settingsController.js';
-import { authPayloadForOrg, FACULTY_ROLES, hashPassword, loadOrganization, matchPassword, orgPayload, STAFF_ROLES, toSafeJSON } from '../middleware/auth.js';
+import {
+  attendanceAuthExtras,
+  authPayloadForOrg,
+  FACULTY_ROLES,
+  hashPassword,
+  loadOrganization,
+  matchPassword,
+  orgPayload,
+  STAFF_ROLES,
+  toSafeJSON,
+} from '../middleware/auth.js';
 import { hasModule, isUniqueError, resolveOrganizationByInstitute } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 
@@ -211,5 +221,6 @@ export const getMe = async (req: Request, res: Response) => {
   res.json({
     user: toSafeJSON(req.user!),
     organization: await orgPayload(req.organization || null),
+    ...(await attendanceAuthExtras(req.organization || null)),
   });
 };

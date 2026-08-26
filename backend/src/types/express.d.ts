@@ -37,6 +37,12 @@ export type AuthPayload = {
     lockReason?: string | null;
     overdue?: boolean;
   } | null;
+  attendanceLocationEnabled?: boolean;
+  campusLocation?: {
+    latitude: number;
+    longitude: number;
+    radiusMeters: number;
+  } | null;
 };
 
 export {};

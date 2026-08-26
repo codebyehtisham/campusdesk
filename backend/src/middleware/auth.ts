@@ -3,9 +3,11 @@ import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import type { Organization, User } from '@prisma/client';
 import { prisma } from '../config/db.js';
+import { parseFence } from '../lib/geofence.js';
 import { hasModule, sellableModules } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 import type { AuthPayload } from '../types/express.js';
+import { getSiteSettings } from '../controllers/settingsController.js';
 
 export const STAFF_ROLES = ['admin', 'reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
 export const FACULTY_ROLES = ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
@@ -63,9 +65,26 @@ export const authPayload = (user: User, org: Organization | null, lock?: { locke
   organization: toOrgJSON(org, lock),
 });
 
+export const attendanceAuthExtras = async (org: Organization | null) => {
+  if (!org || !hasModule(org, 'student-attendance')) {
+    return { attendanceLocationEnabled: false, campusLocation: null };
+  }
+  const settings = await getSiteSettings(org.id);
+  if (!settings) {
+    return { attendanceLocationEnabled: false, campusLocation: null };
+  }
+  return {
+    attendanceLocationEnabled: Boolean(settings.attendanceLocationEnabled),
+    campusLocation: parseFence(settings),
+  };
+};
+
 export const authPayloadForOrg = async (user: User, org: Organization | null) => {
   const lock = org ? await resolveServiceLock(org) : undefined;
-  return authPayload(user, org, lock);
+  return {
+    ...authPayload(user, org, lock),
+    ...(await attendanceAuthExtras(org)),
+  };
 };
 
 export const loadOrganization = async (user: User) => {
