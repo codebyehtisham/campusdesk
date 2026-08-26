@@ -1,0 +1,33 @@
+import { ADMIN_BASE } from '../admin/paths';
+
+export const MODULE_NAV = {
+  admissions: [{ to: 'admissions', label: 'Admissions' }],
+  faculty: [
+    { to: 'users', label: 'Users' },
+    { to: 'access', label: 'Access' },
+    { to: 'classes', label: 'Classes' },
+    { to: 'timetable', label: 'Timetable' },
+  ],
+  careers: [{ to: 'careers', label: 'HR' }],
+  'student-attendance': [{ to: 'attendance/students', label: 'Student attendance' }],
+  'staff-attendance': [{ to: 'attendance/staff', label: 'Staff attendance' }],
+};
+
+export const orgAdminNav = (modules = [], kind = 'education') => {
+  const items = [{ to: `${ADMIN_BASE}/dashboard`, label: 'Dashboard' }];
+  for (const slug of ['admissions', 'faculty', 'careers', 'student-attendance', 'staff-attendance']) {
+    if (!modules.includes(slug)) continue;
+    for (const item of MODULE_NAV[slug] || []) {
+      if (kind === 'hospital' && (item.to === 'classes' || item.to === 'timetable')) continue;
+      if (kind === 'hospital' && item.to === 'attendance/students') {
+        items.push({ to: `${ADMIN_BASE}/${item.to}`, label: 'Patient register', slug });
+        continue;
+      }
+      items.push({ to: `${ADMIN_BASE}/${item.to}`, label: item.label, slug });
+    }
+  }
+  items.push({ to: `${ADMIN_BASE}/units`, label: 'Departments' });
+  items.push({ to: `${ADMIN_BASE}/brand`, label: 'Brand' });
+  items.push({ to: `${ADMIN_BASE}/settings`, label: 'Password' });
+  return items;
+};

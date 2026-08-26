@@ -1,0 +1,22 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Portrait placeholder for Nazia Shaukat">
+  <defs>
+    <linearGradient id="bgNS" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7fc4f5"/>
+      <stop offset="100%" stop-color="#1a4fd6"/>
+    </linearGradient>
+    <linearGradient id="figNS" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f8fe"/>
+      <stop offset="100%" stop-color="#dceafb"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bgNS)"/>
+  <circle cx="55" cy="340" r="12" fill="#38bdf8" opacity="0.55"/>
+  <circle cx="345" cy="65" r="9" fill="#ffffff" opacity="0.5"/>
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+  <circle cx="200" cy="150" r="70" fill="url(#figNS)"/>
+  <path d="M60 380 C60 265 125 235 200 235 C275 235 340 265 340 380 Z" fill="url(#figNS)"/>
+  <path d="M140 210 Q200 260 260 210 L260 250 Q200 285 140 250 Z" fill="#1a4fd6" opacity="0.35"/>
+  <rect x="0" y="330" width="400" height="70" fill="#0d2a80"/>
+  <text x="200" y="365" text-anchor="middle" font-family="'Poppins', Georgia, sans-serif" font-size="28" fill="#ffffff" font-weight="700">NS</text>
+  <text x="200" y="40" text-anchor="middle" font-family="'Poppins', Georgia, sans-serif" font-size="15" fill="#ffffff" opacity="0.9" letter-spacing="1">EXPLORE COLLEGE</text>
+</svg>

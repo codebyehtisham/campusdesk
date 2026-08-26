@@ -1,0 +1,21 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Portrait placeholder for MD Musarrat Khannum">
+  <defs>
+    <linearGradient id="bgMK" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4ea3f0"/>
+      <stop offset="100%" stop-color="#1a4fd6"/>
+    </linearGradient>
+    <linearGradient id="figMK" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f8fe"/>
+      <stop offset="100%" stop-color="#dceafb"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bgMK)"/>
+  <circle cx="330" cy="60" r="10" fill="#ffffff" opacity="0.5"/>
+  <circle cx="60" cy="330" r="16" fill="#38bdf8" opacity="0.6"/>
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+  <circle cx="200" cy="150" r="70" fill="url(#figMK)"/>
+  <path d="M70 380 C70 270 130 240 200 240 C270 240 330 270 330 380 Z" fill="url(#figMK)"/>
+  <rect x="0" y="330" width="400" height="70" fill="#0d2a80"/>
+  <text x="200" y="365" text-anchor="middle" font-family="'Poppins', Georgia, sans-serif" font-size="28" fill="#ffffff" font-weight="700">MK</text>
+  <text x="200" y="40" text-anchor="middle" font-family="'Poppins', Georgia, sans-serif" font-size="15" fill="#ffffff" opacity="0.9" letter-spacing="1">EXPLORE COLLEGE</text>
+</svg>
