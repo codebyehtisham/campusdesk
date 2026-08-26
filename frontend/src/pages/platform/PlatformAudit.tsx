@@ -39,6 +39,7 @@ export default function PlatformAudit() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [method, setMethod] = useState('');
+  const [role, setRole] = useState('');
   const [organization, setOrganization] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,6 +64,7 @@ export default function PlatformAudit() {
           limit: 25,
           q: q || undefined,
           method: method || undefined,
+          role: role || undefined,
           organization: organization || undefined,
         },
       });
@@ -86,7 +88,7 @@ export default function PlatformAudit() {
   useEffect(() => {
     setPage(1);
     load(1);
-  }, [method, organization]);
+  }, [method, role, organization]);
 
   const search = (e) => {
     e.preventDefault();
@@ -134,6 +136,16 @@ export default function PlatformAudit() {
             </option>
           ))}
         </select>
+        <select value={role} onChange={(e) => setRole(e.target.value)} className="field lg:w-44">
+          <option value="">All roles</option>
+          {['superadmin', 'admin', 'teacher', 'officer', 'reviewer', 'reader', 'viewer', 'applicant', 'anonymous'].map(
+            (item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            )
+          )}
+        </select>
         <button type="submit" className="btn btn-primary py-3">
           Search
         </button>
@@ -173,7 +185,8 @@ export default function PlatformAudit() {
               <p className="mt-2 mb-0 font-mono text-[0.82rem] break-all text-[var(--pc-text)]">{item.url}</p>
               <p className="m-0 text-xs text-[var(--pc-muted)]">
                 {item.ip || '—'} · {formatWhere(item.location)}
-                {item.actor?.email ? ` · ${item.actor.email}` : ''} · {new Date(item.createdAt).toLocaleString()}
+                {item.actor?.email ? ` · ${item.actor.email}` : item.actor?.role ? ` · ${item.actor.role}` : ''} ·{' '}
+                {new Date(item.createdAt).toLocaleString()}
               </p>
             </button>
           ))}

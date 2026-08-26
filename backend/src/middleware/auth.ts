@@ -96,7 +96,28 @@ export const matchPassword = (plain: string, hash: string) => bcrypt.compare(pla
 
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 10);
 
+/** Decode Bearer token and attach req.user when present — never rejects. Used before audit logging. */
+export const optionalAuth = async (req: Request, _res: Response, next: NextFunction) => {
+  if (req.user) return next();
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return next();
+
+  try {
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET || 'dev-secret') as { id: string };
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (user && (!user.blocked || user.role === 'superadmin')) {
+      req.user = user;
+      req.organization = await loadOrganization(user);
+    }
+  } catch {
+    /* invalid or expired token — leave anonymous */
+  }
+  return next();
+};
+
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
+  if (req.user) return next();
+
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Sign in required' });

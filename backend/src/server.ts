@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
+import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
 import platformRoutes from './routes/platformRoutes.js';
@@ -80,6 +81,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
+app.use(optionalAuth);
 app.use(audit);
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');

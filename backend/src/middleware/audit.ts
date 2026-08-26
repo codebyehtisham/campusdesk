@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db.js';
 import type { Prisma } from '@prisma/client';
 
 const SECRET_KEYS = /^(password|currentpassword|newpassword|confirmpassword|token|authorization|cookie|set-cookie)$/i;
-const SKIP_EXT = /\.(js|css|map|png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot)(\?.*)?$/i;
 const geoCache = new Map<string, { city: string; region: string; country: string }>();
 
 const isPrivateIp = (ip: string) => {
@@ -82,17 +82,85 @@ const lookupLocation = async (ip: string) => {
   }
 };
 
+const requestPath = (req: Request) => {
+  const raw = req.originalUrl || req.url || '';
+  return raw.split('?')[0] || raw;
+};
+
+/** Log every /api/* call except preflight and super-admin audit reads (avoid noise). */
 const shouldSkip = (req: Request) => {
-  const url = req.originalUrl || req.url || '';
-  if (SKIP_EXT.test(url)) return true;
+  const path = requestPath(req);
   if (req.method === 'OPTIONS') return true;
-  if (req.method === 'GET' && url.startsWith('/api/platform/audit')) return true;
-  // Hot public paths — skip audit to keep admissions login snappy
-  if (req.method === 'GET' && (url.startsWith('/api/health') || url.startsWith('/api/settings'))) return true;
+  if (!path.startsWith('/api')) return true;
+  if (req.method === 'GET' && path.startsWith('/api/platform/audit')) return true;
   return false;
 };
 
 const jsonValue = (value: unknown): Prisma.InputJsonValue => value as Prisma.InputJsonValue;
+
+type Actor = { id: string; email: string; role: string };
+
+const decodeJwtActor = (req: Request): Actor | null => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return null;
+  try {
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET || 'dev-secret') as {
+      id?: string;
+      role?: string;
+    };
+    if (!decoded.id) return null;
+    return { id: decoded.id, email: '', role: decoded.role || '' };
+  } catch {
+    return null;
+  }
+};
+
+const extractLoginContext = (body: unknown): { actor: Actor; orgId: string | null } | null => {
+  if (!body || typeof body !== 'object') return null;
+  const payload = body as {
+    user?: { id?: string; email?: string; role?: string };
+    organization?: { id?: string } | string | null;
+  };
+  if (!payload.user?.id) return null;
+  const org =
+    payload.organization && typeof payload.organization === 'object' ? payload.organization.id || null : null;
+  return {
+    actor: {
+      id: payload.user.id,
+      email: payload.user.email || '',
+      role: payload.user.role || '',
+    },
+    orgId: org,
+  };
+};
+
+const resolveActor = (req: Request, responseBody: unknown): Actor => {
+  if (req.user) {
+    return { id: req.user.id, email: req.user.email || '', role: req.user.role || '' };
+  }
+  const login = extractLoginContext(responseBody);
+  if (login) return login.actor;
+  const jwtActor = decodeJwtActor(req);
+  if (jwtActor) return jwtActor;
+  return { id: '', email: '', role: 'anonymous' };
+};
+
+const resolveOrgId = (req: Request, responseBody: unknown): string | null => {
+  if (req.user?.organizationId) return req.user.organizationId;
+  if (req.organization?.id) return req.organization.id;
+  const login = extractLoginContext(responseBody);
+  if (login?.orgId) return login.orgId;
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET || 'dev-secret') as { orgId?: string | null };
+      if (decoded.orgId) return decoded.orgId;
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
+};
 
 export const audit = (req: Request, res: Response, next: NextFunction) => {
   if (shouldSkip(req)) return next();
@@ -112,7 +180,9 @@ export const audit = (req: Request, res: Response, next: NextFunction) => {
   }) as typeof res.send;
 
   res.on('finish', () => {
-    const orgId = req.user?.organizationId || req.organization?.id || null;
+    const responseBody = asBody(res.locals.auditBody);
+    const actor = resolveActor(req, responseBody);
+    const orgId = resolveOrgId(req, responseBody);
     const payload = {
       method: req.method,
       url: req.originalUrl || req.url,
@@ -121,20 +191,16 @@ export const audit = (req: Request, res: Response, next: NextFunction) => {
       query: jsonValue(redact(req.query || {})),
       headers: jsonValue(redact(req.headers)),
       requestBody: jsonValue(clip(redact(req.body && Object.keys(req.body).length ? req.body : null))),
-      actor: jsonValue(
-        req.user
-          ? { id: req.user.id, email: req.user.email || '', role: req.user.role || '' }
-          : { id: '', email: '', role: '' }
-      ),
+      actor: jsonValue(actor),
       organizationId: orgId,
       statusCode: res.statusCode,
-      responseBody: jsonValue(clip(redact(asBody(res.locals.auditBody)))),
+      responseBody: jsonValue(clip(redact(responseBody))),
       durationMs: Date.now() - started,
     };
 
     lookupLocation(ip)
       .then((location) => prisma.auditLog.create({ data: { ...payload, location: jsonValue(location) } }))
-      .catch(() => {});
+      .catch((err) => console.error('[audit] failed to persist log:', (err as Error).message));
   });
 
   return next();

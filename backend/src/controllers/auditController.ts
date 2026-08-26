@@ -7,15 +7,28 @@ const buildFilter = (req: Request): Prisma.AuditLogWhereInput => {
   const filter: Prisma.AuditLogWhereInput = {};
   if (req.query.organization) filter.organizationId = String(req.query.organization);
   if (req.query.method) filter.method = String(req.query.method).toUpperCase();
+  if (req.query.role) {
+    filter.actor = { path: '$.role', equals: String(req.query.role) };
+  }
   if (req.query.q) {
     const q = String(req.query.q);
     filter.OR = [
       { url: { contains: q } },
       { ip: { contains: q } },
       { userAgent: { contains: q } },
+      { actor: { path: '$.email', string_contains: q } },
+      { actor: { path: '$.role', string_contains: q } },
     ];
   }
   return filter;
+};
+
+const assertSuperAdmin = (req: Request, res: Response) => {
+  if (req.user?.role !== 'superadmin') {
+    res.status(403).json({ message: 'Platform access only' });
+    return false;
+  }
+  return true;
 };
 
 const toAudit = (item: {
@@ -28,6 +41,7 @@ const toAudit = (item: {
 });
 
 export const listPlatformAudit = async (req: Request, res: Response) => {
+  if (!assertSuperAdmin(req, res)) return;
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(10, Number(req.query.limit) || 25));
@@ -69,6 +83,7 @@ export const listPlatformAudit = async (req: Request, res: Response) => {
 };
 
 export const getPlatformAudit = async (req: Request, res: Response) => {
+  if (!assertSuperAdmin(req, res)) return;
   try {
     const item = await prisma.auditLog.findUnique({
       where: { id: req.params.id },
