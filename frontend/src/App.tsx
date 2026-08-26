@@ -13,6 +13,7 @@ import AdminCareers from './pages/admin/AdminCareers';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import AdminAttendanceLocation from './pages/admin/AdminAttendanceLocation';
 import AdminAttendanceSession from './pages/admin/AdminAttendanceSession';
+import AdminAttendanceInsights from './pages/admin/AdminAttendanceInsights';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAccess from './pages/admin/AdminAccess';
 import AdminClasses from './pages/admin/AdminClasses';
@@ -80,6 +81,7 @@ function App() {
               <Route path="admissions" element={<RequireModule slug="admissions"><AdminAdmissions /></RequireModule>} />
               <Route path="careers" element={<RequireModule slug="careers"><AdminCareers /></RequireModule>} />
               <Route path="attendance/students" element={<RequireModule slug="student-attendance"><AdminAttendance kind="student" /></RequireModule>} />
+              <Route path="attendance/insights" element={<RequireModule slug="student-attendance"><AdminAttendanceInsights /></RequireModule>} />
               <Route path="attendance/location" element={<RequireModule slug="student-attendance"><AdminAttendanceLocation /></RequireModule>} />
               <Route path="attendance/sessions/:sessionId" element={<RequireModule slug="student-attendance"><AdminAttendanceSession /></RequireModule>} />
               <Route path="attendance/staff" element={<RequireModule slug="staff-attendance"><AdminAttendance kind="staff" /></RequireModule>} />

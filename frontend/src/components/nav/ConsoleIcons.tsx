@@ -164,6 +164,7 @@ const ADMIN_ICON_BY_SUFFIX: Record<string, typeof IconDashboard> = {
   timetable: IconCalendar,
   careers: IconBriefcase,
   'attendance/students': IconCheck,
+  'attendance/insights': IconPulse,
   'attendance/staff': IconCheck,
   units: IconLayers,
   brand: IconPalette,

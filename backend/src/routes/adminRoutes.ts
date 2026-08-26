@@ -16,6 +16,12 @@ import {
 } from '../controllers/attendanceLocationController.js';
 import { getAdminSession, listAdminSessions } from '../controllers/studentAttendanceController.js';
 import {
+  getAttendanceAnalyticsMeta,
+  getAttendanceByClassDate,
+  getAttendanceClassAnalytics,
+  getAttendanceStudentAnalytics,
+} from '../controllers/attendanceAnalyticsController.js';
+import {
   getTeachingAdmin,
   createClass,
   updateClass,
@@ -56,6 +62,10 @@ router.get('/attendance/location', ...orgAdmin, requireModule('student-attendanc
 router.put('/attendance/location', ...orgAdmin, requireModule('student-attendance'), updateAttendanceLocation);
 router.get('/attendance/sessions', ...orgAdmin, requireModule('student-attendance'), listAdminSessions);
 router.get('/attendance/sessions/:id', ...orgAdmin, requireModule('student-attendance'), getAdminSession);
+router.get('/attendance/analytics/meta', ...orgAdmin, requireModule('student-attendance'), getAttendanceAnalyticsMeta);
+router.get('/attendance/analytics/by-class-date', ...orgAdmin, requireModule('student-attendance'), getAttendanceByClassDate);
+router.get('/attendance/analytics/student/:personId', ...orgAdmin, requireModule('student-attendance'), getAttendanceStudentAnalytics);
+router.get('/attendance/analytics/class/:classId', ...orgAdmin, requireModule('student-attendance'), getAttendanceClassAnalytics);
 router.post('/attendance/people', ...orgAdmin, createAttendancePerson);
 router.put('/attendance/people/:id', ...orgAdmin, updateAttendancePerson);
 router.delete('/attendance/people/:id', ...orgAdmin, deleteAttendancePerson);

@@ -9,7 +9,10 @@ export const MODULE_NAV = {
     { to: 'timetable', label: 'Timetable' },
   ],
   careers: [{ to: 'careers', label: 'HR' }],
-  'student-attendance': [{ to: 'attendance/students', label: 'Student attendance' }],
+  'student-attendance': [
+    { to: 'attendance/students', label: 'Student attendance' },
+    { to: 'attendance/insights', label: 'Attendance insights' },
+  ],
   'staff-attendance': [{ to: 'attendance/staff', label: 'Staff attendance' }],
 };
 
@@ -41,7 +44,7 @@ export const orgAdminNavGroups = (modules = [], kind = 'education') => {
     { title: 'Overview', items: bySuffix('dashboard') },
     {
       title: 'Operations',
-      items: byLabels(['Admissions', 'HR', 'Student attendance', 'Staff attendance', 'Patient register']),
+      items: byLabels(['Admissions', 'HR', 'Student attendance', 'Attendance insights', 'Staff attendance', 'Patient register']),
     },
     { title: 'Teaching', items: byLabels(['Users', 'Access', 'Classes', 'Timetable']) },
     { title: 'Campus', items: [...bySuffix('units'), ...bySuffix('brand')] },
