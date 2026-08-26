@@ -29,17 +29,53 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5174,http
   .map((item) => item.trim())
   .filter(Boolean);
 
-app.use(
+const configuredHosts = () => {
+  const hosts = new Set<string>();
+  for (const value of [
+    process.env.RAILWAY_PUBLIC_DOMAIN,
+    process.env.PUBLIC_APP_URL,
+    process.env.APP_URL,
+    process.env.CLIENT_ORIGIN,
+  ]) {
+    if (!value) continue;
+    for (const part of value.split(',')) {
+      const raw = part.trim();
+      if (!raw || raw === '*') continue;
+      try {
+        const url = raw.includes('://') ? new URL(raw) : new URL(`https://${raw}`);
+        hosts.add(url.host);
+      } catch {
+        /* ignore invalid entries */
+      }
+    }
+  }
+  return hosts;
+};
+
+const isAllowedOrigin = (origin: string | undefined, requestHost?: string) => {
+  if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return true;
+  try {
+    const host = new URL(origin).host;
+    if (configuredHosts().has(host)) return true;
+    // Same Express process serves SPA + API — allow the browser host that hit this server.
+    if (requestHost) {
+      const bare = requestHost.split(':')[0];
+      if (host === requestHost || host === bare) return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+};
+
+app.use((req, res, next) => {
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // Never throw — throwing becomes a 500 and blocks Vite `crossorigin` JS/CSS (white screen).
+      callback(null, isAllowedOrigin(origin, req.headers.host));
     },
-  })
-);
+  })(req, res, next);
+});
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
@@ -77,6 +113,9 @@ app.use('/api', (_req, res) => {
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
 if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
   app.use(express.static(frontendDist));
+  app.get(['/login', '/signin'], (_req, res) => {
+    res.redirect(302, '/org-admin');
+  });
   app.get('*', (_req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
