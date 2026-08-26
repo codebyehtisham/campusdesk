@@ -7,7 +7,7 @@ import { getStaff, signInStaff } from '../../auth/staffSession';
 import { isLockedOrg } from '../../auth/serviceLock';
 import { staffHome } from '../../data/roles';
 import api from '../../api/client';
-import CampusDeskMark from '../../components/CampusDeskMark';
+import BrandMark from '../../components/BrandMark';
 import usePublicBrand from '../../brand/usePublicBrand';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -69,11 +69,13 @@ export default function FacultyLogin() {
           className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
         >
           <div className="mb-8 flex items-center gap-3">
-            <CampusDeskMark size={48} />
+            <BrandMark org={brand} size={48} />
             <div className="leading-tight">
-              <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+              <strong className="font-serif text-sm font-bold tracking-tight text-ink">
+                {brand.title || brand.name || 'Faculty'}
+              </strong>
               <p className="m-0 text-[0.7rem] font-medium text-text-muted">
-                {brand.title || brand.name || 'Faculty'} · Faculty portal
+                {brand.tagline || 'Faculty portal'}
               </p>
             </div>
           </div>

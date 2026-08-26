@@ -6,7 +6,6 @@ import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
 import { orgAdminNav } from '../../data/modules';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
-import CampusDeskMark from '../../components/CampusDeskMark';
 
 export function RequireAdmin() {
   const admin = getAdmin();
@@ -20,6 +19,7 @@ export default function AdminLayout() {
   const [admin, setAdmin] = useState(() => getAdmin());
   const [open, setOpen] = useState(false);
   const nav = orgAdminNav(admin?.modules || [], admin?.organization?.kind || 'education');
+  const org = admin?.organization;
 
   useEffect(() => {
     setAdmin(getAdmin());
@@ -64,26 +64,24 @@ export default function AdminLayout() {
   return (
     <div className="min-h-svh bg-bg-alt">
       <div className="noise" aria-hidden="true" />
-      <div className="relative z-1 mx-auto flex min-h-svh max-w-[1400px]">
+      <div className="relative z-1 flex min-h-svh w-full">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-[#0f5c5c] p-6 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-[#0f5c5c] p-6 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <Link to={`${ADMIN_BASE}/dashboard`} className="mb-8 flex items-center gap-3">
-            <CampusDeskMark size={48} className="ring-2 ring-white/20" />
+            <BrandMark org={org} size={48} className="ring-2 ring-white/20" />
             <span className="leading-tight">
               <strong className="block font-serif text-sm font-bold tracking-tight text-white">
-                Campus Desk
+                {org?.title || org?.name || 'Organisation'}
               </strong>
-              <small className="text-[0.65rem] font-medium text-white/70">
-                {admin?.organization?.title || admin?.organization?.name || 'Admin console'}
-              </small>
+              <small className="text-[0.65rem] font-medium text-white/70">Admin console</small>
             </span>
           </Link>
 
-          <p className="mb-3 text-[0.7rem] font-semibold tracking-[0.18em] text-white/55 uppercase">Desk</p>
-          <nav className="flex flex-col gap-1">
+          <p className="mb-3 text-[0.7rem] font-semibold tracking-[0.18em] text-white/55 uppercase">Menu</p>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
             {nav.map((item) => (
               <NavLink
                 key={item.to}
@@ -110,7 +108,7 @@ export default function AdminLayout() {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-bg/90 px-5 py-3 backdrop-blur-xl md:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-bg/95 px-5 py-3 backdrop-blur-xl md:px-8 lg:px-10">
             <button
               type="button"
               className="rounded-full border border-border px-3 py-2 text-sm font-semibold text-ink md:hidden"
@@ -118,15 +116,20 @@ export default function AdminLayout() {
             >
               Menu
             </button>
-            <div className="hidden items-center gap-2 md:flex">
-              <BrandMark org={admin?.organization} size={28} />
+            <div className="hidden min-w-0 items-center gap-2 md:flex">
+              <BrandMark org={org} size={28} />
               <p className="m-0 truncate text-sm font-semibold text-ink">
-                {admin?.organization?.title || admin?.email || 'Staff console'}
+                {org?.title || org?.name || admin?.email || 'Admin'}
               </p>
             </div>
             <div className="flex items-center gap-3">
               {admin?.modules?.includes('careers') && (
-                <a href="/careers" target="_blank" rel="noreferrer" className="hidden text-sm font-semibold text-cardinal sm:inline">
+                <a
+                  href="/careers"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hidden text-sm font-semibold text-cardinal sm:inline"
+                >
                   View public careers
                 </a>
               )}
@@ -135,7 +138,7 @@ export default function AdminLayout() {
               </button>
             </div>
           </header>
-          <main className="flex-1 px-5 py-8 md:px-8 md:py-10">
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-8 md:px-8 md:py-10 lg:px-10">
             <Outlet />
           </main>
         </div>

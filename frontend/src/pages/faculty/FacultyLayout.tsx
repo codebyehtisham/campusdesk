@@ -6,7 +6,6 @@ import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
 import { roleLabel, isTeacher, staffHome } from '../../data/roles';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
-import CampusDeskMark from '../../components/CampusDeskMark';
 
 export function RequireStaff() {
   const staff = getStaff();
@@ -18,6 +17,7 @@ export default function FacultyLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [staff, setStaff] = useState(() => getStaff());
+  const org = staff?.organization;
 
   useEffect(() => {
     setStaff(getStaff());
@@ -63,19 +63,20 @@ export default function FacultyLayout() {
   return (
     <div className="min-h-svh bg-bg-alt">
       <div className="noise" aria-hidden="true" />
-      <div className="relative z-1 mx-auto flex min-h-svh max-w-[1400px] flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-[#0f5c5c] px-5 py-3 text-white md:px-8">
-          <Link to={home} className="flex items-center gap-3">
-            <CampusDeskMark size={44} className="ring-2 ring-white/20" />
-            <span className="leading-tight">
-              <strong className="block font-serif text-sm font-bold tracking-tight text-white">Campus Desk</strong>
+      <div className="relative z-1 flex min-h-svh w-full flex-col">
+        <header className="sticky top-0 z-20 flex w-full items-center justify-between gap-3 border-b border-white/10 bg-[#0f5c5c] px-5 py-3 text-white md:px-8 lg:px-10">
+          <Link to={home} className="flex min-w-0 items-center gap-3">
+            <BrandMark org={org} size={44} className="ring-2 ring-white/20" />
+            <span className="min-w-0 leading-tight">
+              <strong className="block truncate font-serif text-sm font-bold tracking-tight text-white">
+                {org?.title || org?.name || 'Faculty'}
+              </strong>
               <small className="text-[0.65rem] font-medium text-white/70">
-                {staff?.organization?.title || staff?.organization?.name || 'Faculty'} ·{' '}
-                {staff?.organization?.kind === 'hospital' ? 'Staff portal' : 'Faculty portal'}
+                {org?.kind === 'hospital' ? 'Staff portal' : 'Faculty portal'}
               </small>
             </span>
           </Link>
-          <nav className="flex items-center gap-1 sm:gap-2">
+          <nav className="hidden items-center gap-1 lg:flex">
             {teaching && (
               <>
                 <NavLink
@@ -134,15 +135,19 @@ export default function FacultyLayout() {
             </NavLink>
           </nav>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-white/70 md:block">
-              {staff?.name || staff?.email} · {roleLabel(staff?.role, staff?.organization?.kind)}
+            <span className="hidden text-sm text-white/70 xl:block">
+              {staff?.name || staff?.email} · {roleLabel(staff?.role, org?.kind)}
             </span>
-            <button type="button" className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20" onClick={handleSignOut}>
+            <button
+              type="button"
+              className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+              onClick={handleSignOut}
+            >
               Sign out
             </button>
           </div>
         </header>
-        <main className="flex-1 px-5 py-8 md:px-8 md:py-10">
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-8 md:px-8 md:py-10 lg:px-10">
           <Outlet />
         </main>
       </div>

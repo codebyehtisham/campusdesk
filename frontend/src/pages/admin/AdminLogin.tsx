@@ -6,7 +6,7 @@ import { ADMIN_BASE } from '../../admin/paths';
 import { getAdmin, signInAdmin } from '../../auth/adminSession';
 import { isLockedOrg } from '../../auth/serviceLock';
 import api from '../../api/client';
-import CampusDeskMark from '../../components/CampusDeskMark';
+import BrandMark from '../../components/BrandMark';
 import usePublicBrand from '../../brand/usePublicBrand';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -82,10 +82,12 @@ export default function AdminLogin() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#f2f8f8] via-[#f2f8f8]/90 to-[#f2f8f8]/65" />
           <div className="relative flex h-full flex-col justify-between p-12 xl:p-16">
             <div className="flex items-center gap-3">
-              <CampusDeskMark size={48} />
+              <BrandMark org={brand} size={48} />
               <div className="leading-tight">
-                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
-                <p className="m-0 text-[0.7rem] font-medium text-text-muted">{brand.title || brand.name || 'Organisation admin'}</p>
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">
+                  {brand.title || brand.name || 'Organisation'}
+                </strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">Organisation admin</p>
               </div>
             </div>
             <div>
@@ -111,10 +113,12 @@ export default function AdminLogin() {
             className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
           >
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <CampusDeskMark size={48} />
+              <BrandMark org={brand} size={48} />
               <div className="leading-tight">
-                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
-                <p className="m-0 text-[0.7rem] font-medium text-text-muted">{brand.title || 'Organisation admin'}</p>
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">
+                  {brand.title || brand.name || 'Organisation'}
+                </strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">Organisation admin</p>
               </div>
             </div>
 
