@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Campus Desk">
+  <rect width="64" height="64" rx="14" fill="#0F5C5C"/>
+  <path
+    fill="#F7FBFB"
+    d="M14 22.5c0-1.2.7-2.3 1.8-2.8l14.2-6.5a4 4 0 0 1 3.4 0l14.2 6.5c1.1.5 1.8 1.6 1.8 2.8v1.2c0 1.4-1.1 2.5-2.5 2.5H16.5A2.5 2.5 0 0 1 14 23.7v-1.2z"
+  />
+  <path
+    fill="#D8EFEF"
+    d="M18 26.5h28v2.2c0 .7-.6 1.3-1.3 1.3H19.3c-.7 0-1.3-.6-1.3-1.3v-2.2z"
+  />
+  <rect x="16" y="32" width="32" height="3.2" rx="1.2" fill="#F7FBFB"/>
+  <rect x="20" y="38" width="24" height="2.2" rx="1.1" fill="#9FD0D0"/>
+  <rect x="24" y="43" width="16" height="2.2" rx="1.1" fill="#9FD0D0"/>
+</svg>

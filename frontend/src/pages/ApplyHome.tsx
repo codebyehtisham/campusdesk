@@ -51,7 +51,7 @@ export default function ApplyHome() {
                 {brand.title || brand.name || 'Campus Desk'}
               </strong>
               <p className="m-0 text-[0.7rem] font-medium text-text-muted">
-                Admissions · Campus Desk{institute ? ` · ${institute}` : ''}
+                Admissions apply{institute ? ` · ${institute}` : ''}
               </p>
             </div>
           </div>

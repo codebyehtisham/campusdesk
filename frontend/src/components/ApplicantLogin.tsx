@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Magnetic from './Magnetic';
 import { getApplicant, signInApplicant } from '../auth/session';
@@ -83,7 +83,7 @@ export default function ApplicantLogin({ institute = '' }) {
         viewport={{ once: true }}
         className="glass rounded-[1.8rem] p-8 md:p-10"
       >
-        <span className="eyebrow">Student portal</span>
+        <span className="eyebrow">Admissions</span>
         <h3>You are signed in</h3>
         <p className="mb-6 text-text-muted">
           Continue to your admission application
@@ -111,7 +111,7 @@ export default function ApplicantLogin({ institute = '' }) {
       viewport={{ once: true }}
       className="glass rounded-[1.8rem] p-8 md:p-10"
     >
-      <span className="eyebrow">{mode === 'login' ? 'Student login' : 'New applicant'}</span>
+      <span className="eyebrow">{mode === 'login' ? 'Admissions login' : 'New applicant'}</span>
       <h3>{mode === 'login' ? 'Sign in to apply' : 'Create your account'}</h3>
       <p className="mb-6 text-text-muted">
         {mode === 'login'
@@ -208,6 +208,12 @@ export default function ApplicantLogin({ institute = '' }) {
         >
           {mode === 'login' ? 'Create an account' : 'Sign in'}
         </button>
+      </p>
+      <p className="mt-3 mb-0 text-center text-sm text-text-muted">
+        Already enrolled?{' '}
+        <Link to="/login" className="font-bold text-cardinal">
+          Student portal login
+        </Link>
       </p>
     </motion.div>
   );

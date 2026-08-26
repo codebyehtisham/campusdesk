@@ -10,7 +10,7 @@ export default function ServiceSuspended({ portal }) {
   const navigate = useNavigate();
   const organization =
     portal === 'admin' ? getAdmin()?.organization : portal === 'faculty' ? getStaff()?.organization : getApplicant()?.organization;
-  const home = portal === 'faculty' ? FACULTY_BASE : portal === 'admin' ? ADMIN_BASE : '/admissions';
+  const home = portal === 'faculty' ? FACULTY_BASE : portal === 'admin' ? ADMIN_BASE : '/login';
 
   const handleSignOut = () => {
     if (portal === 'admin') signOutAdmin();

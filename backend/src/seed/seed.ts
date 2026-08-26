@@ -88,7 +88,7 @@ const run = async () => {
           slug: 'explore',
           title: 'Explore',
           tagline: 'Nursing & Allied Health',
-          logo: '/images/logo.png',
+          logo: '/images/explore/logo.png',
           email: 'hello@explorecollege.org',
           status: 'active',
           modules: productModules,
@@ -109,7 +109,7 @@ const run = async () => {
           status: 'active',
           kind: 'education',
           ...(!explore.logo
-            ? { logo: '/images/logo.png', title: explore.title || 'Explore', tagline: explore.tagline || 'Nursing & Allied Health' }
+            ? { logo: '/images/explore/logo.png', title: explore.title || 'Explore', tagline: explore.tagline || 'Nursing & Allied Health' }
             : {}),
         },
       });

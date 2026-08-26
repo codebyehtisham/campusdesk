@@ -36,6 +36,9 @@ import PlatformPassword from './pages/platform/PlatformPassword';
 import PlatformAudit from './pages/platform/PlatformAudit';
 import ApplyHome from './pages/ApplyHome';
 import Apply from './pages/Apply';
+import StudentLogin from './pages/StudentLogin';
+import StudentHome from './pages/StudentHome';
+import StudentSection from './pages/StudentSection';
 
 function RequireModule({ slug, children }) {
   if (!orgHasModule(slug)) return <Navigate to={`${ADMIN_BASE}/dashboard`} replace />;
@@ -110,9 +113,11 @@ function App() {
       <Route path="/admissions" element={<Navigate to="/apply" replace />} />
       <Route path="/admissions/apply" element={<Navigate to="/apply/form" replace />} />
       <Route path="/admissions/suspended" element={<Navigate to="/apply/suspended" replace />} />
-      <Route path="/login" element={<Navigate to="/apply" replace />} />
-      <Route path="/" element={<Navigate to="/apply" replace />} />
-      <Route path="*" element={<Navigate to="/apply" replace />} />
+      <Route path="/student" element={<StudentHome />} />
+      <Route path="/student/:section" element={<StudentSection />} />
+      <Route path="/login" element={<StudentLogin />} />
+      <Route path="/" element={<StudentLogin />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
