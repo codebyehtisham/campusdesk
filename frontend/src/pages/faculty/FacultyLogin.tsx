@@ -7,7 +7,7 @@ import { getStaff, signInStaff } from '../../auth/staffSession';
 import { isLockedOrg } from '../../auth/serviceLock';
 import { staffHome } from '../../data/roles';
 import api from '../../api/client';
-import BrandMark from '../../components/BrandMark';
+import CampusDeskMark from '../../components/CampusDeskMark';
 import usePublicBrand from '../../brand/usePublicBrand';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -59,7 +59,7 @@ export default function FacultyLogin() {
   };
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
       <div className="flex min-h-svh items-center justify-center px-5 py-16">
@@ -69,10 +69,12 @@ export default function FacultyLogin() {
           className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
         >
           <div className="mb-8 flex items-center gap-3">
-            <BrandMark org={brand} size={48} />
+            <CampusDeskMark size={48} />
             <div className="leading-tight">
-              <strong className="font-serif text-sm font-bold tracking-tight text-ink">{brand.title || brand.name || 'Campus'}</strong>
-              <p className="m-0 text-[0.7rem] font-medium text-text-muted">Faculty portal</p>
+              <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+              <p className="m-0 text-[0.7rem] font-medium text-text-muted">
+                {brand.title || brand.name || 'Faculty'} · Faculty portal
+              </p>
             </div>
           </div>
           <span className="eyebrow">Faculty login</span>

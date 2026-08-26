@@ -20,7 +20,7 @@ export default function ServiceSuspended({ portal }) {
   };
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="flex min-h-svh items-center justify-center px-5 py-16">
         <div className="glass glow-border w-full max-w-lg rounded-[1.8rem] p-8 text-center md:p-12">

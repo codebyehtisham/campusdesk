@@ -6,7 +6,7 @@ import { ADMIN_BASE } from '../../admin/paths';
 import { getAdmin, signInAdmin } from '../../auth/adminSession';
 import { isLockedOrg } from '../../auth/serviceLock';
 import api from '../../api/client';
-import BrandMark from '../../components/BrandMark';
+import CampusDeskMark from '../../components/CampusDeskMark';
 import usePublicBrand from '../../brand/usePublicBrand';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -65,12 +65,12 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
       <div className="hero-dots" aria-hidden="true" />
-      <div className="orb top-16 left-[6%] h-72 w-72 bg-crimson/30" />
-      <div className="orb right-[8%] bottom-[10%] h-80 w-80 bg-cardinal/28" />
+      <div className="orb top-16 left-[6%] h-72 w-72 bg-cardinal/25" />
+      <div className="orb right-[8%] bottom-[10%] h-80 w-80 bg-cardinal-light/30" />
 
       <div className="relative z-1 grid min-h-svh lg:grid-cols-[1.05fr_0.95fr]">
         <section className="relative hidden overflow-hidden lg:block">
@@ -79,13 +79,13 @@ export default function AdminLogin() {
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/88 to-white/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f2f8f8] via-[#f2f8f8]/90 to-[#f2f8f8]/65" />
           <div className="relative flex h-full flex-col justify-between p-12 xl:p-16">
             <div className="flex items-center gap-3">
-              <BrandMark org={brand} size={48} />
+              <CampusDeskMark size={48} />
               <div className="leading-tight">
-                <strong className="font-serif text-sm font-bold tracking-tight text-ink">{brand.title || brand.name || 'Campus'}</strong>
-                <p className="m-0 text-[0.7rem] font-medium text-text-muted">{brand.tagline || 'Staff console'}</p>
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">{brand.title || brand.name || 'Organisation admin'}</p>
               </div>
             </div>
             <div>
@@ -93,13 +93,13 @@ export default function AdminLogin() {
               <h1 className="max-w-xl text-[clamp(2.4rem,5vw,4.4rem)]">
                 Quiet console.
                 <br />
-                <span className="text-crimson">Open roles.</span>
+                <span className="text-cardinal">Open campus.</span>
               </h1>
               <p className="max-w-md text-lg text-text-muted">
-                Sign in to manage the careers page — the same openings students and applicants see.
+                Sign in to manage admissions, attendance, teaching, and campus settings.
               </p>
             </div>
-            <p className="m-0 text-sm text-text-muted">Authorized staff only · Rawalpindi</p>
+            <p className="m-0 text-sm text-text-muted">Authorized organisation admins only</p>
           </div>
         </section>
 
@@ -111,10 +111,10 @@ export default function AdminLogin() {
             className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
           >
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <BrandMark org={brand} size={48} />
+              <CampusDeskMark size={48} />
               <div className="leading-tight">
-                <strong className="font-serif text-sm font-bold tracking-tight text-ink">{brand.title || brand.name || 'Campus'}</strong>
-                <p className="m-0 text-[0.7rem] font-medium text-text-muted">Staff console</p>
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">{brand.title || 'Organisation admin'}</p>
               </div>
             </div>
 
@@ -125,7 +125,7 @@ export default function AdminLogin() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <label className={labelClass}>
                 <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-crimson" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-cardinal" />
                   Organisation email
                 </span>
                 <input

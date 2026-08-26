@@ -39,7 +39,7 @@ export default function StudentHome() {
   };
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="mx-auto flex min-h-svh max-w-3xl flex-col px-5 py-10">
         <header className="mb-10 flex items-start justify-between gap-4">

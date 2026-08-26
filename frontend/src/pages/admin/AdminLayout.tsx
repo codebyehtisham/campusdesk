@@ -6,6 +6,7 @@ import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
 import { orgAdminNav } from '../../data/modules';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
+import CampusDeskMark from '../../components/CampusDeskMark';
 
 export function RequireAdmin() {
   const admin = getAdmin();
@@ -65,21 +66,23 @@ export default function AdminLayout() {
       <div className="noise" aria-hidden="true" />
       <div className="relative z-1 mx-auto flex min-h-svh max-w-[1400px]">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-white p-6 transition-transform md:static md:min-h-svh md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-[#0f5c5c] p-6 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <Link to={`${ADMIN_BASE}/dashboard`} className="mb-8 flex items-center gap-3">
-            <BrandMark org={admin?.organization} size={48} />
+            <CampusDeskMark size={48} className="ring-2 ring-white/20" />
             <span className="leading-tight">
-              <strong className="block font-serif text-sm font-bold tracking-tight text-ink">
-                {admin?.organization?.title || admin?.organization?.name || 'Organisation'}
+              <strong className="block font-serif text-sm font-bold tracking-tight text-white">
+                Campus Desk
               </strong>
-              <small className="text-[0.65rem] font-medium text-text-muted">Admin console</small>
+              <small className="text-[0.65rem] font-medium text-white/70">
+                {admin?.organization?.title || admin?.organization?.name || 'Admin console'}
+              </small>
             </span>
           </Link>
 
-          <p className="mb-3 text-[0.7rem] font-semibold tracking-[0.18em] text-text-muted uppercase">Desk</p>
+          <p className="mb-3 text-[0.7rem] font-semibold tracking-[0.18em] text-white/55 uppercase">Desk</p>
           <nav className="flex flex-col gap-1">
             {nav.map((item) => (
               <NavLink
@@ -87,7 +90,7 @@ export default function AdminLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   `rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
-                    isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted hover:bg-bg-alt hover:text-ink'
+                    isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
@@ -100,14 +103,14 @@ export default function AdminLayout() {
         {open && (
           <button
             type="button"
-            className="fixed inset-0 z-30 bg-white/60 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-30 bg-[#0a3d3d]/45 backdrop-blur-sm md:hidden"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
           />
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-white/90 px-5 py-3 backdrop-blur-xl md:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-bg/90 px-5 py-3 backdrop-blur-xl md:px-8">
             <button
               type="button"
               className="rounded-full border border-border px-3 py-2 text-sm font-semibold text-ink md:hidden"
@@ -115,9 +118,12 @@ export default function AdminLayout() {
             >
               Menu
             </button>
-            <p className="m-0 hidden truncate text-sm font-semibold text-ink md:block">
-              {admin?.email || 'Staff console'}
-            </p>
+            <div className="hidden items-center gap-2 md:flex">
+              <BrandMark org={admin?.organization} size={28} />
+              <p className="m-0 truncate text-sm font-semibold text-ink">
+                {admin?.organization?.title || admin?.email || 'Staff console'}
+              </p>
+            </div>
             <div className="flex items-center gap-3">
               {admin?.modules?.includes('careers') && (
                 <a href="/careers" target="_blank" rel="noreferrer" className="hidden text-sm font-semibold text-cardinal sm:inline">

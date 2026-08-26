@@ -25,7 +25,7 @@ export default function StudentSection() {
   if (!meta) return <Navigate to="/student" replace />;
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="mx-auto flex min-h-svh max-w-lg flex-col justify-center px-5 py-16">
         <div className="mb-6 flex items-center gap-3">

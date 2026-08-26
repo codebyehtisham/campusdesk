@@ -1,24 +1,24 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Brand palette from the college crest: icon blue + true red */
-  --color-cardinal: #1a4fd6;
-  --color-cardinal-dark: #0d2a80;
-  --color-cardinal-light: #4ea3f0;
-  --color-cardinal-pale: #eaf3fe;
-  --color-navy: #0d2a80;
-  --color-navy-mid: #eaf3fe;
-  --color-crimson: #c8102e;
-  --color-crimson-dark: #8e0b20;
-  --color-crimson-light: #e11d48;
-  --color-crimson-pale: #fde8ec;
-  --color-gold: #c8102e;
-  --color-ink: #0d2a80;
-  --color-text: #33415c;
-  --color-text-muted: #5b6b86;
-  --color-bg: #ffffff;
-  --color-bg-alt: #f5f8fd;
-  --color-border: #d7e6f7;
+  /* Campus Desk product palette — matches teal icon mark */
+  --color-cardinal: #0f5c5c;
+  --color-cardinal-dark: #0a4545;
+  --color-cardinal-light: #2a8f8f;
+  --color-cardinal-pale: #e6f4f4;
+  --color-navy: #0a4545;
+  --color-navy-mid: #e6f4f4;
+  --color-crimson: #127575;
+  --color-crimson-dark: #0f5c5c;
+  --color-crimson-light: #2a8f8f;
+  --color-crimson-pale: #e6f4f4;
+  --color-gold: #2a8f8f;
+  --color-ink: #0a3d3d;
+  --color-text: #2f4a4a;
+  --color-text-muted: #5a7272;
+  --color-bg: #f2f8f8;
+  --color-bg-alt: #e8f2f2;
+  --color-border: #c5dddd;
   --color-paper: #ffffff;
 
   --font-display: 'Space Grotesk', 'Syne', sans-serif;
@@ -27,14 +27,14 @@
 }
 
 :root {
-  --color-cardinal-rgb: 26, 79, 214;
-  --color-crimson-rgb: 200, 16, 46;
-  --color-ink-rgb: 13, 42, 128;
+  --color-cardinal-rgb: 15, 92, 92;
+  --color-crimson-rgb: 18, 117, 117;
+  --color-ink-rgb: 10, 61, 61;
   --color-paper-rgb: 255, 255, 255;
-  --color-bg-rgb: 255, 255, 255;
-  --color-gradient-from: #c8102e;
-  --color-gradient-via: #e11d48;
-  --color-gradient-to: #1a4fd6;
+  --color-bg-rgb: 242, 248, 248;
+  --color-gradient-from: #0a4545;
+  --color-gradient-via: #0f5c5c;
+  --color-gradient-to: #2a8f8f;
   --nav-radius: 999px;
   --card-radius: 1.6rem;
   --btn-radius: 999px;
@@ -126,6 +126,7 @@ html[data-template='editorial'] .filter-btn {
     margin: 0;
     padding: 0;
     background: var(--color-bg);
+    min-height: 100%;
   }
 
   body {
@@ -137,12 +138,13 @@ html[data-template='editorial'] .filter-btn {
   }
 
   ::selection {
-    background: var(--color-crimson);
+    background: var(--color-cardinal);
     color: #fff;
   }
 
   #root {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -274,12 +276,12 @@ html[data-template='editorial'] .filter-btn {
   .btn-primary {
     background: linear-gradient(135deg, var(--color-gradient-from) 0%, var(--color-gradient-via) 55%, var(--color-gradient-to) 160%);
     color: #fff;
-    box-shadow: 0 10px 32px rgba(var(--color-crimson-rgb), 0.32);
+    box-shadow: 0 10px 32px rgba(var(--color-cardinal-rgb), 0.32);
   }
 
   .btn-primary:hover {
     transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 16px 40px rgba(var(--color-crimson-rgb), 0.42);
+    box-shadow: 0 16px 40px rgba(var(--color-cardinal-rgb), 0.42);
   }
 
   .btn-navy {

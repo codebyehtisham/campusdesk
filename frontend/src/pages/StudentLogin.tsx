@@ -70,7 +70,7 @@ export default function StudentLogin() {
   };
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-white">
+    <div className="relative min-h-svh overflow-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
       <div className="flex min-h-svh items-center justify-center px-5 py-16">

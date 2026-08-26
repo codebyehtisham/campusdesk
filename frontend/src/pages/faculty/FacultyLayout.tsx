@@ -6,6 +6,7 @@ import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
 import { roleLabel, isTeacher, staffHome } from '../../data/roles';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
+import CampusDeskMark from '../../components/CampusDeskMark';
 
 export function RequireStaff() {
   const staff = getStaff();
@@ -63,14 +64,13 @@ export default function FacultyLayout() {
     <div className="min-h-svh bg-bg-alt">
       <div className="noise" aria-hidden="true" />
       <div className="relative z-1 mx-auto flex min-h-svh max-w-[1400px] flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-white/90 px-5 py-3 backdrop-blur-xl md:px-8">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-[#0f5c5c] px-5 py-3 text-white md:px-8">
           <Link to={home} className="flex items-center gap-3">
-            <BrandMark org={staff?.organization} size={48} />
+            <CampusDeskMark size={44} className="ring-2 ring-white/20" />
             <span className="leading-tight">
-              <strong className="block font-serif text-sm font-bold tracking-tight text-ink">
-                {staff?.organization?.title || staff?.organization?.name || 'Faculty'}
-              </strong>
-              <small className="text-[0.65rem] font-medium text-text-muted">
+              <strong className="block font-serif text-sm font-bold tracking-tight text-white">Campus Desk</strong>
+              <small className="text-[0.65rem] font-medium text-white/70">
+                {staff?.organization?.title || staff?.organization?.name || 'Faculty'} ·{' '}
                 {staff?.organization?.kind === 'hospital' ? 'Staff portal' : 'Faculty portal'}
               </small>
             </span>
@@ -82,7 +82,7 @@ export default function FacultyLayout() {
                   to={`${FACULTY_BASE}/timetable`}
                   className={({ isActive }) =>
                     `rounded-full px-4 py-2 text-sm font-semibold ${
-                      isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted'
+                      isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/75 hover:text-white'
                     }`
                   }
                 >
@@ -92,7 +92,7 @@ export default function FacultyLayout() {
                   to={`${FACULTY_BASE}/courses`}
                   className={({ isActive }) =>
                     `rounded-full px-4 py-2 text-sm font-semibold ${
-                      isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted'
+                      isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/75 hover:text-white'
                     }`
                   }
                 >
@@ -102,7 +102,7 @@ export default function FacultyLayout() {
                   to={`${FACULTY_BASE}/attendance`}
                   className={({ isActive }) =>
                     `rounded-full px-4 py-2 text-sm font-semibold ${
-                      isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted'
+                      isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/75 hover:text-white'
                     }`
                   }
                 >
@@ -115,7 +115,7 @@ export default function FacultyLayout() {
                 to={`${FACULTY_BASE}/admissions`}
                 className={({ isActive }) =>
                   `rounded-full px-4 py-2 text-sm font-semibold ${
-                    isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted'
+                    isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/75 hover:text-white'
                   }`
                 }
               >
@@ -126,7 +126,7 @@ export default function FacultyLayout() {
               to={`${FACULTY_BASE}/password`}
               className={({ isActive }) =>
                 `rounded-full px-4 py-2 text-sm font-semibold ${
-                  isActive ? 'bg-cardinal-pale text-cardinal' : 'text-text-muted'
+                  isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/75 hover:text-white'
                 }`
               }
             >
@@ -134,10 +134,10 @@ export default function FacultyLayout() {
             </NavLink>
           </nav>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-text-muted md:block">
+            <span className="hidden text-sm text-white/70 md:block">
               {staff?.name || staff?.email} · {roleLabel(staff?.role, staff?.organization?.kind)}
             </span>
-            <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={handleSignOut}>
+            <button type="button" className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20" onClick={handleSignOut}>
               Sign out
             </button>
           </div>
