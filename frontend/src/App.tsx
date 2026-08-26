@@ -110,8 +110,9 @@ function App() {
       <Route path="/admissions" element={<Navigate to="/apply" replace />} />
       <Route path="/admissions/apply" element={<Navigate to="/apply/form" replace />} />
       <Route path="/admissions/suspended" element={<Navigate to="/apply/suspended" replace />} />
-      <Route path="/" element={<Navigate to={ADMIN_BASE} replace />} />
-      <Route path="*" element={<Navigate to={ADMIN_BASE} replace />} />
+      <Route path="/login" element={<Navigate to="/apply" replace />} />
+      <Route path="/" element={<Navigate to="/apply" replace />} />
+      <Route path="*" element={<Navigate to="/apply" replace />} />
     </Routes>
   );
 }
