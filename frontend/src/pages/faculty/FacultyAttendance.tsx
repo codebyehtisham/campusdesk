@@ -6,6 +6,7 @@ import { FACULTY_BASE } from '../../admin/paths';
 import { isTeacher, staffHome } from '../../data/roles';
 import { ATTENDANCE_STATUSES } from '../../data/attendance';
 import { weekdayLabel } from '../../data/teaching';
+import LocationMatchBadge from '../../components/LocationMatchBadge';
 
 const staffReq = { authScope: 'staff' };
 
@@ -146,7 +147,8 @@ export default function FacultyAttendance() {
       <span className="eyebrow">Teaching</span>
       <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Class attendance</h1>
       <p className="mb-8 max-w-xl text-text-muted">
-        Choose a class from your timetable, generate a QR code for the room, and mark the roster. Student scan comes later.
+        Choose a class from your timetable, generate a QR code for the room, and mark the roster. Students scan the QR
+        from the Campus Desk app — location badges show whether a present mark was on campus.
       </p>
 
       {error && (
@@ -234,6 +236,11 @@ export default function FacultyAttendance() {
                           <div>
                             <strong className="block text-ink">{person.name}</strong>
                             <small className="text-text-muted">{person.title || person.email}</small>
+                            {person.status === 'present' && (
+                              <div className="mt-2">
+                                <LocationMatchBadge location={person.location} status={person.status} />
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {ATTENDANCE_STATUSES.map((status) => (

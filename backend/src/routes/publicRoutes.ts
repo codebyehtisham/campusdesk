@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { registerApplicant, loginApplicant, getMe, loginStaff, changePassword } from '../controllers/authController.js';
+import { scanStudentAttendance } from '../controllers/studentAttendanceController.js';
 import { getMine, listAll, decide } from '../controllers/applicationController.js';
 import { getOpenings, createOpening, updateOpening, deleteOpening } from '../controllers/careerController.js';
 import { getPublicSettings } from '../controllers/settingsController.js';
@@ -40,6 +41,14 @@ export const authRoutes = Router();
 authRoutes.post('/register', registerApplicant);
 authRoutes.post('/login', loginApplicant);
 authRoutes.get('/me', protect, applicantOnly, getMe);
+authRoutes.post(
+  '/attendance/scan',
+  protect,
+  requireActiveOrg,
+  applicantOnly,
+  requireModule('student-attendance'),
+  scanStudentAttendance
+);
 
 export const staffRoutes = Router();
 const teaching = [protect, requireActiveOrg, staffOnly, teacherOnly, requireModule('faculty')];

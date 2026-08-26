@@ -39,7 +39,7 @@ export const registerApplicant = async (req: Request, res: Response) => {
     }
 
     const settings = await getSiteSettings(org.id);
-    if (!settings.admissionsOpen) {
+    if (!settings || !settings.admissionsOpen) {
       return res.status(403).json({ message: 'Admissions are closed right now.' });
     }
 
@@ -86,7 +86,7 @@ export const loginApplicant = async (req: Request, res: Response) => {
         return res.status(403).json({ message: 'Admissions are not available for this organisation.' });
       }
       const settings = await getSiteSettings(org.id);
-      if (!settings.admissionsOpen) {
+      if (!settings || !settings.admissionsOpen) {
         return res.status(403).json({ message: 'Admissions are closed right now.' });
       }
     }

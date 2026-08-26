@@ -11,6 +11,11 @@ import {
   saveAttendanceDay,
 } from '../controllers/attendanceController.js';
 import {
+  getAttendanceLocation,
+  updateAttendanceLocation,
+} from '../controllers/attendanceLocationController.js';
+import { getAdminSession, listAdminSessions } from '../controllers/studentAttendanceController.js';
+import {
   getTeachingAdmin,
   createClass,
   updateClass,
@@ -47,6 +52,10 @@ router.put('/units/:id', ...orgAdmin, updateUnit);
 router.delete('/units/:id', ...orgAdmin, deleteUnit);
 router.get('/attendance', ...orgAdmin, listAttendance);
 router.put('/attendance', ...orgAdmin, saveAttendanceDay);
+router.get('/attendance/location', ...orgAdmin, requireModule('student-attendance'), getAttendanceLocation);
+router.put('/attendance/location', ...orgAdmin, requireModule('student-attendance'), updateAttendanceLocation);
+router.get('/attendance/sessions', ...orgAdmin, requireModule('student-attendance'), listAdminSessions);
+router.get('/attendance/sessions/:id', ...orgAdmin, requireModule('student-attendance'), getAdminSession);
 router.post('/attendance/people', ...orgAdmin, createAttendancePerson);
 router.put('/attendance/people/:id', ...orgAdmin, updateAttendancePerson);
 router.delete('/attendance/people/:id', ...orgAdmin, deleteAttendancePerson);

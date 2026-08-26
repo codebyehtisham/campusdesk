@@ -1,7 +1,9 @@
 import type { AttendanceStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
+import { evaluateFence, parseFence, parseScanLocation } from '../lib/geofence.js';
 import { hasModule, orgId } from '../lib/tenant.js';
+import { getSiteSettings } from './settingsController.js';
 import { dayStamp, jsToWeekday, newQrToken, QR_TTL_MS, qrImage, qrPayload } from '../lib/teaching.js';
 
 const STATUSES: AttendanceStatus[] = ['present', 'absent', 'late', 'leave'];
@@ -64,7 +66,20 @@ const sessionPayload = async (
     status: string;
     class: { name: string; code: string; room: string };
   },
-  roster: { id: string; name: string; title: string; email: string; status: AttendanceStatus | null }[]
+  roster: {
+    id: string;
+    name: string;
+    title: string;
+    email: string;
+    status: AttendanceStatus | null;
+    location?: {
+      latitude: number;
+      longitude: number;
+      accuracy: number | null;
+      onCampus: boolean | null;
+      distanceMeters: number | null;
+    } | null;
+  }[]
 ) => ({
   id: session.id,
   classId: session.classId,
@@ -205,15 +220,30 @@ const loadRoster = async (classId: string, sessionId: string) => {
     orderBy: { person: { name: 'asc' } },
   });
   const marks = await prisma.sessionAttendance.findMany({ where: { sessionId } });
-  const byPerson = new Map(marks.map((item) => [item.personId, item.status]));
-  return enrollments.map((item) => ({
-    id: item.person.id,
-    name: item.person.name,
-    title: item.person.title,
-    email: item.person.email,
-    status: byPerson.get(item.person.id) || null,
-  }));
+  const byPerson = new Map(marks.map((item) => [item.personId, item]));
+  return enrollments.map((item) => {
+    const mark = byPerson.get(item.person.id);
+    return {
+      id: item.person.id,
+      name: item.person.name,
+      title: item.person.title,
+      email: item.person.email,
+      status: mark?.status || null,
+      location:
+        mark?.latitude != null && mark?.longitude != null
+          ? {
+              latitude: mark.latitude,
+              longitude: mark.longitude,
+              accuracy: mark.accuracy,
+              onCampus: mark.onCampus,
+              distanceMeters: mark.distanceMeters,
+            }
+          : null,
+    };
+  });
 };
+
+export { loadRoster, sessionPayload };
 
 export const openSession = async (req: Request, res: Response) => {
   try {
@@ -329,10 +359,37 @@ export const markSession = async (req: Request, res: Response) => {
     });
     if (!enrolled) return res.status(400).json({ message: 'That student is not in this class.' });
 
+    const settings = await getSiteSettings(ctx.organizationId);
+    const locationInput = parseScanLocation(req.body as Record<string, unknown>);
+    let onCampus: boolean | null = null;
+    let distanceMeters: number | null = null;
+    const fence = settings ? parseFence(settings) : null;
+    if (locationInput.latitude != null && locationInput.longitude != null && fence) {
+      const verdict = evaluateFence(locationInput.latitude, locationInput.longitude, fence);
+      onCampus = verdict.onCampus;
+      distanceMeters = verdict.distanceMeters;
+    }
+
     await prisma.sessionAttendance.upsert({
       where: { sessionId_personId: { sessionId: session.id, personId } },
-      update: { status: parseStatus(req.body.status) },
-      create: { sessionId: session.id, personId, status: parseStatus(req.body.status) },
+      update: {
+        status: parseStatus(req.body.status),
+        latitude: locationInput.latitude,
+        longitude: locationInput.longitude,
+        accuracy: locationInput.accuracy,
+        onCampus,
+        distanceMeters,
+      },
+      create: {
+        sessionId: session.id,
+        personId,
+        status: parseStatus(req.body.status),
+        latitude: locationInput.latitude,
+        longitude: locationInput.longitude,
+        accuracy: locationInput.accuracy,
+        onCampus,
+        distanceMeters,
+      },
     });
     res.json(await sessionPayload(session, await loadRoster(session.classId, session.id)));
   } catch (err) {

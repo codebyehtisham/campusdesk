@@ -167,8 +167,19 @@ const run = async () => {
 
     await prisma.setting.upsert({
       where: { organizationId: explore.id },
-      update: {},
-      create: { organizationId: explore.id, admissionsOpen: true },
+      update: {
+        campusLatitude: 31.5497,
+        campusLongitude: 74.3436,
+        campusRadiusMeters: 250,
+      },
+      create: {
+        organizationId: explore.id,
+        admissionsOpen: true,
+        attendanceLocationEnabled: false,
+        campusLatitude: 31.5497,
+        campusLongitude: 74.3436,
+        campusRadiusMeters: 250,
+      },
     });
 
     const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();

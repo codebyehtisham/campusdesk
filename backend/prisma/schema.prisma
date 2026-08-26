@@ -266,6 +266,10 @@ model Setting {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   key            String       @default("site")
   admissionsOpen Boolean      @default(true)
+  attendanceLocationEnabled Boolean @default(false)
+  campusLatitude  Float?
+  campusLongitude Float?
+  campusRadiusMeters Int       @default(250)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -486,6 +490,11 @@ model SessionAttendance {
   personId  String
   person    AttendancePerson  @relation(fields: [personId], references: [id], onDelete: Cascade)
   status    AttendanceStatus
+  latitude  Float?
+  longitude Float?
+  accuracy  Float?
+  onCampus  Boolean?
+  distanceMeters Float?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 

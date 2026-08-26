@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { signOutAdmin } from '../../auth/adminSession';
 import { ADMIN_BASE } from '../../admin/paths';
 import { ATTENDANCE_STATUSES, STAFF_TITLES, STUDENT_PROGRAMMES, todayStamp } from '../../data/attendance';
+import AdminAttendanceSessions from '../../components/AdminAttendanceSessions';
 
 const emptyForm = { name: '', title: '', email: '', unitId: '' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -166,6 +167,11 @@ export default function AdminAttendance({ kind }) {
           <button type="button" className="btn btn-primary" onClick={saveDay} disabled={saving || loading}>
             {saving ? 'Saving…' : 'Save day'}
           </button>
+          {!isStaff && (
+            <Link to={`${ADMIN_BASE}/attendance/location`} className="btn btn-outline">
+              Campus location
+            </Link>
+          )}
         </div>
       </div>
 
@@ -324,6 +330,8 @@ export default function AdminAttendance({ kind }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {!isStaff && <AdminAttendanceSessions date={date} />}
     </div>
   );
 }
