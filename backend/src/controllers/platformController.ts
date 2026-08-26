@@ -13,6 +13,7 @@ import {
   themeJson,
   toSlug,
 } from '../lib/tenant.js';
+import { asStringList } from '../lib/lists.js';
 import { overdueOrgIds, resolveServiceLock } from '../lib/serviceLock.js';
 import { billingOverview } from '../lib/billing.js';
 import { sanitizeTheme } from '../lib/theme.js';
@@ -58,7 +59,7 @@ const toOrg = (doc: Organization, adminCount = 0) => ({
   email: doc.email,
   phone: doc.phone,
   status: doc.status,
-  departments: doc.departments || [],
+  departments: asStringList(doc.departments),
   modules: sellableModules(doc.modules),
   isPublic: Boolean(doc.isPublic),
   suspendOnOverdue: Boolean(doc.suspendOnOverdue),
@@ -396,8 +397,8 @@ export const updateOrganization = async (req: Request, res: Response) => {
 
     const entitlementsTouched = Array.isArray(req.body.departments) || Array.isArray(req.body.modules);
     const pack = entitlementsTouched
-      ? await resolveOrgPack(req, { departments: org.departments || [], modules: org.modules || [] })
-      : { departments: org.departments || [], modules: org.modules || [] };
+      ? await resolveOrgPack(req, { departments: asStringList(org.departments), modules: asStringList(org.modules) })
+      : { departments: asStringList(org.departments), modules: asStringList(org.modules) };
     if (req.body.isPublic === true) {
       await prisma.organization.updateMany({ where: { id: { not: org.id } }, data: { isPublic: false } });
     }

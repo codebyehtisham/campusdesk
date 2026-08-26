@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -53,8 +53,8 @@ model Organization {
   phone     String     @default("")
   status      OrgStatus  @default(active)
   kind        OrgKind    @default(education)
-  departments String[]   @default([])
-  modules     String[]   @default([])
+  departments Json      @default("[]")
+  modules     Json      @default("[]")
   isPublic    Boolean    @default(false)
   suspendOnOverdue Boolean @default(false)
   notes     String     @default("")
@@ -374,7 +374,7 @@ model Course {
   duration       String
   category       String
   description    String        @default("")
-  highlights     String[]      @default([])
+  highlights     Json          @default("[]")
   eligibility    String        @default("")
   order          Int           @default(0)
   createdAt      DateTime      @default(now())

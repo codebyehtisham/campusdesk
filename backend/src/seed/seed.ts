@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import type { InvoiceStatus, Prisma } from '@prisma/client';
+import { asStringList } from '../lib/lists.js';
 import { prisma } from '../config/db.js';
 import { DEFAULT_DEPARTMENTS, DEFAULT_MODULES } from '../lib/tenant.js';
 import { DEFAULT_PLANS } from '../lib/billing.js';
@@ -38,11 +39,12 @@ const run = async () => {
     }
     const orgs = await prisma.organization.findMany({ select: { id: true, departments: true } });
     for (const org of orgs) {
-      if (!org.departments.includes('workforce')) continue;
+      const departments = asStringList(org.departments);
+      if (!departments.includes('workforce')) continue;
       await prisma.organization.update({
         where: { id: org.id },
         data: {
-          departments: [...new Set(org.departments.map((slug) => (slug === 'workforce' ? 'human-resources' : slug)))],
+          departments: [...new Set(departments.map((slug) => (slug === 'workforce' ? 'human-resources' : slug)))],
         },
       });
     }

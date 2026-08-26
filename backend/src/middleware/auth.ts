@@ -35,7 +35,7 @@ export const toOrgJSON = (org: Organization | null | undefined, lock?: { locked:
         slug: org.slug,
         email: org.email || '',
         status: org.status,
-        modules: sellableModules(org.modules),
+        modules: sellableModules(org.modules as unknown),
         suspendOnOverdue: Boolean(org.suspendOnOverdue),
         servicesLocked: Boolean(lock?.locked),
         lockReason: lock?.reason || null,

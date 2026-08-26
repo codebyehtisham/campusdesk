@@ -111,12 +111,14 @@ export const toSlug = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+import { asStringList } from './lists.js';
+
 export const orgId = (req: Request) => req.organization?.id || req.user?.organizationId || null;
 
-export const hasModule = (org: { modules?: string[] } | null | undefined, slug: string) =>
-  Boolean(org?.modules?.includes(slug));
+export const hasModule = (org: { modules?: unknown } | null | undefined, slug: string) =>
+  asStringList(org?.modules).includes(slug);
 
-export const sellableModules = (modules: string[] = []) => modules.filter((slug) => slug !== 'audit');
+export const sellableModules = (modules: unknown = []) => asStringList(modules).filter((slug) => slug !== 'audit');
 
 export const withIds = <T extends { id: string }>(row: T) => ({ ...row, _id: row.id });
 
@@ -185,12 +187,12 @@ export const resolveOrgPack = async (
     catalog.flatMap((dept) => dept.modules.map((item) => [item.slug, { active: item.active, deptSlug: dept.slug }]))
   );
 
-  let departments = [...current.departments];
-  let modules = [...current.modules];
+  let departments = asStringList(current.departments);
+  let modules = asStringList(current.modules);
 
   if (Array.isArray(body.departments)) {
     const allowed = new Set(
-      catalog.filter((item) => item.active || current.departments.includes(item.slug)).map((item) => item.slug)
+      catalog.filter((item) => item.active || departments.includes(item.slug)).map((item) => item.slug)
     );
     departments = body.departments.map(String).filter((slug) => allowed.has(slug));
     const keep = new Set(departments);
@@ -207,7 +209,7 @@ export const resolveOrgPack = async (
       if (!meta || !meta.active) return false;
       if (!keep.has(meta.deptSlug)) {
         const dept = deptBySlug.get(meta.deptSlug);
-        if (!dept || !(dept.active || current.departments.includes(dept.slug))) return false;
+        if (!dept || !(dept.active || departments.includes(dept.slug))) return false;
         departments.push(dept.slug);
         keep.add(dept.slug);
       }

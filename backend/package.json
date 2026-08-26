@@ -25,14 +25,13 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "embedded-postgres": "^18.4.0-beta.17",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
     "prisma": "^6.14.0",
     "qrcode": "^1.5.4",
     "redis": "^4.7.1",
-    "typescript": "^5.9.2",
-    "tsx": "^4.20.5"
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

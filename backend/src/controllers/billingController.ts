@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../config/db.js';
+import { asStringList } from '../lib/lists.js';
 import { bustOrgCache, isUniqueError } from '../lib/tenant.js';
 import {
   billingOverview,
@@ -51,7 +52,7 @@ export const getBillingOverview = async (_req: Request, res: Response) => {
         id: org.id,
         name: org.name,
         slug: org.slug,
-        preview: await invoicePreviewForOrg(org.modules),
+        preview: await invoicePreviewForOrg(asStringList(org.modules)),
       }))
     );
     res.json({
@@ -84,7 +85,7 @@ export const getOrgBilling = async (req: Request, res: Response) => {
       }),
       prisma.invoice.findMany({ where: { organizationId: org.id }, orderBy: { issuedAt: 'desc' } }),
       billingOverview(org.id),
-      invoicePreviewForOrg(org.modules),
+      invoicePreviewForOrg(asStringList(org.modules)),
     ]);
     res.json({
       subscription: subscription ? toSubscription(subscription) : null,
@@ -223,7 +224,7 @@ export const generateOrgInvoice = async (req: Request, res: Response) => {
   try {
     const org = await prisma.organization.findUnique({ where: { id: req.params.id } });
     if (!org) return res.status(404).json({ message: 'Organisation not found' });
-    const preview = await invoicePreviewForOrg(org.modules);
+    const preview = await invoicePreviewForOrg(asStringList(org.modules));
     if (!preview.quantity) {
       return res.status(400).json({ message: 'Enable at least one module before generating an invoice.' });
     }

@@ -10,9 +10,9 @@ const buildFilter = (req: Request): Prisma.AuditLogWhereInput => {
   if (req.query.q) {
     const q = String(req.query.q);
     filter.OR = [
-      { url: { contains: q, mode: 'insensitive' } },
-      { ip: { contains: q, mode: 'insensitive' } },
-      { userAgent: { contains: q, mode: 'insensitive' } },
+      { url: { contains: q } },
+      { ip: { contains: q } },
+      { userAgent: { contains: q } },
     ];
   }
   return filter;
