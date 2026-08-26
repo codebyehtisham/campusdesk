@@ -31,3 +31,22 @@ export const orgAdminNav = (modules = [], kind = 'education') => {
   items.push({ to: `${ADMIN_BASE}/settings`, label: 'Password' });
   return items;
 };
+
+export const orgAdminNavGroups = (modules = [], kind = 'education') => {
+  const flat = orgAdminNav(modules, kind);
+  const bySuffix = (suffix: string) => flat.filter((item) => item.to.endsWith(`/${suffix}`) || item.to.endsWith(suffix));
+  const byLabels = (labels: string[]) => flat.filter((item) => labels.includes(item.label));
+
+  const groups = [
+    { title: 'Overview', items: bySuffix('dashboard') },
+    {
+      title: 'Operations',
+      items: byLabels(['Admissions', 'HR', 'Student attendance', 'Staff attendance', 'Patient register']),
+    },
+    { title: 'Teaching', items: byLabels(['Users', 'Access', 'Classes', 'Timetable']) },
+    { title: 'Campus', items: [...bySuffix('units'), ...bySuffix('brand')] },
+    { title: 'Account', items: bySuffix('settings') },
+  ];
+
+  return groups.filter((group) => group.items.length > 0);
+};

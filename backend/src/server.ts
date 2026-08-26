@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis } from './config/redis.js';
+import { appEnvironment, publicAppUrl } from './lib/env.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
 import platformRoutes from './routes/platformRoutes.js';
@@ -89,6 +90,8 @@ app.get('/api/health', async (_req, res) => {
   const [postgres, redis] = await Promise.all([pingPostgres(), pingRedis()]);
   res.json({
     status: 'ok',
+    environment: appEnvironment(),
+    url: publicAppUrl(),
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
   });

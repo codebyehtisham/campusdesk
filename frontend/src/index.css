@@ -770,6 +770,186 @@ html[data-template='editorial'] .filter-btn {
   }
 }
 
+/* Org admin + faculty console rail */
+.staff-shell {
+  --staff-rail: #0f5c5c;
+  --staff-rail-deep: #0a4848;
+  --staff-rail-line: rgba(255, 255, 255, 0.12);
+  --staff-rail-muted: rgba(255, 255, 255, 0.55);
+  --staff-rail-active-bg: #ffffff;
+  --staff-rail-active-text: #0f5c5c;
+}
+
+.staff-rail {
+  background: linear-gradient(175deg, var(--staff-rail) 0%, var(--staff-rail-deep) 100%);
+  border-right: 1px solid var(--staff-rail-line);
+}
+
+.staff-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.staff-rail-brand strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.staff-rail-brand small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.staff-nav-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-right: -0.35rem;
+  padding-right: 0.35rem;
+}
+
+.staff-nav-group + .staff-nav-group {
+  margin-top: 1.35rem;
+}
+
+.staff-nav-label {
+  margin: 0 0 0.45rem;
+  padding: 0 0.75rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--staff-rail-muted);
+}
+
+.staff-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.staff-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 12px;
+  padding: 0.62rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.84);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.staff-nav a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.staff-nav a.is-active {
+  background: var(--staff-rail-active-bg);
+  color: var(--staff-rail-active-text);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.staff-nav-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+}
+
+.staff-nav a.is-active .staff-nav-icon {
+  background: rgba(15, 92, 92, 0.12);
+}
+
+.staff-rail-foot {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--staff-rail-line);
+  padding-top: 1rem;
+}
+
+.staff-rail-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+  min-width: 0;
+}
+
+.staff-rail-avatar {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.staff-rail-user-meta {
+  min-width: 0;
+}
+
+.staff-rail-user-meta strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: #fff;
+}
+
+.staff-rail-user-meta small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.staff-rail-signout {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+.staff-rail-signout:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.staff-mobile-scrim {
+  background: rgba(10, 61, 61, 0.45);
+}
+
 /* Super-admin control plane — scoped so the public college site stays untouched. */
 html:has(.platform-shell),
 #root:has(.platform-shell) {
@@ -1003,8 +1183,30 @@ html:has(.platform-shell),
 }
 
 .platform-shell .pc-rail {
-  background: var(--pc-rail);
+  background: linear-gradient(175deg, var(--pc-rail) 0%, #080b12 100%);
   border-right: 1px solid var(--pc-line);
+}
+
+.platform-shell .pc-nav-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-right: -0.35rem;
+  padding-right: 0.35rem;
+}
+
+.platform-shell .pc-nav-group + .pc-nav-group {
+  margin-top: 1.35rem;
+}
+
+.platform-shell .pc-nav-label {
+  margin: 0 0 0.45rem;
+  padding: 0 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pc-muted);
 }
 
 .platform-shell .pc-topbar {
@@ -1024,11 +1226,23 @@ html:has(.platform-shell),
   align-items: center;
   gap: 0.7rem;
   border-radius: 10px;
-  padding: 0.7rem 0.85rem;
+  padding: 0.65rem 0.8rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--pc-muted);
   transition: background 0.15s, color 0.15s;
+}
+
+.platform-shell .pc-nav-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(109, 147, 255, 0.06);
+  color: inherit;
 }
 
 .platform-shell .pc-nav a:hover {
@@ -1037,9 +1251,97 @@ html:has(.platform-shell),
 }
 
 .platform-shell .pc-nav a.is-active {
-  background: rgba(109, 147, 255, 0.12);
+  background: rgba(109, 147, 255, 0.14);
   color: var(--pc-text);
-  box-shadow: inset 2px 0 0 var(--pc-accent);
+  box-shadow: inset 3px 0 0 var(--pc-accent);
+}
+
+.platform-shell .pc-nav a.is-active .pc-nav-icon {
+  background: rgba(109, 147, 255, 0.18);
+  color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-rail-foot {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--pc-line);
+  padding-top: 1rem;
+}
+
+.platform-shell .pc-rail-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+  min-width: 0;
+}
+
+.platform-shell .pc-rail-avatar {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--pc-line);
+  background: var(--pc-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-rail-user-meta {
+  min-width: 0;
+}
+
+.platform-shell .pc-rail-user-meta strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--pc-text);
+}
+
+.platform-shell .pc-rail-user-meta small {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pc-muted);
+}
+
+.platform-shell .pc-rail-signout {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--pc-line);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pc-muted);
+  background: var(--pc-surface);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.platform-shell .pc-rail-signout:hover {
+  border-color: rgba(109, 147, 255, 0.35);
+  color: var(--pc-text);
+  background: var(--pc-surface-2);
+}
+
+.platform-shell .pc-rail-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.45;
+  color: var(--pc-muted);
 }
 
 .platform-shell .pc-brand-meta strong {

@@ -39,6 +39,13 @@ Passwords come from `ADMIN_PASSWORD` / `PLATFORM_PASSWORD` in `backend/.env`.
 - Faculty: `faculty@explorecollege.org`
 - Student: `student@explorecollege.org` / `student123`
 
-## Public API for Explore website
+## Deploy environments
+
+| Env        | Branch    | URL |
+|------------|-----------|-----|
+| Production | `main`    | https://campusdesk-production-9ab3.up.railway.app |
+| Development| `develop` | Separate Railway service — see [deploy/DEV.md](deploy/DEV.md) |
+
+Push to `develop` to test on the dev URL without touching production. The iOS app Debug build targets dev; Release uses production.
 
 The website reads: `GET /api/settings`, `/api/faculty`, `/api/courses`, `/api/news`, `/api/careers`, `POST /api/contact`.

@@ -3,7 +3,8 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import { ADMIN_BASE } from '../../admin/paths';
 import { getAdmin, signInAdmin, signOutAdmin } from '../../auth/adminSession';
 import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
-import { orgAdminNav } from '../../data/modules';
+import { orgAdminNavGroups } from '../../data/modules';
+import { adminNavIcon } from '../../components/nav/ConsoleIcons';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
 
@@ -13,13 +14,21 @@ export function RequireAdmin() {
   return <Outlet />;
 }
 
+function initials(email?: string, name?: string) {
+  const source = name || email || 'A';
+  const parts = source.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [admin, setAdmin] = useState(() => getAdmin());
   const [open, setOpen] = useState(false);
-  const nav = orgAdminNav(admin?.modules || [], admin?.organization?.kind || 'education');
+  const navGroups = orgAdminNavGroups(admin?.modules || [], admin?.organization?.kind || 'education');
   const org = admin?.organization;
+  const orgLabel = org?.title || org?.name || 'Organisation';
 
   useEffect(() => {
     setAdmin(getAdmin());
@@ -61,47 +70,75 @@ export default function AdminLayout() {
     navigate(ADMIN_BASE, { replace: true });
   };
 
+  const sidebar = (
+    <>
+      <Link to={`${ADMIN_BASE}/dashboard`} className="staff-rail-brand" onClick={() => setOpen(false)}>
+        <BrandMark org={org} size={48} className="ring-2 ring-white/20" />
+        <span>
+          <strong>{orgLabel}</strong>
+          <small>Admin console</small>
+        </span>
+      </Link>
+
+      <div className="staff-nav-scroll">
+        {navGroups.map((group) => (
+          <div key={group.title} className="staff-nav-group">
+            <p className="staff-nav-label">{group.title}</p>
+            <nav className="staff-nav">
+              {group.items.map((item) => {
+                const Icon = adminNavIcon(item.to);
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) => (isActive ? 'is-active' : '')}
+                  >
+                    <span className="staff-nav-icon">
+                      <Icon />
+                    </span>
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
+        ))}
+      </div>
+
+      <div className="staff-rail-foot">
+        <div className="staff-rail-user">
+          <span className="staff-rail-avatar" aria-hidden="true">
+            {initials(admin?.email, orgLabel)}
+          </span>
+          <div className="staff-rail-user-meta">
+            <strong>{admin?.email || 'Admin'}</strong>
+            <small>Organisation admin</small>
+          </div>
+        </div>
+        <button type="button" className="staff-rail-signout" onClick={handleSignOut}>
+          Sign out
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="min-h-svh bg-bg-alt">
+    <div className="staff-shell min-h-svh bg-bg-alt">
       <div className="noise" aria-hidden="true" />
       <div className="relative z-1 flex min-h-svh w-full">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-[#0f5c5c] p-6 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
+          className={`staff-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <Link to={`${ADMIN_BASE}/dashboard`} className="mb-8 flex items-center gap-3">
-            <BrandMark org={org} size={48} className="ring-2 ring-white/20" />
-            <span className="leading-tight">
-              <strong className="block font-serif text-sm font-bold tracking-tight text-white">
-                {org?.title || org?.name || 'Organisation'}
-              </strong>
-              <small className="text-[0.65rem] font-medium text-white/70">Admin console</small>
-            </span>
-          </Link>
-
-          <p className="mb-3 text-[0.7rem] font-semibold tracking-[0.18em] text-white/55 uppercase">Menu</p>
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-            {nav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
-                    isActive ? 'bg-white text-[#0f5c5c]' : 'text-white/80 hover:bg-white/10 hover:text-white'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          {sidebar}
         </aside>
 
         {open && (
           <button
             type="button"
-            className="fixed inset-0 z-30 bg-[#0a3d3d]/45 backdrop-blur-sm md:hidden"
+            className="staff-mobile-scrim fixed inset-0 z-30 backdrop-blur-sm md:hidden"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
           />
@@ -118,9 +155,7 @@ export default function AdminLayout() {
             </button>
             <div className="hidden min-w-0 items-center gap-2 md:flex">
               <BrandMark org={org} size={28} />
-              <p className="m-0 truncate text-sm font-semibold text-ink">
-                {org?.title || org?.name || admin?.email || 'Admin'}
-              </p>
+              <p className="m-0 truncate text-sm font-semibold text-ink">{orgLabel}</p>
             </div>
             <div className="flex items-center gap-3">
               {admin?.modules?.includes('careers') && (
@@ -133,7 +168,7 @@ export default function AdminLayout() {
                   View public careers
                 </a>
               )}
-              <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={handleSignOut}>
+              <button type="button" className="btn btn-outline py-2.5 text-sm max-md:hidden" onClick={handleSignOut}>
                 Sign out
               </button>
             </div>

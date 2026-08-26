@@ -12,13 +12,21 @@ const backendRoot = path.join(__dirname, '..');
 const dataDir = path.join(backendRoot, 'data');
 
 const DEMO_PASSWORD = 'CampusDesk2026!';
+const isDev = process.env.APP_ENV === 'development';
 
 process.env.ADMIN_EMAIL ||= 'admin@explorecollege.org';
 process.env.ADMIN_PASSWORD ||= DEMO_PASSWORD;
 process.env.PLATFORM_EMAIL ||= 'platform@explore.app';
 process.env.PLATFORM_PASSWORD ||= DEMO_PASSWORD;
-process.env.JWT_SECRET ||= 'campusdesk-prod-jwt-change-me';
+process.env.JWT_SECRET ||= isDev ? 'campusdesk-dev-jwt-not-for-production' : 'campusdesk-prod-jwt-change-me';
 process.env.PUBLIC_ORG_SLUG ||= 'explore';
+
+if (isDev) {
+  console.log('');
+  console.log('=== Campus Desk DEV deploy (APP_ENV=development) ===');
+  console.log('Push to the develop branch — production is untouched.');
+  console.log('');
+}
 
 if (!process.env.DATABASE_URL?.trim()) {
   fs.mkdirSync(dataDir, { recursive: true });
