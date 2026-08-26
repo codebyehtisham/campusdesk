@@ -34,7 +34,7 @@ export default function AdminAdmissions() {
       <span className="eyebrow">Admissions</span>
       <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Student records</h1>
       <p className="mb-8 max-w-xl text-text-muted">
-        Open or close public applications, then review student records.
+        Open or close public applications. Admissions officers accept or reject students — admins view records only.
       </p>
 
       <div className="glass mb-8 flex flex-col justify-between gap-4 rounded-[1.6rem] p-6 sm:flex-row sm:items-center">

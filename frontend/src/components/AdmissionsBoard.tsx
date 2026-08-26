@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../api/client';
 import { canDecideAdmissions } from '../data/roles';
 
 const statusClass = {
-  not_started: 'bg-cardinal-pale text-cardinal',
+  not_started: 'bg-slate-100 text-slate-700',
   in_progress: 'bg-cardinal-pale text-cardinal',
-  submitted: 'bg-crimson-pale text-crimson',
-  accepted: 'bg-cardinal-pale text-cardinal',
-  rejected: 'bg-crimson-pale text-crimson',
+  submitted: 'bg-amber-100 text-amber-900',
+  accepted: 'bg-emerald-100 text-emerald-800',
+  rejected: 'bg-crimson-pale text-crimson-dark',
 };
 
 const statusLabel = {
@@ -18,8 +18,30 @@ const statusLabel = {
   rejected: 'Rejected',
 };
 
+const SECTIONS = [
+  {
+    key: 'pending',
+    label: 'Pending',
+    description: 'Applications still in progress or awaiting review.',
+    match: (status) => ['not_started', 'in_progress', 'submitted'].includes(status),
+  },
+  {
+    key: 'accepted',
+    label: 'Accepted',
+    description: 'Accepted students. Officers can move them back to rejected if needed.',
+    match: (status) => status === 'accepted',
+  },
+  {
+    key: 'rejected',
+    label: 'Rejected',
+    description: 'Rejected applications. Officers can accept them later if circumstances change.',
+    match: (status) => status === 'rejected',
+  },
+];
+
 export default function AdmissionsBoard({ authScope, role }) {
   const [rows, setRows] = useState([]);
+  const [section, setSection] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -42,12 +64,27 @@ export default function AdmissionsBoard({ authScope, role }) {
     load();
   }, []);
 
+  const activeSection = SECTIONS.find((item) => item.key === section) || SECTIONS[0];
+  const filteredRows = useMemo(
+    () => rows.filter((row) => activeSection.match(row.status)),
+    [rows, activeSection]
+  );
+
+  const counts = useMemo(
+    () =>
+      SECTIONS.reduce((acc, item) => {
+        acc[item.key] = rows.filter((row) => item.match(row.status)).length;
+        return acc;
+      }, {}),
+    [rows]
+  );
+
   const decide = async (id, decision) => {
     setSavingId(id);
     try {
       const res = await api.patch(`/applications/${id}/decision`, { decision }, { authScope });
       setRows((list) => list.map((row) => (row.id === id ? res.data : row)));
-      setNotice(decision === 'accepted' ? 'Applicant accepted.' : 'Applicant rejected.');
+      setNotice(decision === 'accepted' ? 'Applicant marked accepted.' : 'Applicant marked rejected.');
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save that decision.');
@@ -60,9 +97,29 @@ export default function AdmissionsBoard({ authScope, role }) {
     <div>
       {!canDecide && (
         <p className="mb-5 rounded-2xl bg-cardinal-pale px-4 py-3 text-sm font-semibold text-cardinal">
-          Your role is view only. You can read student records but cannot accept or reject.
+          {role === 'admin'
+            ? 'Organisation admins can open or close admissions and view records. Only admissions officers can accept or reject.'
+            : 'Your role is view only. You can read student records but cannot accept or reject.'}
         </p>
       )}
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {SECTIONS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setSection(item.key)}
+            className={`rounded-full px-4 py-2 text-sm font-bold ${
+              section === item.key ? 'bg-cardinal text-white' : 'border border-border bg-white text-ink'
+            }`}
+          >
+            {item.label} ({counts[item.key] || 0})
+          </button>
+        ))}
+      </div>
+
+      <p className="mb-5 text-sm text-text-muted">{activeSection.description}</p>
+
       {error && (
         <p className="mb-5 rounded-2xl bg-crimson-pale px-4 py-3 text-sm font-bold text-crimson-dark">{error}</p>
       )}
@@ -72,14 +129,14 @@ export default function AdmissionsBoard({ authScope, role }) {
 
       {loading ? (
         <div className="glass rounded-[1.6rem] p-10 text-center text-text-muted">Loading student records…</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <div className="glass rounded-[1.6rem] p-10 text-center">
-          <h3>No applications yet</h3>
-          <p className="m-0 text-text-muted">When students register to apply, they will appear here.</p>
+          <h3>No {activeSection.label.toLowerCase()} applications</h3>
+          <p className="m-0 text-text-muted">Switch tabs to see other groups.</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {rows.map((row) => (
+          {filteredRows.map((row) => (
             <article key={row.id} className="glass rounded-[1.6rem] p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
@@ -91,6 +148,7 @@ export default function AdmissionsBoard({ authScope, role }) {
                   {row.reviewer && (
                     <p className="mt-2 mb-0 text-sm text-text-muted">
                       Reviewed by {row.reviewer.name || row.reviewer.email}
+                      {row.reviewedAt ? ` · ${new Date(row.reviewedAt).toLocaleDateString()}` : ''}
                     </p>
                   )}
                 </div>
@@ -99,18 +157,18 @@ export default function AdmissionsBoard({ authScope, role }) {
                     <button
                       type="button"
                       className="btn btn-navy py-2.5 text-sm"
-                      disabled={savingId === row.id || row.status === 'accepted'}
+                      disabled={savingId === row.id}
                       onClick={() => decide(row.id, 'accepted')}
                     >
-                      Accept
+                      {row.status === 'accepted' ? 'Keep accepted' : 'Accept'}
                     </button>
                     <button
                       type="button"
                       className="rounded-full border border-crimson/25 bg-crimson-pale px-5 py-2.5 text-sm font-bold text-crimson disabled:opacity-50"
-                      disabled={savingId === row.id || row.status === 'rejected'}
+                      disabled={savingId === row.id}
                       onClick={() => decide(row.id, 'rejected')}
                     >
-                      Reject
+                      {row.status === 'rejected' ? 'Keep rejected' : 'Reject'}
                     </button>
                   </div>
                 )}

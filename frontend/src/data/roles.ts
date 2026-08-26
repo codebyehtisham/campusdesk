@@ -9,7 +9,7 @@ export const FACULTY_ROLES = [
   {
     key: 'officer',
     label: 'Officer',
-    hint: 'Can open student applications and accept or reject them.',
+    hint: 'Can accept, reject, and change admission decisions.',
   },
   {
     key: 'teacher',
@@ -35,7 +35,7 @@ export const isTeacher = (role) => normalizeRole(role) === 'teacher';
 
 export const canDecideAdmissions = (role) => {
   const key = normalizeRole(role);
-  return key === 'admin' || key === 'officer';
+  return key === 'officer';
 };
 
 export const isReadOnlyAdmissions = (role) => normalizeRole(role) === 'reader';

@@ -12,7 +12,7 @@ import { getSiteSettings } from '../controllers/settingsController.js';
 export const STAFF_ROLES = ['admin', 'reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
 export const FACULTY_ROLES = ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
 export const ADMISSIONS_ROLES = ['admin', 'reader', 'officer', 'viewer', 'reviewer'] as const;
-export const DECISION_ROLES = ['admin', 'officer', 'reviewer'] as const;
+export const DECISION_ROLES = ['officer', 'reviewer'] as const;
 
 export const toSafeJSON = (user: User) => ({
   id: user.id,
@@ -178,7 +178,7 @@ export const canViewAdmissions = (req: Request, res: Response, next: NextFunctio
 
 export const canDecideAdmissions = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user || !DECISION_ROLES.includes(req.user.role as (typeof DECISION_ROLES)[number])) {
-    return res.status(403).json({ message: 'You can view records but cannot accept or reject applicants.' });
+    return res.status(403).json({ message: 'Only admissions officers can accept or reject applicants.' });
   }
   return next();
 };
