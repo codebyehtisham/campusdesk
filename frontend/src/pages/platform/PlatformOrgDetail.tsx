@@ -499,8 +499,8 @@ export default function PlatformOrgDetail() {
           <div className="mb-2 flex items-center justify-between">
             <h2 className="m-0">Payment history</h2>
             <p className="pc-legend m-0">
-              <span><i style={{ background: 'var(--pc-live)' }} />Paid</span>
-              <span><i style={{ background: '#6d93ff' }} />Outstanding</span>
+              <span><i style={{ background: '#4a9eff' }} />Paid</span>
+              <span><i style={{ background: 'rgba(109,147,255,0.55)' }} />Outstanding</span>
             </p>
           </div>
           <BarChart data={billing.overview?.monthly || []} />

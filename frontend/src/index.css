@@ -1652,6 +1652,16 @@ html:has(.platform-shell),
   position: relative;
 }
 
+.platform-shell .pc-chart-dark {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.platform-shell .pc-chart-footnote {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .platform-shell .pc-line-chart {
   display: block;
   width: 100%;
