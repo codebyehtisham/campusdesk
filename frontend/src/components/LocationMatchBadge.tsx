@@ -1,4 +1,4 @@
-export function LocationMatchBadge({ location, status }) {
+export default function LocationMatchBadge({ location, status }) {
   if (status !== 'present' || !location || location.onCampus == null) return null;
   const onCampus = Boolean(location.onCampus);
   const distance =
