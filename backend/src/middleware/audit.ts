@@ -66,7 +66,10 @@ const lookupLocation = async (ip: string) => {
   if (geoCache.has(ip)) return geoCache.get(ip)!;
   if (geoCache.size > 2000) geoCache.clear();
   try {
-    const res = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city`);
+    const res = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city`,
+      { signal: AbortSignal.timeout(1200) }
+    );
     const data = (await res.json()) as { status?: string; country?: string; regionName?: string; city?: string };
     const location =
       data?.status === 'success'
@@ -84,6 +87,8 @@ const shouldSkip = (req: Request) => {
   if (SKIP_EXT.test(url)) return true;
   if (req.method === 'OPTIONS') return true;
   if (req.method === 'GET' && url.startsWith('/api/platform/audit')) return true;
+  // Hot public paths — skip audit to keep admissions login snappy
+  if (req.method === 'GET' && (url.startsWith('/api/health') || url.startsWith('/api/settings'))) return true;
   return false;
 };
 

@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { Organization } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { CACHE_KEYS, cacheDel, cacheGet, cacheSet } from '../config/redis.js';
-import { getPublicOrganization, hasModule, orgId, sellableModules } from '../lib/tenant.js';
+import { getPublicOrganization, hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
 import { sanitizeTheme } from '../lib/theme.js';
 
 export const getSiteSettings = async (organizationId: string | null) => {
@@ -12,12 +12,16 @@ export const getSiteSettings = async (organizationId: string | null) => {
   return prisma.setting.create({ data: { organizationId, admissionsOpen: true } });
 };
 
-export const getPublicSettings = async (_req: Request, res: Response) => {
+export const getPublicSettings = async (req: Request, res: Response) => {
   try {
-    const cached = await cacheGet<{ admissionsOpen: boolean; organization: unknown }>(CACHE_KEYS.publicSettings);
+    const institute = String(req.query.institute || req.query.organizationSlug || '')
+      .trim()
+      .toLowerCase();
+    const cacheKey = institute ? `${CACHE_KEYS.publicSettings}:${institute}` : CACHE_KEYS.publicSettings;
+    const cached = await cacheGet<{ admissionsOpen: boolean; organization: unknown }>(cacheKey);
     if (cached) return res.json(cached);
 
-    const org = await getPublicOrganization();
+    const org = institute ? await resolveOrganizationByInstitute(institute) : await getPublicOrganization();
     const settings = org ? await getSiteSettings(org.id) : { admissionsOpen: false };
     const payload = {
       admissionsOpen: Boolean(settings.admissionsOpen) && hasModule(org, 'admissions'),
@@ -33,7 +37,7 @@ export const getPublicSettings = async (_req: Request, res: Response) => {
           }
         : { name: '', slug: '', title: '', tagline: '', logo: '', modules: [], theme: null },
     };
-    await cacheSet(CACHE_KEYS.publicSettings, payload, 60);
+    await cacheSet(cacheKey, payload, 60);
     res.json(payload);
   } catch (err) {
     res.status(500).json({ message: 'Failed to load settings', error: (err as Error).message });

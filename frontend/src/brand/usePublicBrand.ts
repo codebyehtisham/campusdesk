@@ -8,7 +8,7 @@ export default function usePublicBrand() {
   useEffect(() => {
     let ignore = false;
     api
-      .get('/settings')
+      .get('/settings', { timeout: 3000 })
       .then((res) => {
         if (ignore) return;
         const org = res.data?.organization || {};

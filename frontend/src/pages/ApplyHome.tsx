@@ -14,11 +14,24 @@ export default function ApplyHome() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 3000);
     api
-      .get('/settings', { params: institute ? { institute } : undefined })
+      .get('/settings', {
+        params: institute ? { institute } : undefined,
+        timeout: 3000,
+        signal: ctrl.signal,
+      })
       .then((res) => setAdmissionsOpen(res.data?.admissionsOpen !== false))
       .catch(() => setAdmissionsOpen(true))
-      .finally(() => setLoaded(true));
+      .finally(() => {
+        window.clearTimeout(timer);
+        setLoaded(true);
+      });
+    return () => {
+      ctrl.abort();
+      window.clearTimeout(timer);
+    };
   }, [institute]);
 
   return (
