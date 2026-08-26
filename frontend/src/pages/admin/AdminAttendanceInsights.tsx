@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { ADMIN_BASE } from '../../admin/paths';
 import { todayStamp } from '../../data/attendance';
-import { AttendanceBarChart, AttendanceLineChart } from '../../components/AttendanceAnalyticsChart';
+import AttendanceTimeSeriesChart, { toCumulativeSeries } from '../../components/AttendanceTimeSeriesChart';
 import AttendanceTrendLine from '../../components/AttendanceTrendLine';
 
 const adminReq = { authScope: 'admin' as const };
@@ -84,18 +84,16 @@ export default function AdminAttendanceInsights() {
   }, [tab, classId]);
 
   const classDateChart = (classDateData?.classes || []).map((row) => ({
-    label: row.classCode || row.className,
+    date: row.classCode || row.className,
     value: row.percent,
+    label: row.classCode,
     sublabel: row.teacherName,
   }));
 
-  const studentChart = (studentData?.history || []).map((row) => ({
-    label: row.date.slice(5),
-    value: row.finalPresent ? 100 : 0,
-  }));
+  const studentChart = toCumulativeSeries(studentData?.history || []);
 
   const classTimelineChart = (classData?.timeline || []).map((row) => ({
-    label: row.date.slice(5),
+    date: row.date,
     value: row.percent,
   }));
 
@@ -153,7 +151,12 @@ export default function AdminAttendanceInsights() {
             <p className="py-12 text-center text-text-muted">Loading chart…</p>
           ) : (
             <>
-              <AttendanceBarChart data={classDateChart} title={`Class attendance on ${date}`} />
+              <AttendanceTimeSeriesChart
+                variant="bar"
+                title={`Class attendance · ${date}`}
+                subtitle="Final present % per class session on the selected date"
+                data={classDateChart}
+              />
               {classDateData?.classes?.length > 0 && (
                 <div className="mt-6 grid gap-2 sm:grid-cols-2">
                   {classDateData.classes.map((row) => (
@@ -213,7 +216,16 @@ export default function AdminAttendanceInsights() {
                   Overall {studentData.percent}%
                 </span>
               </div>
-              <AttendanceLineChart data={studentChart} title="Student attendance over time" />
+              <AttendanceTimeSeriesChart
+                variant="line"
+                title={`${studentData.student?.name} · attendance trend`}
+                subtitle={
+                  studentClassId
+                    ? 'Running attendance % for the selected class'
+                    : 'Running attendance % across all enrolled classes'
+                }
+                data={studentChart}
+              />
               <div className="mt-6 flex flex-col gap-2">
                 {(studentData.history || []).map((row) => (
                   <div key={`${row.date}-${row.classId}`} className="flex items-center justify-between rounded-2xl border border-border px-4 py-2 text-sm">
@@ -260,7 +272,12 @@ export default function AdminAttendanceInsights() {
                 </span>
               </div>
               <h3 className="mb-2 text-base font-bold text-ink">Session attendance over time</h3>
-              <AttendanceLineChart data={classTimelineChart} title="Class session attendance" />
+              <AttendanceTimeSeriesChart
+                variant="line"
+                title={`${classData.class?.name} · session attendance`}
+                subtitle="Class-wide final present % for each session"
+                data={classTimelineChart}
+              />
               <h3 className="mb-3 mt-8 text-base font-bold text-ink">Students in this class</h3>
               <div className="flex flex-col gap-3">
                 {(classData.students || []).map((person) => (
