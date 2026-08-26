@@ -161,33 +161,37 @@ export const saveAttendanceDay = async (req: Request, res: Response) => {
     if (!kind) return res.status(400).json({ message: 'Choose student or staff attendance.' });
     if (!gate(req, res, kind)) return;
     const date = dayStart(req.body.date);
-    const marks = Array.isArray(req.body.marks) ? req.body.marks : [];
+    const rawMarks: unknown[] = Array.isArray(req.body.marks) ? req.body.marks : [];
     const people = await prisma.attendancePerson.findMany({
       where: { organizationId, kind, active: true },
       select: { id: true },
     });
     const allowed = new Set(people.map((item) => item.id));
-    await Promise.all(
-      marks
-        .map((mark: { personId?: string; status?: string; notes?: string }) => ({
+    type DayMark = { personId: string; status: AttendanceStatus; notes: string };
+    const marks: DayMark[] = rawMarks
+      .map((item): DayMark => {
+        const mark = (item || {}) as { personId?: string; status?: string; notes?: string };
+        return {
           personId: String(mark.personId || ''),
           status: parseStatus(mark.status),
           notes: String(mark.notes || '').trim(),
-        }))
-        .filter((mark) => allowed.has(mark.personId))
-        .map((mark) =>
-          prisma.attendanceRecord.upsert({
-            where: { personId_date: { personId: mark.personId, date } },
-            update: { status: mark.status, notes: mark.notes },
-            create: {
-              organizationId,
-              personId: mark.personId,
-              date,
-              status: mark.status,
-              notes: mark.notes,
-            },
-          })
-        )
+        };
+      })
+      .filter((mark) => allowed.has(mark.personId));
+    await Promise.all(
+      marks.map((mark) =>
+        prisma.attendanceRecord.upsert({
+          where: { personId_date: { personId: mark.personId, date } },
+          update: { status: mark.status, notes: mark.notes },
+          create: {
+            organizationId,
+            personId: mark.personId,
+            date,
+            status: mark.status,
+            notes: mark.notes,
+          },
+        })
+      )
     );
     req.query.kind = kind;
     req.query.date = date.toISOString().slice(0, 10);

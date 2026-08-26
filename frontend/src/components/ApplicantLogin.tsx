@@ -17,7 +17,7 @@ function RequiredLabel({ children }) {
   );
 }
 
-export default function ApplicantLogin() {
+export default function ApplicantLogin({ institute = '' }) {
   const navigate = useNavigate();
   const existing = getApplicant();
   const [mode, setMode] = useState('login');
@@ -25,6 +25,7 @@ export default function ApplicantLogin() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const instituteSlug = String(institute || '').trim().toLowerCase();
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -39,8 +40,17 @@ export default function ApplicantLogin() {
       const path = mode === 'register' ? '/auth/register' : '/auth/login';
       const payload =
         mode === 'register'
-          ? { name: form.name.trim(), email: form.email.trim(), password: form.password }
-          : { email: form.email.trim(), password: form.password };
+          ? {
+              name: form.name.trim(),
+              email: form.email.trim(),
+              password: form.password,
+              ...(instituteSlug ? { institute: instituteSlug } : {}),
+            }
+          : {
+              email: form.email.trim(),
+              password: form.password,
+              ...(instituteSlug ? { institute: instituteSlug } : {}),
+            };
       const res = await api.post(path, payload);
       signInApplicant({
         id: res.data.user.id,
@@ -49,7 +59,11 @@ export default function ApplicantLogin() {
         token: res.data.token,
         organization: res.data.organization,
       });
-      navigate(res.data.organization?.servicesLocked || res.data.organization?.status === 'suspended' ? '/apply/suspended' : '/apply/form');
+      navigate(
+        res.data.organization?.servicesLocked || res.data.organization?.status === 'suspended'
+          ? '/apply/suspended'
+          : '/apply/form'
+      );
     } catch (err) {
       if (isSuspendedError(err)) {
         navigate('/apply/suspended');
@@ -76,7 +90,13 @@ export default function ApplicantLogin() {
           {existing.name ? ` as ${existing.name}` : ''}.
         </p>
         <Magnetic>
-          <button type="button" className="btn btn-primary w-full" onClick={() => navigate(isLockedOrg(existing.organization) ? '/apply/suspended' : '/apply/form')}>
+          <button
+            type="button"
+            className="btn btn-primary w-full"
+            onClick={() =>
+              navigate(isLockedOrg(existing.organization) ? '/apply/suspended' : '/apply/form')
+            }
+          >
             Continue application
           </button>
         </Magnetic>
@@ -97,6 +117,12 @@ export default function ApplicantLogin() {
         {mode === 'login'
           ? 'Use your applicant email and password to open the admission form.'
           : 'A few details now. Your application opens right after.'}
+        {instituteSlug ? (
+          <>
+            {' '}
+            Applying to <strong className="text-ink">{instituteSlug}</strong>.
+          </>
+        ) : null}
       </p>
 
       <AnimatePresence mode="wait">

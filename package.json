@@ -2,13 +2,13 @@
   "name": "campusdesk",
   "version": "1.0.0",
   "private": true,
-  "description": "Campus Desk — admissions, LMS, attendance, org admin, and platform control plane",
+  "description": "Campus Desk \u2014 admissions, LMS, attendance, org admin, and platform control plane",
   "scripts": {
-    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "install:all": "npm install --prefix backend --include=dev && npm install --prefix frontend --include=dev",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev": "npm run dev:backend",
-    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npm run db:generate --prefix backend && npm run build --prefix backend",
+    "build": "npm install --prefix frontend --include=dev && npm run build --prefix frontend && npm install --prefix backend --include=dev && npm run db:generate --prefix backend && npm run build --prefix backend",
     "start": "npm start --prefix backend",
     "db:up": "docker compose up -d postgres redis",
     "seed": "npm run seed --prefix backend"

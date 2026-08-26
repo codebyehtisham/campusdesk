@@ -137,6 +137,16 @@ export const getPublicOrganization = async () => {
   return org;
 };
 
+
+export const resolveOrganizationByInstitute = async (institute?: string | null) => {
+  const slug = String(institute || '').trim().toLowerCase();
+  if (slug) {
+    const bySlug = await prisma.organization.findFirst({ where: { slug, status: 'active' } });
+    if (bySlug) return bySlug;
+  }
+  return getPublicOrganization();
+};
+
 export const bustOrgCache = async () => {
   await cacheDel(
     CACHE_KEYS.publicOrg,

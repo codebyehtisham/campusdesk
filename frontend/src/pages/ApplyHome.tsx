@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ApplicantLogin from '../components/ApplicantLogin';
 import BrandMark from '../components/BrandMark';
@@ -7,16 +8,18 @@ import api from '../api/client';
 
 export default function ApplyHome() {
   const brand = usePublicBrand();
+  const [searchParams] = useSearchParams();
+  const institute = String(searchParams.get('institute') || '').trim().toLowerCase();
   const [admissionsOpen, setAdmissionsOpen] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     api
-      .get('/settings')
+      .get('/settings', { params: institute ? { institute } : undefined })
       .then((res) => setAdmissionsOpen(res.data?.admissionsOpen !== false))
       .catch(() => setAdmissionsOpen(true))
       .finally(() => setLoaded(true));
-  }, []);
+  }, [institute]);
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-white">
@@ -34,7 +37,9 @@ export default function ApplyHome() {
               <strong className="font-serif text-sm font-bold tracking-tight text-ink">
                 {brand.title || brand.name || 'Campus Desk'}
               </strong>
-              <p className="m-0 text-[0.7rem] font-medium text-text-muted">Admissions · Campus Desk</p>
+              <p className="m-0 text-[0.7rem] font-medium text-text-muted">
+                Admissions · Campus Desk{institute ? ` · ${institute}` : ''}
+              </p>
             </div>
           </div>
           {!loaded ? (
@@ -42,7 +47,7 @@ export default function ApplyHome() {
               <p className="m-0 text-text-muted">Checking admissions status…</p>
             </div>
           ) : admissionsOpen ? (
-            <ApplicantLogin />
+            <ApplicantLogin institute={institute} />
           ) : (
             <div className="glass glow-border rounded-[1.8rem] p-8 md:p-10">
               <span className="eyebrow">Admissions</span>

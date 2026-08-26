@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import type { InvoiceStatus, Prisma } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { DEFAULT_DEPARTMENTS, DEFAULT_MODULES } from '../lib/tenant.js';
 import { DEFAULT_PLANS } from '../lib/billing.js';
@@ -363,7 +364,7 @@ const run = async () => {
           notes: 'Campus plan for Explore College.',
         },
       });
-      const invoices = [];
+      const invoices: Prisma.InvoiceCreateManyInput[] = [];
       for (let i = 11; i >= 0; i -= 1) {
         const issuedAt = new Date();
         issuedAt.setUTCMonth(issuedAt.getUTCMonth() - i);
@@ -371,13 +372,14 @@ const run = async () => {
         const periodStart = new Date(Date.UTC(issuedAt.getUTCFullYear(), issuedAt.getUTCMonth(), 1));
         const nextPeriod = new Date(Date.UTC(issuedAt.getUTCFullYear(), issuedAt.getUTCMonth() + 1, 1));
         const isCurrent = i === 0;
+        const status: InvoiceStatus = isCurrent ? 'open' : 'paid';
         invoices.push({
           organizationId: explore.id,
           subscriptionId: subscription.id,
           number: `INV-${issuedAt.getUTCFullYear()}-${String(12 - i).padStart(4, '0')}`,
           amountCents: campusPlan.amountCents,
           currency: 'USD',
-          status: isCurrent ? 'open' : 'paid',
+          status,
           issuedAt,
           paidAt: isCurrent ? null : new Date(issuedAt.getTime() + 2 * 24 * 60 * 60 * 1000),
           dueAt: new Date(issuedAt.getTime() + 14 * 24 * 60 * 60 * 1000),

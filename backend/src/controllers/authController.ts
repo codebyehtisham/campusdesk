@@ -3,7 +3,7 @@ import type { Organization } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { getSiteSettings } from './settingsController.js';
 import { authPayloadForOrg, FACULTY_ROLES, hashPassword, loadOrganization, matchPassword, orgPayload, STAFF_ROLES, toSafeJSON } from '../middleware/auth.js';
-import { getPublicOrganization, hasModule, isUniqueError } from '../lib/tenant.js';
+import { hasModule, isUniqueError, resolveOrganizationByInstitute } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 
 const requireLinkedOrg = (org: Organization | null, res: Response): org is Organization => {
@@ -24,8 +24,12 @@ export const registerApplicant = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
     }
 
-    const org = await getPublicOrganization();
+    const institute = String(req.body.institute || req.body.organizationSlug || '').trim();
+    const org = await resolveOrganizationByInstitute(institute);
     if (!requireLinkedOrg(org, res)) return;
+    if (institute && org.slug !== institute.toLowerCase()) {
+      return res.status(404).json({ message: 'That institute was not found on Campus Desk.' });
+    }
     const lock = await resolveServiceLock(org);
     if (lock.locked) {
       return res.status(403).json({ code: 'SERVICES_SUSPENDED', message: SUSPENDED_MESSAGE, lockReason: lock.reason });
@@ -70,6 +74,12 @@ export const loginApplicant = async (req: Request, res: Response) => {
 
     const org = await loadOrganization(user);
     if (!requireLinkedOrg(org, res)) return;
+    const institute = String(req.body.institute || req.body.organizationSlug || '').trim().toLowerCase();
+    if (institute && org.slug !== institute) {
+      return res.status(403).json({
+        message: 'This applicant account belongs to a different institute. Open Campus Desk from that college website.',
+      });
+    }
     const lock = await resolveServiceLock(org);
     if (!lock.locked) {
       if (!hasModule(org, 'admissions')) {
