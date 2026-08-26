@@ -114,7 +114,7 @@ const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
 if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
   app.use(express.static(frontendDist));
   app.get(['/login', '/signin'], (_req, res) => {
-    res.redirect(302, '/org-admin');
+    res.redirect(302, '/apply');
   });
   app.get('*', (_req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
