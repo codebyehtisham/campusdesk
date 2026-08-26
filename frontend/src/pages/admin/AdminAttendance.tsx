@@ -247,8 +247,13 @@ export default function AdminAttendance({ kind }) {
                         {item.label}
                       </button>
                     ))}
-                  <button type="button" className="text-xs font-bold text-crimson" onClick={() => setPendingDelete(person)}>
-                    Remove
+                  <button
+                    type="button"
+                    className="text-xs font-bold text-crimson"
+                    title="Removes this person from the campus attendance roster (not from class enrollment)"
+                    onClick={() => setPendingDelete(person)}
+                  >
+                    Remove from roster
                   </button>
                 </div>
               </div>
@@ -331,8 +336,11 @@ export default function AdminAttendance({ kind }) {
         {pendingDelete && (
           <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="w-full max-w-md rounded-[1.6rem] bg-white p-6">
-              <h2 className="mt-0">Remove {pendingDelete.name}?</h2>
-              <p className="text-text-muted">Their attendance history for this campus will also be removed.</p>
+              <h2 className="mt-0">Remove {pendingDelete.name} from roster?</h2>
+              <p className="text-text-muted">
+                This removes them from the campus attendance register and deletes their daily attendance history. It does
+                not remove class enrollments — use Classes to unenroll a student from a course.
+              </p>
               <div className="mt-5 flex gap-2">
                 <button type="button" className="btn btn-primary flex-1" onClick={confirmDelete} disabled={saving}>
                   Remove

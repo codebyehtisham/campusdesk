@@ -15,6 +15,29 @@ export default function AdminAttendanceLocation() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [locating, setLocating] = useState(false);
+
+  const loadCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Your browser does not support location access.');
+      return;
+    }
+    setLocating(true);
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+        setNotice('Current location loaded. Save to apply.');
+        setLocating(false);
+      },
+      (err) => {
+        setError(err.message || 'Could not read your current location. Allow location access and try again.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
 
   const load = async () => {
     try {
@@ -138,9 +161,18 @@ export default function AdminAttendanceLocation() {
                 <br />
                 {latitude != null && longitude != null
                   ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-                  : 'Tap the map to drop a pin.'}
+                  : 'Tap the map or use your current location.'}
               </p>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-outline mb-3 w-full py-2.5 text-sm"
+              disabled={locating || saving}
+              onClick={loadCurrentLocation}
+            >
+              {locating ? 'Getting location…' : 'Use my current location'}
+            </button>
 
             <button type="button" className="btn btn-primary w-full" disabled={saving} onClick={save}>
               {saving ? 'Saving…' : 'Save campus location'}

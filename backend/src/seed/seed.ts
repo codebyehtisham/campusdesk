@@ -168,6 +168,7 @@ const run = async () => {
     await prisma.setting.upsert({
       where: { organizationId: explore.id },
       update: {
+        attendanceLocationEnabled: true,
         campusLatitude: 31.5497,
         campusLongitude: 74.3436,
         campusRadiusMeters: 250,
@@ -175,7 +176,7 @@ const run = async () => {
       create: {
         organizationId: explore.id,
         admissionsOpen: true,
-        attendanceLocationEnabled: false,
+        attendanceLocationEnabled: true,
         campusLatitude: 31.5497,
         campusLongitude: 74.3436,
         campusRadiusMeters: 250,
@@ -502,8 +503,24 @@ const ensureDemoStudent = async (organizationId: string) => {
     }
     await prisma.sessionAttendance.upsert({
       where: { sessionId_personId: { sessionId: session.id, personId: person.id } },
-      update: { status: 'present' },
-      create: { sessionId: session.id, personId: person.id, status: 'present' },
+      update: {
+        status: 'present',
+        latitude: 31.5498,
+        longitude: 74.3435,
+        accuracy: 8,
+        onCampus: true,
+        distanceMeters: 12,
+      },
+      create: {
+        sessionId: session.id,
+        personId: person.id,
+        status: 'present',
+        latitude: 31.5498,
+        longitude: 74.3435,
+        accuracy: 8,
+        onCampus: true,
+        distanceMeters: 12,
+      },
     });
   }
 
