@@ -84,7 +84,13 @@ export const loginApplicant = async (req: Request, res: Response) => {
     const password = String(req.body.password || '').trim();
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user || user.role !== 'applicant' || !(await matchPassword(password, user.password))) {
+    if (!user || user.role !== 'applicant') {
+      return res.status(401).json({
+        message:
+          'Email or password is incorrect. If you registered before a recent deploy, create a new account — the server database may have been reset.',
+      });
+    }
+    if (!(await matchPassword(password, user.password))) {
       return res.status(401).json({ message: 'Email or password is incorrect.' });
     }
     if (user.blocked) {

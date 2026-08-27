@@ -27,13 +27,16 @@ PUBLIC_APP_URL=https://<your-dev-service>.up.railway.app
 REDIS_DISABLED=1
 ```
 
-Optional Postgres (recommended so dev data stays separate from prod):
+**Persist applicant accounts** (required on both prod and dev, or logins break after every deploy):
 
-```env
-DATABASE_URL=<Railway Postgres plugin URL for dev service>
-```
+1. Railway → service → **Volumes** → add a volume.
+2. Mount path: `/data`
+3. Leave `DATABASE_URL` unset (boot writes `file:/data/campusdesk.db`), or set:
+   `DATABASE_URL=file:/data/campusdesk.db`
 
-If `DATABASE_URL` is unset, boot uses SQLite on the dev container (fine for smoke tests; data resets on redeploy).
+Without `/data`, SQLite lives on the ephemeral container disk — every redeploy wipes users and sign-in returns “Email or password is incorrect.”
+
+Optional: set `DATA_DIR` to another absolute folder if you mount the volume elsewhere.
 
 Demo logins are seeded on every boot (same as production):
 

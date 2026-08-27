@@ -42,8 +42,8 @@ export default function StudentLogin() {
     setError('');
     try {
       const res = await api.post('/auth/login', {
-        email: form.email.trim(),
-        password: form.password,
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
       });
       signInApplicant({
         id: res.data.user.id,
