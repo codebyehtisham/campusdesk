@@ -9,7 +9,7 @@ export default function LocationMatchBadge({ location, status }) {
         onCampus ? 'bg-emerald-100 text-emerald-800' : 'bg-crimson-pale text-crimson-dark'
       }`}
     >
-      {onCampus ? 'On campus' : distance ? `Off campus · ${distance}` : 'Off campus'}
+      {onCampus ? 'Onsite' : distance ? `Not onsite · ${distance}` : 'Not onsite'}
     </span>
   );
 }

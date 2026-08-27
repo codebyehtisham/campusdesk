@@ -6,6 +6,7 @@ const pill = (label, tone) => {
     absent: 'bg-crimson-pale text-crimson-dark',
     na: 'bg-slate-100 text-slate-600',
     onsite: 'bg-emerald-100 text-emerald-800',
+    offsite: 'bg-crimson-pale text-crimson-dark',
     unknown: 'bg-amber-100 text-amber-900',
     true: 'bg-emerald-600 text-white',
     false: 'bg-crimson text-white',
@@ -18,7 +19,7 @@ const pill = (label, tone) => {
 };
 
 const qrLabel = { present: 'Present', absent: 'Absent', na: 'N/A' };
-const locLabel = { onsite: 'Onsite', unknown: 'Unknown' };
+const locLabel = { onsite: 'Onsite', offsite: 'Not onsite', unknown: 'Unknown' };
 
 export default function AttendanceRecordRow({ person, locationEnabled, showGraph = true }) {
   const qr = person.qrStatus || (person.status === 'present' ? 'present' : person.status ? 'absent' : 'na');
@@ -33,7 +34,7 @@ export default function AttendanceRecordRow({ person, locationEnabled, showGraph
         <small className="text-text-muted">{person.title || person.email}</small>
       </div>
       {pill(qrLabel[qr] || 'N/A', qr === 'present' ? 'present' : qr === 'absent' ? 'absent' : 'na')}
-      {locationEnabled ? pill(locLabel[loc] || 'Unknown', loc === 'onsite' ? 'onsite' : 'unknown') : <span />}
+      {locationEnabled ? pill(locLabel[loc] || 'Unknown', loc === 'onsite' ? 'onsite' : loc === 'offsite' ? 'offsite' : 'unknown') : <span />}
       {pill(final ? 'True' : 'False', final ? 'true' : 'false')}
       {showGraph ? (
         <div className="flex items-center gap-2">

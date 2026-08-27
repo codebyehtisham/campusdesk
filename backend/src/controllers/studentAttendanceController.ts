@@ -63,13 +63,6 @@ export const scanStudentAttendance = async (req: Request, res: Response) => {
       const verdict = evaluateFence(locationInput.latitude, locationInput.longitude, fence);
       onCampus = verdict.onCampus;
       distanceMeters = verdict.distanceMeters;
-      if (!verdict.onCampus) {
-        return res.status(403).json({
-          message: `You appear to be ${Math.round(verdict.distanceMeters)} m from campus. Move inside the allowed area and scan again.`,
-          onCampus: false,
-          distanceMeters: verdict.distanceMeters,
-        });
-      }
     } else if (locationInput.latitude != null && locationInput.longitude != null && fence) {
       const verdict = evaluateFence(locationInput.latitude, locationInput.longitude, fence);
       onCampus = verdict.onCampus;

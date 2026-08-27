@@ -1,6 +1,8 @@
-# Campus Desk
+# CampusDeskPortal
 
 Admissions portal, faculty LMS, attendance, organisation admin, and platform control plane.
+
+Public marketing site: `../Explore Website`.
 
 ## Run
 

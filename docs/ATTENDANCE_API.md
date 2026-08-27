@@ -137,16 +137,18 @@ Auth: student/applicant Bearer token. Requires `student-attendance` module.
 | Status | When |
 |--------|------|
 | 400 | Missing/invalid QR, expired QR, or location required but not sent |
-| 403 | Not on roster, not enrolled, or outside campus geofence |
+| 403 | Not on roster or not enrolled |
 | 404 | Session not open |
 
-Off-campus example:
+Off-campus scans are **accepted** (HTTP 200). Attendance is marked present with `onCampus: false` so the portal can show **Not onsite**. Final present still requires onsite when location is enabled.
 
 ```json
 {
-  "message": "You appear to be 842 m from campus. Move inside the allowed area and scan again.",
+  "message": "You are marked present.",
+  "status": "present",
   "onCampus": false,
-  "distanceMeters": 842
+  "distanceMeters": 842,
+  "session": { }
 }
 ```
 

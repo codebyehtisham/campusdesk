@@ -1,7 +1,7 @@
 import type { AttendanceStatus } from '@prisma/client';
 
 export type QrStatus = 'present' | 'absent' | 'na';
-export type LocationStatus = 'onsite' | 'unknown';
+export type LocationStatus = 'onsite' | 'offsite' | 'unknown';
 
 export type AttendanceMarkLike = {
   status?: AttendanceStatus | null;
@@ -26,8 +26,10 @@ export const locationStatusFromMark = (
   mark: AttendanceMarkLike | null | undefined
 ): LocationStatus | null => {
   if (!locationEnabled) return null;
-  if (!mark || mark.onCampus !== true) return 'unknown';
-  return 'onsite';
+  if (!mark) return 'unknown';
+  if (mark.onCampus === true) return 'onsite';
+  if (mark.onCampus === false) return 'offsite';
+  return 'unknown';
 };
 
 export const computeFinalPresent = (
