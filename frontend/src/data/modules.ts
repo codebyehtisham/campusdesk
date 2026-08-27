@@ -1,7 +1,10 @@
 import { ADMIN_BASE } from '../admin/paths';
 
 export const MODULE_NAV = {
-  admissions: [{ to: 'admissions', label: 'Admissions' }],
+  admissions: [
+    { to: 'admissions', label: 'Admissions' },
+    { to: 'admissions/form', label: 'Admission portal' },
+  ],
   faculty: [
     { to: 'users', label: 'Users' },
     { to: 'access', label: 'Access' },
@@ -44,7 +47,7 @@ export const orgAdminNavGroups = (modules = [], kind = 'education') => {
     { title: 'Overview', items: bySuffix('dashboard') },
     {
       title: 'Operations',
-      items: byLabels(['Admissions', 'HR', 'Student attendance', 'Attendance insights', 'Staff attendance', 'Patient register']),
+      items: byLabels(['Admissions', 'Admission portal', 'HR', 'Student attendance', 'Attendance insights', 'Staff attendance', 'Patient register']),
     },
     { title: 'Teaching', items: byLabels(['Users', 'Access', 'Classes', 'Timetable']) },
     { title: 'Campus', items: [...bySuffix('units'), ...bySuffix('brand')] },

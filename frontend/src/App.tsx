@@ -9,6 +9,7 @@ import { RequireActiveAdmin, RequireActiveStaff } from './auth/RequireActiveServ
 import ServiceSuspended from './pages/ServiceSuspended';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAdmissions from './pages/admin/AdminAdmissions';
+import AdminAdmissionForm from './pages/admin/AdminAdmissionForm';
 import AdminCareers from './pages/admin/AdminCareers';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import AdminAttendanceLocation from './pages/admin/AdminAttendanceLocation';
@@ -79,6 +80,7 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="admissions" element={<RequireModule slug="admissions"><AdminAdmissions /></RequireModule>} />
+              <Route path="admissions/form" element={<RequireModule slug="admissions"><AdminAdmissionForm /></RequireModule>} />
               <Route path="careers" element={<RequireModule slug="careers"><AdminCareers /></RequireModule>} />
               <Route path="attendance/students" element={<RequireModule slug="student-attendance"><AdminAttendance kind="student" /></RequireModule>} />
               <Route path="attendance/insights" element={<RequireModule slug="student-attendance"><AdminAttendanceInsights /></RequireModule>} />

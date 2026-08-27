@@ -236,6 +236,8 @@ model Application {
   userId         String
   user           User              @relation("ApplicantApplications", fields: [userId], references: [id], onDelete: Cascade)
   status         ApplicationStatus @default(not_started)
+  answers        String            @default("{}")
+  submittedAt    DateTime?
   reviewedById   String?
   reviewedBy     User?             @relation("ApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   reviewedAt     DateTime?
@@ -244,6 +246,7 @@ model Application {
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([status])
 }
 
 model Career {
@@ -266,6 +269,8 @@ model Setting {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   key            String       @default("site")
   admissionsOpen Boolean      @default(true)
+  /// Configurable student apply form: groups, fields, documents, required flags, file limits.
+  admissionForm  String       @default("")
   attendanceLocationEnabled Boolean @default(false)
   campusLatitude  Float?
   campusLongitude Float?

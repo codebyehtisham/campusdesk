@@ -1,11 +1,16 @@
-import { brandAlt, brandLogo, brandTitle, initials } from '../brand/brand';
+import { useEffect, useState } from 'react';
+import { brandAlt, brandLogo, initials } from '../brand/brand';
 
 export default function BrandMark({ org, size = 48, className = '' }) {
   const src = brandLogo(org);
-  const title = brandTitle(org);
+  const [broken, setBroken] = useState(false);
   const dim = typeof size === 'number' ? `${size}px` : size;
 
-  if (src) {
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
+
+  if (src && !broken) {
     return (
       <img
         src={src}
@@ -14,6 +19,7 @@ export default function BrandMark({ org, size = 48, className = '' }) {
         height={typeof size === 'number' ? size : 48}
         className={`rounded-full object-cover ${className}`}
         style={{ width: dim, height: dim }}
+        onError={() => setBroken(true)}
       />
     );
   }

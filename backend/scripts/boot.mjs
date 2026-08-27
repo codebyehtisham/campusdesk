@@ -57,9 +57,11 @@ const main = async () => {
   console.log('');
   console.log('Seeded login accounts:');
   console.log(`  Org admin   /org-admin          ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}`);
+  console.log(`  Officer     /faculty-portal     officer@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
   console.log(`  Faculty     /faculty-portal     faculty@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
   console.log(`  Super admin /x7k2m9q4p8n3       ${process.env.PLATFORM_EMAIL} / ${process.env.PLATFORM_PASSWORD}`);
   console.log('  Student     /login              student@explorecollege.org / student123');
+  console.log('  Apply       /apply              pick institute (or ?institute=explore)');
   console.log('');
   await run('node', ['dist/server.js']);
 };

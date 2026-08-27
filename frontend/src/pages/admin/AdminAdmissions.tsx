@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AdmissionsBoard from '../../components/AdmissionsBoard';
 import { getAdmin } from '../../auth/adminSession';
+import { ADMIN_BASE } from '../../admin/paths';
 import api from '../../api/client';
 
 export default function AdminAdmissions() {
@@ -31,11 +33,19 @@ export default function AdminAdmissions() {
 
   return (
     <div>
-      <span className="eyebrow">Admissions</span>
-      <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Student records</h1>
-      <p className="mb-8 max-w-xl text-text-muted">
-        Open or close public applications. Admissions officers accept or reject students — admins view records only.
-      </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="eyebrow">Admissions</span>
+          <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Student records</h1>
+          <p className="m-0 max-w-xl text-text-muted">
+            Open or close public applications. Officers accept or reject submitted forms. Build the student form in
+            Admission portal.
+          </p>
+        </div>
+        <Link to={`${ADMIN_BASE}/admissions/form`} className="btn btn-primary text-sm">
+          Edit admission portal
+        </Link>
+      </div>
 
       <div className="glass mb-8 flex flex-col justify-between gap-4 rounded-[1.6rem] p-6 sm:flex-row sm:items-center">
         <div>
@@ -43,8 +53,8 @@ export default function AdminAdmissions() {
           <h3 className="mt-2 mb-1">{open ? 'Admissions are open' : 'Admissions are closed'}</h3>
           <p className="m-0 text-sm text-text-muted">
             {open
-              ? 'The login and apply form is visible on the website.'
-              : 'The website shows that admissions are closed. The login form is hidden.'}
+              ? 'Students can pick your institute and apply with your published form.'
+              : 'Your institute is hidden from the apply picker until you open admissions again.'}
           </p>
         </div>
         <div className="flex gap-2">

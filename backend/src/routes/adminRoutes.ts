@@ -32,6 +32,7 @@ import {
   deleteSlot,
 } from '../controllers/academicController.js';
 import { updateBrand, saveLogo } from '../controllers/brandController.js';
+import { getAdminAdmissionForm, saveAdminAdmissionForm } from '../controllers/admissionFormController.js';
 import { getSchemeDesk, listUnits, createUnit, updateUnit, deleteUnit } from '../controllers/unitsController.js';
 import { protect, adminOnly, requireActiveOrg, requireOrgLinked, requireModule } from '../middleware/auth.js';
 
@@ -49,6 +50,8 @@ router.put('/users/:id/password', ...orgAdmin, requireModule('faculty'), setUser
 router.put('/users/:id', ...orgAdmin, requireModule('faculty'), updateUser);
 router.delete('/users/:id', ...orgAdmin, requireModule('faculty'), deleteUser);
 router.put('/settings', ...orgAdmin, requireModule('admissions'), updateSettings);
+router.get('/admission-form', ...orgAdmin, requireModule('admissions'), getAdminAdmissionForm);
+router.put('/admission-form', ...orgAdmin, requireModule('admissions'), saveAdminAdmissionForm);
 router.put('/brand', ...orgAdmin, updateBrand);
 router.post('/brand/logo', ...orgAdmin, saveLogo);
 router.get('/scheme', ...orgAdmin, getSchemeDesk);

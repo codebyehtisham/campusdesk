@@ -21,6 +21,8 @@ import {
   courseRoutes,
   newsRoutes,
   contactRoutes,
+  instituteRoutes,
+  admissionFormRoutes,
 } from './routes/publicRoutes.js';
 
 const app = express();
@@ -78,7 +80,7 @@ app.use((req, res, next) => {
     },
   })(req, res, next);
 });
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
 app.use(optionalAuth);
@@ -109,6 +111,8 @@ app.use('/api/careers', careerRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/institutes', instituteRoutes);
+app.use('/api/admission-form', admissionFormRoutes);
 app.use('/api/platform', platformRoutes);
 
 app.use('/api', (_req, res) => {

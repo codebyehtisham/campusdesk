@@ -17,7 +17,7 @@ function RequiredLabel({ children }) {
   );
 }
 
-export default function ApplicantLogin({ institute = '' }) {
+export default function ApplicantLogin({ institute = '', instituteLabel = '' }) {
   const navigate = useNavigate();
   const existing = getApplicant();
   const [mode, setMode] = useState('login');
@@ -26,6 +26,7 @@ export default function ApplicantLogin({ institute = '' }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const instituteSlug = String(institute || '').trim().toLowerCase();
+  const instituteName = String(instituteLabel || instituteSlug).trim();
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -120,7 +121,7 @@ export default function ApplicantLogin({ institute = '' }) {
         {instituteSlug ? (
           <>
             {' '}
-            Applying to <strong className="text-ink">{instituteSlug}</strong>.
+            Applying to <strong className="text-ink">{instituteName}</strong>.
           </>
         ) : null}
       </p>

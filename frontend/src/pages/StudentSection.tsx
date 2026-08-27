@@ -1,8 +1,10 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import CampusDeskMark from '../components/CampusDeskMark';
-import { getApplicant } from '../auth/session';
-import { isLockedOrg } from '../auth/serviceLock';
+import { getApplicant, signOutApplicant } from '../auth/session';
+import { isLockedOrg, isSuspendedError } from '../auth/serviceLock';
 import { CAMPUSDESK_NAME } from '../brand/product';
+import api from '../api/client';
 
 const copy: Record<string, { title: string; body: string }> = {
   attendance: {
@@ -17,12 +19,34 @@ const copy: Record<string, { title: string; body: string }> = {
 
 export default function StudentSection() {
   const { section } = useParams();
+  const navigate = useNavigate();
   const applicant = getApplicant();
-  const meta = copy[section] || null;
+  const meta = copy[section || ''] || null;
+  const [accepted, setAccepted] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!applicant?.token) return;
+    api
+      .get('/applications/me', { authScope: 'applicant' })
+      .then((res) => setAccepted(res.data?.status === 'accepted'))
+      .catch((err) => {
+        if (isSuspendedError(err)) {
+          navigate('/apply/suspended', { replace: true });
+          return;
+        }
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          signOutApplicant();
+          navigate('/login', { replace: true });
+        }
+      })
+      .finally(() => setReady(true));
+  }, [applicant?.token, navigate]);
 
   if (!applicant?.token) return <Navigate to="/login" replace />;
   if (isLockedOrg(applicant.organization)) return <Navigate to="/apply/suspended" replace />;
   if (!meta) return <Navigate to="/student" replace />;
+  if (ready && !accepted) return <Navigate to="/student" replace />;
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-bg">

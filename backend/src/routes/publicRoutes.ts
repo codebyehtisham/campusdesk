@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { registerApplicant, loginApplicant, getMe, loginStaff, changePassword } from '../controllers/authController.js';
 import { scanStudentAttendance } from '../controllers/studentAttendanceController.js';
-import { getMine, listAll, decide } from '../controllers/applicationController.js';
+import { getMine, saveMine, submitMine, listAll, getOne, decide } from '../controllers/applicationController.js';
+import {
+  getPublicAdmissionForm,
+  listAdmissionInstitutes,
+  uploadApplicationFile,
+} from '../controllers/admissionFormController.js';
 import { getOpenings, createOpening, updateOpening, deleteOpening } from '../controllers/careerController.js';
 import { getPublicSettings } from '../controllers/settingsController.js';
 import {
@@ -68,7 +73,18 @@ staffRoutes.put('/sessions/:id/close', ...teaching, closeSession);
 
 export const applicationRoutes = Router();
 applicationRoutes.get('/me', protect, requireActiveOrg, applicantOnly, requireModule('admissions'), getMine);
+applicationRoutes.put('/me', protect, requireActiveOrg, applicantOnly, requireModule('admissions'), saveMine);
+applicationRoutes.post('/me/submit', protect, requireActiveOrg, applicantOnly, requireModule('admissions'), submitMine);
+applicationRoutes.post(
+  '/me/files',
+  protect,
+  requireActiveOrg,
+  applicantOnly,
+  requireModule('admissions'),
+  uploadApplicationFile
+);
 applicationRoutes.get('/', protect, requireActiveOrg, canViewAdmissions, requireModule('admissions'), listAll);
+applicationRoutes.get('/:id', protect, requireActiveOrg, canViewAdmissions, requireModule('admissions'), getOne);
 applicationRoutes.patch(
   '/:id/decision',
   protect,
@@ -77,6 +93,12 @@ applicationRoutes.patch(
   requireModule('admissions'),
   decide
 );
+
+export const instituteRoutes = Router();
+instituteRoutes.get('/', listAdmissionInstitutes);
+
+export const admissionFormRoutes = Router();
+admissionFormRoutes.get('/', getPublicAdmissionForm);
 
 export const careerRoutes = Router();
 careerRoutes.get('/', getOpenings);

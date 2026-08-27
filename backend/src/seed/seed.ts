@@ -8,6 +8,7 @@ import { DEFAULT_THEME } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
 import { seedOrgUnits } from '../lib/schemes.js';
 import { dayStamp, jsToWeekday, newQrToken, QR_TTL_MS } from '../lib/teaching.js';
+import { defaultAdmissionForm } from '../lib/admissionForm.js';
 import { careers, courses, faculty, news } from './content.js';
 
 const run = async () => {
@@ -172,6 +173,7 @@ const run = async () => {
         campusLatitude: 31.5497,
         campusLongitude: 74.3436,
         campusRadiusMeters: 250,
+        admissionForm: JSON.stringify(defaultAdmissionForm()),
       },
       create: {
         organizationId: explore.id,
@@ -180,6 +182,7 @@ const run = async () => {
         campusLatitude: 31.5497,
         campusLongitude: 74.3436,
         campusRadiusMeters: 250,
+        admissionForm: JSON.stringify(defaultAdmissionForm()),
       },
     });
 
@@ -231,6 +234,27 @@ const run = async () => {
           data: { role: 'teacher', password: teacherPassword, organizationId: explore.id, name: teacher.name || 'Nazia Shaukat' },
         });
         console.log(`Faculty member updated: ${teacherEmail} (sign in at /faculty-portal)`);
+      }
+
+      const officerEmail = 'officer@explorecollege.org';
+      const existingOfficer = await prisma.user.findUnique({ where: { email: officerEmail } });
+      if (!existingOfficer) {
+        await prisma.user.create({
+          data: {
+            name: 'Admissions Officer',
+            email: officerEmail,
+            password: teacherPassword,
+            role: 'officer',
+            organizationId: explore.id,
+          },
+        });
+        console.log(`Admissions officer created: ${officerEmail} (sign in at /faculty-portal)`);
+      } else {
+        await prisma.user.update({
+          where: { id: existingOfficer.id },
+          data: { role: 'officer', password: teacherPassword, organizationId: explore.id },
+        });
+        console.log(`Admissions officer updated: ${officerEmail} (sign in at /faculty-portal)`);
       }
 
       const programmes = await prisma.course.findMany({ where: { organizationId: explore.id } });
