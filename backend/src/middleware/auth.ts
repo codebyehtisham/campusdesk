@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import type { Organization, User } from '@prisma/client';
 import { prisma } from '../config/db.js';
+import { applicantSessionWasInvalidated } from '../lib/applicantSession.js';
 import { parseFence } from '../lib/geofence.js';
 import { hasModule, sellableModules } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
@@ -124,11 +125,23 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
   }
 
   try {
-    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET || 'dev-secret') as { id: string };
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET || 'dev-secret') as {
+      id: string;
+      iat?: number;
+    };
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) return res.status(401).json({ message: 'Account not found' });
     if (user.blocked && user.role !== 'superadmin') {
       return res.status(403).json({ message: 'This account is blocked. Contact administration.' });
+    }
+    if (user.role === 'applicant' && decoded.iat) {
+      const invalidated = await applicantSessionWasInvalidated(user.id, decoded.iat);
+      if (invalidated) {
+        return res.status(401).json({
+          code: 'ADMISSION_ACCEPTED',
+          message: 'Your admission was accepted. Sign in again from the student portal to continue.',
+        });
+      }
     }
     req.user = user;
     req.organization = await loadOrganization(user);

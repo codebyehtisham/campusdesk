@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getAdmin } from '../auth/adminSession';
-import { getApplicant } from '../auth/session';
+import { getApplicant, signOutApplicant } from '../auth/session';
 import { getStaff } from '../auth/staffSession';
 import { getPlatform } from '../auth/platformSession';
 
@@ -35,5 +35,21 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && error.config?.authScope === 'applicant' && getApplicant()?.token) {
+      signOutApplicant();
+      const path = window.location.pathname;
+      const accepted = error.response?.data?.code === 'ADMISSION_ACCEPTED';
+      const target = accepted || path.startsWith('/student') ? '/login' : '/apply';
+      if (path !== target) {
+        window.location.assign(target);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

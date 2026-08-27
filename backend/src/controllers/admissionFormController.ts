@@ -154,7 +154,7 @@ export const uploadApplicationFile = async (req: Request, res: Response) => {
       update: {},
       create: { userId: req.user.id, organizationId, status: 'not_started' },
     });
-    if (['accepted', 'rejected'].includes(application.status)) {
+    if (['accepted', 'rejected', 'submitted'].includes(application.status)) {
       return res.status(400).json({ message: 'This application can no longer be edited.' });
     }
 

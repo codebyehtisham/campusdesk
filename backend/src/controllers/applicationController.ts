@@ -20,6 +20,7 @@ import {
   type AdmissionForm,
 } from '../lib/admissionForm.js';
 import { loadOrgAdmissionForm } from './admissionFormController.js';
+import { invalidateApplicantSessions } from '../lib/applicantSession.js';
 
 type AppWithPeople = Application & { user: User | null; reviewedBy: User | null };
 
@@ -112,8 +113,7 @@ export const getMine = async (req: Request, res: Response) => {
       toApplication(application, {
         form,
         editable: editableStatuses.has(application.status),
-        documentsEditable:
-          editableStatuses.has(application.status) || application.status === 'submitted',
+        documentsEditable: editableStatuses.has(application.status),
       })
     );
   } catch (err) {
@@ -428,6 +428,7 @@ export const decide = async (req: Request, res: Response) => {
 
     if (decision === 'accepted' && updated.user) {
       await provisionAcceptedStudent(updated.organizationId, updated.user);
+      await invalidateApplicantSessions(updated.user.id);
     } else if (decision === 'rejected' && updated.user?.email) {
       const person = await prisma.attendancePerson.findFirst({
         where: {

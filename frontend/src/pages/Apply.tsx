@@ -248,7 +248,6 @@ export default function Apply() {
   const [form, setForm] = useState({ published: false, intro: '', groups: [] });
   const [answers, setAnswers] = useState({});
   const [editable, setEditable] = useState(true);
-  const [documentsEditable, setDocumentsEditable] = useState(true);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -296,7 +295,6 @@ export default function Apply() {
         setAnswers(res.data?.answers || {});
         setForm(res.data?.form || { published: false, intro: '', groups: [] });
         setEditable(res.data?.editable !== false);
-        setDocumentsEditable(res.data?.documentsEditable !== false);
       })
       .catch((err) => {
         if (isSuspendedError(err)) {
@@ -521,16 +519,8 @@ export default function Apply() {
                     ? 'You are accepted. Open the student portal for LMS and attendance once your classes are assigned.'
                     : appStatus === 'rejected'
                       ? 'This application was rejected. Contact the institute if you have questions.'
-                      : documentsEditable
-                        ? 'An admissions officer will review your file. If a document preview is broken, replace it below so staff can open it.'
-                        : 'An admissions officer will review your answers and documents. We will update your status here.'}
+                      : 'An admissions officer will review your answers and documents. We will update your status here.'}
                 </p>
-                {appStatus === 'submitted' && documentsEditable && (
-                  <div className="mx-auto mb-6 max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
-                    You can still replace admission documents while your application is under review. Open each Documents
-                    section below and upload again — files now save to secure cloud storage.
-                  </div>
-                )}
                 <div className="flex flex-wrap justify-center gap-3">
                   {appStatus === 'accepted' ? (
                     <Magnetic>
@@ -538,21 +528,6 @@ export default function Apply() {
                         Open student portal
                       </Link>
                     </Magnetic>
-                  ) : null}
-                  {appStatus === 'submitted' && documentsEditable ? (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => {
-                        const docsIndex = groups.findIndex((g) =>
-                          (g.fields || []).some((f) => f.type === 'file')
-                        );
-                        setStep(docsIndex >= 0 ? docsIndex : 0);
-                        window.scrollTo({ top: panelRef.current?.offsetTop || 0, behavior: 'smooth' });
-                      }}
-                    >
-                      Replace documents
-                    </button>
                   ) : null}
                   <button type="button" className="btn btn-outline" onClick={() => goToStep(0)}>
                     Review answers
@@ -706,10 +681,7 @@ export default function Apply() {
                               <FieldInput
                                 field={field}
                                 value={answers[field.key]}
-                                disabled={
-                                  saving ||
-                                  !(editable || (documentsEditable && field.type === 'file'))
-                                }
+                                disabled={saving || !editable}
                                 uploading={uploadingKey === field.key}
                                 onChange={(value) => setAnswer(field.key, value)}
                                 onUpload={(file) => uploadFile(field, file)}

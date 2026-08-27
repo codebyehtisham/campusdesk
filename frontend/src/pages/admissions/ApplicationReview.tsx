@@ -137,9 +137,9 @@ function DocumentPreview({ doc, previewHref, previewLoading, replacing, onReplac
             <FileIcon className="h-12 w-12 text-crimson" />
             <p className="m-0 text-sm font-semibold text-ink">File missing from cloud storage</p>
             <p className="m-0 max-w-sm text-sm text-text-muted">
-              The file metadata is saved but the actual file was never stored in R2 (common for applications
-              submitted before cloud storage was enabled). Upload a replacement below, or ask the applicant to use
-              Replace documents in Apply.
+              {onReplace
+                ? 'The file metadata is saved but the actual file was never stored in R2. Upload a replacement below.'
+                : 'The file metadata is saved but the actual file was never stored in R2. Contact administration if a document needs to be re-uploaded.'}
             </p>
             {onReplace ? (
               <>
@@ -640,7 +640,10 @@ export default function ApplicationReview({ portal = 'staff' }) {
                           previewLoading={previewLoading}
                           replacing={Boolean(selectedDoc && replacingKey === selectedDoc.key)}
                           onReplace={
-                            selectedDoc && detail?.status !== 'accepted' && detail?.status !== 'rejected'
+                            portal === 'admin' &&
+                            selectedDoc &&
+                            detail?.status !== 'accepted' &&
+                            detail?.status !== 'rejected'
                               ? (file) => replaceDocument(selectedDoc.key, file)
                               : null
                           }
