@@ -50,4 +50,35 @@ export function countDocuments(answers) {
   return Object.values(answers).filter((v) => v && typeof v === 'object' && v.url).length;
 }
 
+export function isEmptyAnswer(field, answers) {
+  const value = answers?.[field?.key];
+  if (value == null || value === '') return true;
+  if (field?.type === 'file') return !(value && value.url);
+  return false;
+}
+
+export function sectionProgress(group, answers) {
+  const fields = group?.fields || [];
+  const required = fields.filter((f) => f.required);
+  const requiredDone = required.filter((f) => !isEmptyAnswer(f, answers)).length;
+  const filled = fields.filter((f) => !isEmptyAnswer(f, answers)).length;
+  return {
+    total: fields.length,
+    filled,
+    required: required.length,
+    requiredDone,
+    complete: required.length ? requiredDone === required.length : filled === fields.length,
+    pct: fields.length ? Math.round((filled / fields.length) * 100) : 0,
+  };
+}
+
+export function applicationProgress(form, answers) {
+  const groups = form?.groups || [];
+  const stats = groups.map((g) => sectionProgress(g, answers));
+  const requiredTotal = stats.reduce((n, s) => n + s.required, 0);
+  const requiredDone = stats.reduce((n, s) => n + s.requiredDone, 0);
+  const pct = requiredTotal ? Math.round((requiredDone / requiredTotal) * 100) : 0;
+  return { groups: stats, requiredTotal, requiredDone, pct };
+}
+
 export { formatFileSize, resolveUploadUrl };
