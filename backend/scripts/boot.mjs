@@ -103,12 +103,26 @@ const runBackground = (label, distRel, srcRel) => {
 };
 
 const main = async () => {
+  if (['1', 'true', 'yes'].includes(String(process.env.BOOT_MINIMAL || '').trim().toLowerCase())) {
+    console.warn('BOOT_MINIMAL=1 — skipping schema push, catalog, flush, and seed.');
+    await run('node', ['dist/server.js']);
+    return;
+  }
+
   const pushArgs = ['prisma', 'db', 'push', '--skip-generate'];
   if (process.env.FORCE_DB_RESET === '1') {
     pushArgs.push('--accept-data-loss');
     console.warn('FORCE_DB_RESET=1 — prisma db push will accept data loss.');
   }
-  await run('npx', pushArgs);
+  try {
+    await run('npx', pushArgs);
+  } catch (err) {
+    if (isDev) {
+      console.warn(`prisma db push failed in dev (continuing): ${err.message}`);
+    } else {
+      throw err;
+    }
+  }
 
   await runStep('Catalog ensure', 'dist/scripts/ensure-catalog.js', 'src/scripts/ensure-catalog.ts', { required: false });
 
@@ -121,7 +135,7 @@ const main = async () => {
       console.warn('');
     } else {
       console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');
-      await runStep('Database flush', 'dist/scripts/flush-db.js', 'src/scripts/flush-db.ts');
+      await runStep('Database flush', 'dist/scripts/flush-db.js', 'src/scripts/flush-db.ts', { required: false });
       console.warn('Flush done. Remove CONFIRM_DB_FLUSH from Railway variables before the next deploy.');
     }
   }

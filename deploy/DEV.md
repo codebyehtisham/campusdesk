@@ -125,6 +125,20 @@ On the **production** Railway service:
 
 Without Postgres + Redis, `npm start` exits immediately (by design).
 
+### Recover from 502 (dev service)
+
+If the dev URL shows **502 Bad Gateway**, open **Deployments → latest deploy → View logs** and look for `FATAL:` or `exited with`.
+
+1. **Variables** — confirm these exist (and remove flush vars):
+   - `APP_ENV` = `development`
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
+   - `REDIS_URL` = `${{Redis.REDIS_URL}}`
+   - Delete `CONFIRM_DB_FLUSH` and `SKIP_SEED` if present
+2. **Plugins** — dev service must have its **own** Postgres + Redis plugins attached.
+3. **Emergency start** — add `BOOT_MINIMAL=1`, redeploy once (skips seed/push), confirm `/api/health` returns ok, then **remove `BOOT_MINIMAL`** and redeploy again.
+
+`SKIP_SEED` is **optional**. You do **not** need to add it unless you intentionally flushed and want only the superadmin account.
+
 ## Platform catalog (modules & departments)
 
 The **Catalog** in super admin (`/x7k2m9q4p8n3/modules`) reads from `Department`, `Module`, and `Plan` tables. These are **platform-wide** — not tenant data — and are **not** deleted by `db:flush`.
