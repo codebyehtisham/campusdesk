@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerApplicant, loginApplicant, getMe, loginStaff, changePassword } from '../controllers/authController.js';
+import { registerApplicant, loginApplicant, selectApplicantInstitute, getMe, loginStaff, changePassword } from '../controllers/authController.js';
 import { scanStudentAttendance } from '../controllers/studentAttendanceController.js';
 import { getMine, saveMine, submitMine, listAll, getOne, decide } from '../controllers/applicationController.js';
 import {
@@ -45,6 +45,7 @@ import {
 export const authRoutes = Router();
 authRoutes.post('/register', registerApplicant);
 authRoutes.post('/login', loginApplicant);
+authRoutes.post('/select-institute', protect, applicantOnly, selectApplicantInstitute);
 authRoutes.get('/me', protect, applicantOnly, getMe);
 authRoutes.post(
   '/attendance/scan',

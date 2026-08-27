@@ -284,6 +284,10 @@ export default function Apply() {
       return;
     }
     setApplicant(current);
+    if (!current.organization?.id && !current.organization?.slug) {
+      navigate('/apply', { replace: true });
+      return;
+    }
     api
       .get('/applications/me', { authScope: 'applicant' })
       .then((res) => {

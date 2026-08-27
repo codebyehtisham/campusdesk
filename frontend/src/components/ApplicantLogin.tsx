@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Magnetic from './Magnetic';
-import { getApplicant, signInApplicant } from '../auth/session';
+import { getApplicant, signInApplicant, signOutApplicant } from '../auth/session';
 import { isLockedOrg, isSuspendedError } from '../auth/serviceLock';
 import api from '../api/client';
 
@@ -17,8 +17,11 @@ function RequiredLabel({ children }) {
   );
 }
 
-export default function ApplicantLogin({ institute = '', instituteLabel = '' }) {
-  const navigate = useNavigate();
+export default function ApplicantLogin({
+  institute = '',
+  instituteLabel = '',
+  onAuthenticated,
+}) {
   const existing = getApplicant();
   const [mode, setMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,6 +30,17 @@ export default function ApplicantLogin({ institute = '', instituteLabel = '' }) 
   const [loading, setLoading] = useState(false);
   const instituteSlug = String(institute || '').trim().toLowerCase();
   const instituteName = String(instituteLabel || instituteSlug).trim();
+
+  const finish = (payload) => {
+    signInApplicant({
+      id: payload.user.id,
+      name: payload.user.name,
+      email: payload.user.email,
+      token: payload.token,
+      organization: payload.organization,
+    });
+    onAuthenticated?.(payload);
+  };
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -43,34 +57,27 @@ export default function ApplicantLogin({ institute = '', instituteLabel = '' }) 
         mode === 'register'
           ? {
               name: form.name.trim(),
-              email: form.email.trim(),
-              password: form.password,
+              email: form.email.trim().toLowerCase(),
+              password: form.password.trim(),
               ...(instituteSlug ? { institute: instituteSlug } : {}),
             }
           : {
-              email: form.email.trim(),
-              password: form.password,
+              email: form.email.trim().toLowerCase(),
+              password: form.password.trim(),
               ...(instituteSlug ? { institute: instituteSlug } : {}),
             };
       const res = await api.post(path, payload);
-      signInApplicant({
-        id: res.data.user.id,
-        name: res.data.user.name,
-        email: res.data.user.email,
-        token: res.data.token,
-        organization: res.data.organization,
-      });
-      navigate(
-        res.data.organization?.servicesLocked || res.data.organization?.status === 'suspended'
-          ? '/apply/suspended'
-          : '/apply/form'
-      );
+      finish(res.data);
     } catch (err) {
       if (isSuspendedError(err)) {
-        navigate('/apply/suspended');
+        onAuthenticated?.({ suspended: true });
         return;
       }
-      setError(err.response?.data?.message || 'Could not sign in. Try again.');
+      const message = err.response?.data?.message || 'Could not sign in. Try again.';
+      if (err.response?.status === 409) {
+        setMode('login');
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -80,27 +87,49 @@ export default function ApplicantLogin({ institute = '', instituteLabel = '' }) 
     return (
       <motion.div
         initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        animate={{ opacity: 1, y: 0 }}
         className="glass rounded-[1.8rem] p-8 md:p-10"
       >
         <span className="eyebrow">Admissions</span>
-        <h3>You are signed in</h3>
+        <h3>Welcome back</h3>
         <p className="mb-6 text-text-muted">
-          Continue to your admission application
-          {existing.name ? ` as ${existing.name}` : ''}.
+          Continue
+          {existing.name ? ` as ${existing.name}` : ''}
+          {existing.organization?.title || existing.organization?.name
+            ? ` · ${existing.organization.title || existing.organization.name}`
+            : ''}
+          .
         </p>
         <Magnetic>
           <button
             type="button"
             className="btn btn-primary w-full"
-            onClick={() =>
-              navigate(isLockedOrg(existing.organization) ? '/apply/suspended' : '/apply/form')
-            }
+            onClick={() => {
+              if (isLockedOrg(existing.organization)) {
+                onAuthenticated?.({ suspended: true, organization: existing.organization });
+                return;
+              }
+              onAuthenticated?.({
+                token: existing.token,
+                user: existing,
+                organization: existing.organization,
+              });
+            }}
           >
-            Continue application
+            Continue
           </button>
         </Magnetic>
+        <button
+          type="button"
+          className="mt-4 w-full text-sm font-bold text-cardinal"
+          onClick={() => {
+            signOutApplicant();
+            setError('');
+            setMode('login');
+          }}
+        >
+          Use a different account
+        </button>
       </motion.div>
     );
   }
@@ -108,22 +137,23 @@ export default function ApplicantLogin({ institute = '', instituteLabel = '' }) 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      animate={{ opacity: 1, y: 0 }}
       className="glass rounded-[1.8rem] p-8 md:p-10"
     >
       <span className="eyebrow">{mode === 'login' ? 'Admissions login' : 'New applicant'}</span>
       <h3>{mode === 'login' ? 'Sign in to apply' : 'Create your account'}</h3>
       <p className="mb-6 text-text-muted">
         {mode === 'login'
-          ? 'Use your applicant email and password to open the admission form.'
-          : 'A few details now. Your application opens right after.'}
+          ? 'Use your applicant email and password. Your account is saved for next time.'
+          : 'Create an account once — you can sign back in anytime.'}
         {instituteSlug ? (
           <>
             {' '}
             Applying to <strong className="text-ink">{instituteName}</strong>.
           </>
-        ) : null}
+        ) : (
+          <> You will choose your institute after signing in.</>
+        )}
       </p>
 
       <AnimatePresence mode="wait">
