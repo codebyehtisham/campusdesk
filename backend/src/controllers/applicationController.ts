@@ -5,7 +5,9 @@ import { orgId } from '../lib/tenant.js';
 import {
   asAnswerMap,
   formatCnic,
+  formatPhone,
   isCnicField,
+  isPhoneField,
   publicAdmissionForm,
   stringifyAnswers,
   validateAnswers,
@@ -95,7 +97,13 @@ export const saveMine = async (req: Request, res: Response) => {
     for (const [key, value] of Object.entries(incoming)) {
       if (!allowed.has(key)) continue;
       const field = fields.find((f) => f.key === key);
-      next[key] = field && isCnicField(field) && value != null && value !== '' ? formatCnic(value) : value;
+      if (field && isCnicField(field) && value != null && value !== '') {
+        next[key] = formatCnic(value);
+      } else if (field && isPhoneField(field) && value != null && value !== '') {
+        next[key] = formatPhone(value);
+      } else {
+        next[key] = value;
+      }
     }
 
     const updated = await prisma.application.update({

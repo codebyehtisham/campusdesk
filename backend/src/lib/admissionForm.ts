@@ -68,6 +68,22 @@ export const isCnicField = (field: { type?: string; key?: string }) =>
 
 export const isValidCnic = (value: unknown) => CNIC_PATTERN.test(formatCnic(value));
 
+/** Pakistani mobile: 03001234567 (11 digits). */
+export const PHONE_MAX_DIGITS = 11;
+export const PHONE_PATTERN = /^\d{11}$/;
+
+export const formatPhone = (raw: unknown) =>
+  String(raw ?? '')
+    .replace(/\D/g, '')
+    .slice(0, PHONE_MAX_DIGITS);
+
+export const isPhoneField = (field: { type?: string; key?: string }) => {
+  const key = String(field?.key || '').toLowerCase();
+  return field?.type === 'tel' || key === 'phone' || key === 'mobile' || key === 'mobile_number';
+};
+
+export const isValidPhone = (value: unknown) => PHONE_PATTERN.test(formatPhone(value));
+
 const clip = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
 
 const slugKey = (value: string, fallback: string) => {
@@ -130,8 +146,8 @@ export const defaultAdmissionForm = (): AdmissionForm => ({
           options: [],
           maxFileMb: 5,
           accept: '',
-          placeholder: '03xx xxxxxxx',
-          helpText: '',
+          placeholder: '03001234567',
+          helpText: '11-digit mobile number',
           sortOrder: 2,
         },
         {
@@ -401,6 +417,10 @@ export const validateAnswers = (form: AdmissionForm, answers: AnswerMap) => {
       value = formatCnic(value);
       answers[field.key] = value;
     }
+    if (isPhoneField(field) && value != null && value !== '') {
+      value = formatPhone(value);
+      answers[field.key] = value;
+    }
     const empty =
       value == null ||
       value === '' ||
@@ -412,6 +432,9 @@ export const validateAnswers = (form: AdmissionForm, answers: AnswerMap) => {
     if (empty) continue;
     if (isCnicField(field) && !isValidCnic(value)) {
       errors.push(`${field.label} must look like 34209-9090987-0.`);
+    }
+    if (isPhoneField(field) && !isValidPhone(value)) {
+      errors.push(`${field.label} must be an 11-digit mobile number.`);
     }
     if (field.type === 'select' && field.options.length && !field.options.includes(String(value))) {
       errors.push(`${field.label} has an invalid option.`);

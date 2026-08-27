@@ -5,7 +5,7 @@ import Reveal from '../components/Reveal';
 import { getApplicant, signOutApplicant } from '../auth/session';
 import { isLockedOrg, isSuspendedError } from '../auth/serviceLock';
 import api from '../api/client';
-import { CNIC_MAX_LENGTH, formatCnic, isCnicField } from '../lib/cnic';
+import { CNIC_MAX_LENGTH, formatCnic, formatPhone, isCnicField, isPhoneField, PHONE_MAX_DIGITS } from '../lib/cnic';
 
 const statusLabel = {
   not_started: 'Not started',
@@ -92,10 +92,23 @@ function FieldInput({ field, value, disabled, onChange, onUpload }) {
     );
   }
 
+  if (isPhoneField(field)) {
+    return (
+      <input
+        {...common}
+        type="tel"
+        inputMode="numeric"
+        autoComplete="tel"
+        maxLength={PHONE_MAX_DIGITS}
+        placeholder={field.placeholder || '03001234567'}
+        value={formatPhone(value || '')}
+        onChange={(e) => onChange(formatPhone(e.target.value))}
+      />
+    );
+  }
+
   const inputType =
-    field.type === 'email' || field.type === 'tel' || field.type === 'number' || field.type === 'date'
-      ? field.type
-      : 'text';
+    field.type === 'email' || field.type === 'number' || field.type === 'date' ? field.type : 'text';
 
   return (
     <input

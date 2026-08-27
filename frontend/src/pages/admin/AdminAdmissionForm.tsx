@@ -7,7 +7,7 @@ const FIELD_TYPES = [
   { value: 'text', label: 'Short text' },
   { value: 'textarea', label: 'Long text' },
   { value: 'email', label: 'Email' },
-  { value: 'tel', label: 'Phone' },
+  { value: 'tel', label: 'Phone (11 digits)' },
   { value: 'cnic', label: 'CNIC (34209-9090987-0)' },
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
@@ -335,6 +335,11 @@ export default function AdminAdmissionForm() {
                   {field.type === 'cnic' && (
                     <p className="m-0 text-xs font-medium text-text-muted md:col-span-2">
                       Auto-formats as 34209-9090987-0 (max 15 characters).
+                    </p>
+                  )}
+                  {field.type === 'tel' && (
+                    <p className="m-0 text-xs font-medium text-text-muted md:col-span-2">
+                      Digits only, maximum 11 (e.g. 03001234567).
                     </p>
                   )}
                   {field.type === 'select' && (
