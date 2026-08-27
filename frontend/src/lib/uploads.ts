@@ -1,13 +1,16 @@
 /** Turn stored /uploads/... paths into a browser-openable URL (dev API host vs same-origin prod). */
 export function resolveUploadUrl(url: string | undefined | null) {
   if (!url) return '';
-  if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
-  const path = url.startsWith('/') ? url : `/${url}`;
+  if (url.startsWith('data:')) return url;
 
-  // Same-origin first so Vite `/uploads` proxy (dev) and Railway monorepo (prod) both work.
-  if (typeof window !== 'undefined' && path.startsWith('/uploads')) {
+  const uploadsMatch = String(url).match(/\/uploads\/(.+)$/i);
+  if (uploadsMatch && typeof window !== 'undefined') {
+    const path = `/uploads/${uploadsMatch[1]}`;
     return `${window.location.origin}${path}`;
   }
+
+  if (/^https?:\/\//i.test(url)) return url;
+  const path = url.startsWith('/') ? url : `/${url}`;
 
   const apiBase =
     import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5050/api' : '/api');

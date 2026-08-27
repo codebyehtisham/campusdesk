@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
-import { getObject, isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, sanitizeStorageKey, verifyR2ConnectionSafe } from './lib/storage.js';
+import { isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, readStoredObject, sanitizeStorageKey, verifyR2ConnectionSafe } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -97,18 +97,16 @@ app.use('/uploads', async (req, res, next) => {
   const key = sanitizeStorageKey(decodeURIComponent(req.path.replace(/^\//, '')));
   if (!key) return res.status(404).end();
 
-  const localPath = path.join(uploadsDir, key);
-  if (localPath.startsWith(uploadsDir) && fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
-    return res.sendFile(localPath);
-  }
-
-  if (!isR2Configured()) {
-    console.warn(`[uploads] missing object and R2 not configured: ${key}`);
-    return res.status(404).json({ message: 'File not found' });
-  }
   try {
-    const object = await getObject(key);
-    if (!object.body) return res.status(404).json({ message: 'File not found' });
+    const object = await readStoredObject(key);
+    if (!object?.body) {
+      if (!isR2Configured()) {
+        console.warn(`[uploads] missing object and R2 not configured: ${key}`);
+      } else {
+        console.warn(`[uploads] missing object: ${key}`);
+      }
+      return res.status(404).json({ message: 'File not found' });
+    }
     res.setHeader('Content-Type', object.contentType);
     if (object.contentLength != null) res.setHeader('Content-Length', String(object.contentLength));
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -116,7 +114,7 @@ app.use('/uploads', async (req, res, next) => {
     if (req.method === 'HEAD') return res.status(200).end();
     await pipeline(object.body, res);
   } catch (err) {
-    console.error(`[uploads] R2 get failed key=${key}:`, (err as Error).message);
+    console.error(`[uploads] read failed key=${key}:`, (err as Error).message);
     if (!res.headersSent) res.status(404).json({ message: 'File not found' });
   }
 });
@@ -159,7 +157,8 @@ app.use('/api', (_req, res) => {
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
 if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
   app.use(express.static(frontendDist));
-  app.get('*', (_req, res) => {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/uploads') || req.path.startsWith('/api')) return next();
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
 } else {

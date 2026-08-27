@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { registerApplicant, loginApplicant, selectApplicantInstitute, getMe, loginStaff, changePassword } from '../controllers/authController.js';
 import { scanStudentAttendance } from '../controllers/studentAttendanceController.js';
-import { getMine, saveMine, submitMine, listAll, getOne, decide } from '../controllers/applicationController.js';
+import { getMine, saveMine, submitMine, listAll, getOne, decide, streamApplicationFile } from '../controllers/applicationController.js';
 import {
   getPublicAdmissionForm,
   listAdmissionInstitutes,
@@ -85,6 +85,14 @@ applicationRoutes.post(
   uploadApplicationFile
 );
 applicationRoutes.get('/', protect, requireActiveOrg, canViewAdmissions, requireModule('admissions'), listAll);
+applicationRoutes.get(
+  '/:id/files/:fieldKey',
+  protect,
+  requireActiveOrg,
+  canViewAdmissions,
+  requireModule('admissions'),
+  streamApplicationFile
+);
 applicationRoutes.get('/:id', protect, requireActiveOrg, canViewAdmissions, requireModule('admissions'), getOne);
 applicationRoutes.patch(
   '/:id/decision',

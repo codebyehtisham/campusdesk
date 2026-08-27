@@ -1,6 +1,8 @@
 import type { Application, User } from '@prisma/client';
 import type { Request, Response } from 'express';
+import { pipeline } from 'node:stream/promises';
 import { prisma } from '../config/db.js';
+import { readStoredObject, storageKeyFromFileUrl } from '../lib/storage.js';
 import { orgId } from '../lib/tenant.js';
 import {
   asAnswerMap,
@@ -253,6 +255,55 @@ export const getOne = async (req: Request, res: Response) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load application', error: (err as Error).message });
+  }
+};
+
+export const streamApplicationFile = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    const fieldKey = String(req.params.fieldKey || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 48);
+    if (!fieldKey) return res.status(400).json({ message: 'Document field is required.' });
+
+    const application = await prisma.application.findFirst({
+      where: { id: req.params.id, organizationId: organizationId || undefined },
+      include: { user: true },
+    });
+    if (!application || application.user?.role !== 'applicant') {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    const answers = asAnswerMap(application.answers);
+    const file = answers[fieldKey];
+    if (!file || typeof file !== 'object' || Array.isArray(file) || !file.url) {
+      return res.status(404).json({ message: 'Document not found on this application.' });
+    }
+
+    const key = storageKeyFromFileUrl(String(file.url));
+    if (!key) return res.status(404).json({ message: 'Document storage key is invalid.' });
+
+    const object = await readStoredObject(key);
+    if (!object?.body) {
+      return res.status(404).json({
+        message: 'File missing from cloud storage. Ask the applicant to open Apply and use Replace documents.',
+      });
+    }
+
+    const mime = typeof file.mime === 'string' && file.mime ? file.mime : object.contentType;
+    const name = typeof file.name === 'string' && file.name ? file.name : fieldKey;
+    res.setHeader('Content-Type', mime);
+    if (object.contentLength != null) res.setHeader('Content-Length', String(object.contentLength));
+    res.setHeader('Content-Disposition', `inline; filename="${name.replace(/"/g, '')}"`);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    if (req.method === 'HEAD') return res.status(200).end();
+    await pipeline(object.body, res);
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Could not open document.', error: (err as Error).message });
+    }
   }
 };
 

@@ -15,6 +15,7 @@ import {
   statusClass,
   statusLabel,
 } from '../../lib/admissionReview';
+import { revokeStaffDocumentUrls, staffDocumentBlobUrl } from '../../lib/staffDocuments';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -85,12 +86,14 @@ function FieldValue({ field, value }) {
   return <span className="text-sm font-semibold text-ink">{String(value)}</span>;
 }
 
-function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
+function DocumentPreview({ doc, previewHref, previewLoading, onPrev, onNext, hasPrev, hasNext }) {
   const [broken, setBroken] = useState(false);
+  const href = previewHref || '';
+  const missing = Boolean(doc && !previewLoading && !href);
 
   useEffect(() => {
     setBroken(false);
-  }, [doc?.key, doc?.href]);
+  }, [doc?.key, href]);
 
   if (!doc) {
     return (
@@ -122,7 +125,12 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
         </div>
       </div>
       <div className="review-preview-frame">
-        {broken ? (
+        {previewLoading ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+            <div className="admit-spinner" />
+            <p className="m-0 text-sm text-text-muted">Loading document…</p>
+          </div>
+        ) : broken || missing ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
             <FileIcon className="h-12 w-12 text-crimson" />
             <p className="m-0 text-sm font-semibold text-ink">File missing from cloud storage</p>
@@ -133,7 +141,7 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
         ) : doc.image ? (
           <motion.img
             key={doc.key}
-            src={doc.href}
+            src={href}
             alt={doc.name || doc.label}
             className="review-preview-image"
             initial={{ opacity: 0, scale: 0.98 }}
@@ -142,7 +150,7 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
             onError={() => setBroken(true)}
           />
         ) : doc.pdf ? (
-          <iframe title={doc.label} src={doc.href} className="review-preview-iframe" onError={() => setBroken(true)} />
+          <iframe title={doc.label} src={href} className="review-preview-iframe" onError={() => setBroken(true)} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-16">
             <FileIcon className="h-12 w-12 text-cardinal" />
@@ -151,10 +159,27 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
         )}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <a href={doc.href} target="_blank" rel="noreferrer" className="btn btn-primary py-2 text-sm">
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-primary py-2 text-sm"
+          aria-disabled={!href}
+          onClick={(event) => {
+            if (!href) event.preventDefault();
+          }}
+        >
           Open in new tab
         </a>
-        <a href={doc.href} download={doc.name || doc.label} className="btn btn-outline-light py-2 text-sm">
+        <a
+          href={href}
+          download={doc.name || doc.label}
+          className="btn btn-outline-light py-2 text-sm"
+          aria-disabled={!href}
+          onClick={(event) => {
+            if (!href) event.preventDefault();
+          }}
+        >
           Download
         </a>
       </div>
@@ -179,6 +204,8 @@ export default function ApplicationReview({ portal = 'staff' }) {
   const [active, setActive] = useState({ type: 'overview' });
   const [confirmReject, setConfirmReject] = useState(false);
   const [mobilePane, setMobilePane] = useState('browse');
+  const [previewUrls, setPreviewUrls] = useState({});
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -196,13 +223,50 @@ export default function ApplicationReview({ portal = 'staff' }) {
       .finally(() => setLoading(false));
   }, [id, authScope]);
 
+  const documents = useMemo(() => collectDocuments(detail?.form, detail?.answers), [detail]);
+
+  useEffect(() => {
+    if (!id || !documents.length) {
+      setPreviewUrls({});
+      setPreviewLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const scope = portal === 'admin' ? 'admin' : 'staff';
+    setPreviewLoading(true);
+
+    const load = async () => {
+      const entries = await Promise.all(
+        documents.map(async (doc) => {
+          try {
+            const href = await staffDocumentBlobUrl(id, doc.key, scope);
+            return [doc.key, href];
+          } catch {
+            return [doc.key, ''];
+          }
+        })
+      );
+      if (!cancelled) {
+        setPreviewUrls(Object.fromEntries(entries));
+        setPreviewLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, portal, documents]);
+
+  useEffect(() => () => revokeStaffDocumentUrls(id), [id]);
+
   useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => setNotice(''), 4500);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const documents = useMemo(() => collectDocuments(detail?.form, detail?.answers), [detail]);
   const groups = detail?.form?.groups || [];
   const student = detail?.student;
   const progress = useMemo(() => applicationProgress(detail?.form, detail?.answers), [detail]);
@@ -491,7 +555,11 @@ export default function ApplicationReview({ portal = 'staff' }) {
                                     className={`review-file-card ${selected ? 'is-selected' : ''}`}
                                   >
                                     <div className="review-file-thumb">
-                                      {doc.image ? <img src={doc.href} alt="" /> : <FileIcon className="h-6 w-6 text-cardinal" />}
+                                      {doc.image && previewUrls[doc.key] ? (
+                                        <img src={previewUrls[doc.key]} alt="" />
+                                      ) : (
+                                        <FileIcon className="h-6 w-6 text-cardinal" />
+                                      )}
                                     </div>
                                     <div className="min-w-0">
                                       <p className="m-0 truncate text-sm font-bold text-ink">{doc.label}</p>
@@ -508,6 +576,8 @@ export default function ApplicationReview({ portal = 'staff' }) {
                         </div>
                         <DocumentPreview
                           doc={selectedDoc}
+                          previewHref={selectedDoc ? previewUrls[selectedDoc.key] : ''}
+                          previewLoading={previewLoading}
                           hasPrev={docIndex > 0}
                           hasNext={docIndex >= 0 && docIndex < documents.length - 1}
                           onPrev={() => docIndex > 0 && selectDocument(documents[docIndex - 1].key)}

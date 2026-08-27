@@ -5,7 +5,10 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Readable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 
 /** Cloudflare R2 — S3-compatible API for campusdesk bucket. */
 const DEFAULT_ENDPOINT = 'https://fed2231335a1a08237a63ec5f77bc211.r2.cloudflarestorage.com';
@@ -198,4 +201,52 @@ export function sanitizeStorageKey(raw: string) {
     .split('/')
     .filter(Boolean)
     .join('/');
+}
+
+const uploadsRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../uploads');
+
+/** Recover the R2/local object key from a stored file URL. */
+export function storageKeyFromFileUrl(url: string) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  const pathOnly = raw.split('?')[0] || raw;
+  const marker = '/uploads/';
+  const markerIdx = pathOnly.indexOf(marker);
+  if (markerIdx >= 0) {
+    return sanitizeStorageKey(pathOnly.slice(markerIdx + marker.length));
+  }
+  const publicBase = r2PublicBaseUrl();
+  if (publicBase && pathOnly.startsWith(`${publicBase}/`)) {
+    return sanitizeStorageKey(pathOnly.slice(publicBase.length + 1));
+  }
+  if (!/^https?:\/\//i.test(pathOnly)) {
+    return sanitizeStorageKey(pathOnly);
+  }
+  try {
+    const parsed = new URL(pathOnly);
+    return sanitizeStorageKey(parsed.pathname.replace(/^\/+/, ''));
+  } catch {
+    return '';
+  }
+}
+
+export async function readStoredObject(key: string) {
+  const clean = sanitizeStorageKey(key);
+  if (!clean) return null;
+
+  const localPath = path.join(uploadsRoot, clean);
+  if (localPath.startsWith(uploadsRoot) && fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
+    return {
+      body: fs.createReadStream(localPath) as Readable,
+      contentType: 'application/octet-stream',
+      contentLength: fs.statSync(localPath).size,
+    };
+  }
+
+  if (!isR2Configured()) return null;
+  try {
+    return await getObject(clean);
+  } catch {
+    return null;
+  }
 }
