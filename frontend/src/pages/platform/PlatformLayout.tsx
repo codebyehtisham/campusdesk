@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { SUPER_BASE } from '../../admin/paths';
 import { getPlatform, signOutPlatform } from '../../auth/platformSession';
 import {
@@ -10,6 +11,7 @@ import {
   IconPulse,
   IconSwitches,
 } from '../../components/nav/ConsoleIcons';
+import { LiveClock, PlatformBackdrop, ease } from './motion';
 import { Pulse } from './ui';
 
 export function RequirePlatform() {
@@ -45,9 +47,32 @@ function initials(email?: string) {
   return source.slice(0, 2).toUpperCase();
 }
 
+function NavItem({ item, onNavigate }: { item: (typeof navGroups)[0]['items'][0]; onNavigate: () => void }) {
+  const reduce = useReducedMotion();
+
+  return (
+    <NavLink to={item.to} onClick={onNavigate} className={({ isActive }) => (isActive ? 'is-active' : '')}>
+      {({ isActive }) => (
+        <>
+          {isActive && !reduce ? (
+            <motion.span layoutId="pc-nav-active" className="pc-nav-active-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
+          ) : null}
+          <span className="relative z-1 flex items-center gap-2">
+            <span className="pc-nav-icon">
+              <item.icon />
+            </span>
+            {item.label}
+          </span>
+        </>
+      )}
+    </NavLink>
+  );
+}
+
 export default function PlatformLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const reduce = useReducedMotion();
   const [account, setAccount] = useState(() => getPlatform());
   const [open, setOpen] = useState(false);
 
@@ -65,9 +90,14 @@ export default function PlatformLayout() {
   const sidebar = (
     <>
       <Link to={`${SUPER_BASE}/dashboard`} className="mb-6 flex items-center gap-3" onClick={() => setOpen(false)}>
-        <span className="pc-mark" aria-hidden="true">
+        <motion.span
+          className="pc-mark"
+          aria-hidden="true"
+          whileHover={reduce ? undefined : { rotate: 8, scale: 1.05 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+        >
           <IconDashboard />
-        </span>
+        </motion.span>
         <span className="pc-brand-meta leading-tight">
           <strong>Control plane</strong>
           <small className="text-[0.62rem] font-medium tracking-[0.12em] text-[var(--pc-muted)] uppercase">
@@ -82,25 +112,21 @@ export default function PlatformLayout() {
       </p>
 
       <div className="pc-nav-scroll">
-        {navGroups.map((group) => (
-          <div key={group.title} className="pc-nav-group">
+        {navGroups.map((group, gi) => (
+          <motion.div
+            key={group.title}
+            className="pc-nav-group"
+            initial={reduce ? false : { opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.05 + gi * 0.06, duration: 0.35, ease }}
+          >
             <p className="pc-nav-label">{group.title}</p>
             <nav className="pc-nav">
               {group.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) => (isActive ? 'is-active' : '')}
-                >
-                  <span className="pc-nav-icon">
-                    <item.icon />
-                  </span>
-                  {item.label}
-                </NavLink>
+                <NavItem key={item.to} item={item} onNavigate={() => setOpen(false)} />
               ))}
             </nav>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -117,32 +143,35 @@ export default function PlatformLayout() {
         <button type="button" className="pc-rail-signout" onClick={handleSignOut}>
           Sign out
         </button>
-        <p className="pc-rail-note">
-          Global departments and tenant entitlements. Campus consoles stay on their own theme.
-        </p>
       </div>
     </>
   );
 
   return (
     <div className="platform-shell min-h-svh">
+      <PlatformBackdrop />
       <div className="relative z-1 flex min-h-svh w-full">
+        <AnimatePresence>
+          {open ? (
+            <motion.button
+              type="button"
+              className="fixed inset-0 z-30 bg-black/55 backdrop-blur-md md:hidden"
+              aria-label="Close menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+            />
+          ) : null}
+        </AnimatePresence>
+
         <aside
-          className={`pc-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 transition-transform md:static md:min-h-svh md:translate-x-0 ${
+          className={`pc-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 transition-transform duration-300 ease-out md:static md:min-h-svh md:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           {sidebar}
         </aside>
-
-        {open && (
-          <button
-            type="button"
-            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          />
-        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="pc-topbar sticky top-0 z-20 flex items-center justify-between gap-3 px-5 py-3 md:px-8">
@@ -153,15 +182,28 @@ export default function PlatformLayout() {
             >
               Menu
             </button>
-            <p className="m-0 hidden truncate font-mono text-[0.72rem] tracking-wide text-[var(--pc-muted)] md:block">
-              {account?.email || 'platform'} · restricted
-            </p>
+            <div className="hidden min-w-0 flex-1 items-center gap-4 md:flex">
+              <p className="m-0 truncate font-mono text-[0.72rem] tracking-wide text-[var(--pc-muted)]">
+                {account?.email || 'platform'} · restricted
+              </p>
+              <LiveClock className="pc-live-clock" />
+            </div>
             <button type="button" className="btn btn-outline py-2 text-sm max-md:hidden" onClick={handleSignOut}>
               Sign out
             </button>
           </header>
           <main className="flex-1 px-5 py-7 md:px-8 md:py-8">
-            <Outlet />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -10 }}
+                transition={{ duration: 0.32, ease }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </main>
         </div>
       </div>

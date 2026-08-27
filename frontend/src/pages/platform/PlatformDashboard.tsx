@@ -4,7 +4,15 @@ import api from '../../api/client';
 import { signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE } from '../../admin/paths';
 import { FRONTEND_VERSION } from '../../version';
-import { Banner, PageHead, Pulse, Stat } from './ui';
+import {
+  IconBuildings,
+  IconCard,
+  IconDashboard,
+  IconPulse,
+  IconSwitches,
+} from '../../components/nav/ConsoleIcons';
+import { AnimatedNumber, LiveClock, PingBar, QuickAction, ShimmerLine, StaggerCard, StaggerGrid } from './motion';
+import { Banner, PageHead, Panel, Pulse, Stat } from './ui';
 import { BarChart } from './BarChart';
 import { formatMoney } from './money';
 
@@ -56,7 +64,7 @@ function formatUptime(seconds) {
 
 function formatPing(ms) {
   if (ms == null || Number.isNaN(ms)) return '—';
-  return `${ms} ms`;
+  return `${Math.round(ms)} ms`;
 }
 
 function pingTone(ms, up) {
@@ -67,13 +75,22 @@ function pingTone(ms, up) {
   return 'warn';
 }
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function PlatformDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(empty);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = async (live = false) => {
+    if (live) setRefreshing(true);
     try {
       const res = await api.get('/platform/dashboard', {
         authScope: 'platform',
@@ -90,6 +107,7 @@ export default function PlatformDashboard() {
       setError(err.response?.data?.message || 'Could not load the control plane.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -112,179 +130,242 @@ export default function PlatformDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+      <section className="pc-hero">
+        <div className="pc-hero-copy">
+          <p className="pc-kicker m-0">{greeting()}</p>
+          <h1 className="pc-title-gradient m-0 text-[clamp(1.6rem,3vw,2.35rem)]!">Operations command center</h1>
+          <p className="pc-hint m-0 mt-2 max-w-xl">
+            Live revenue, tenant health, infrastructure pings, and traffic — all in one place.
+          </p>
+        </div>
+        <div className="pc-hero-meta">
+          <div className="pc-hero-clock-wrap">
+            <span className="pc-kicker m-0">Live</span>
+            <LiveClock className="pc-hero-clock" />
+          </div>
+          <button
+            type="button"
+            className={`btn btn-outline py-2.5 text-sm ${refreshing ? 'is-spinning' : ''}`}
+            onClick={() => load(true)}
+            disabled={loading || refreshing}
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh data'}
+          </button>
+        </div>
+        <ShimmerLine className="mt-5" />
+      </section>
+
       <PageHead
         kicker="Control plane"
-        title="Operations"
+        title="Overview"
         hint="Revenue, tenant count, service health, and request volume across the platform."
-        actions={
-          <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={() => load(true)} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh'}
-          </button>
-        }
       />
 
       <Banner>{error}</Banner>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Total revenue" value={formatMoney(billing.totalPaidCents, billing.currency)} hint="All paid invoices" />
-        <Stat label="This month" value={formatMoney(billing.monthPaidCents, billing.currency)} />
-        <Stat label="MRR" value={formatMoney(billing.mrrCents, billing.currency)} hint={`${billing.activeSubscriptions} active subscription${billing.activeSubscriptions === 1 ? '' : 's'}`} />
-        <Stat
-          label="Outstanding"
-          value={formatMoney(billing.outstandingCents, billing.currency)}
-          tone={billing.outstandingCents ? 'warn' : undefined}
-          hint={billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices'}
-        />
-      </div>
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StaggerCard>
+          <Stat label="Total revenue" value={formatMoney(billing.totalPaidCents, billing.currency)} hint="All paid invoices" />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat label="This month" value={formatMoney(billing.monthPaidCents, billing.currency)} />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat
+            label="MRR"
+            value={formatMoney(billing.mrrCents, billing.currency)}
+            hint={`${billing.activeSubscriptions} active subscription${billing.activeSubscriptions === 1 ? '' : 's'}`}
+          />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat
+            label="Outstanding"
+            value={formatMoney(billing.outstandingCents, billing.currency)}
+            tone={billing.outstandingCents ? 'warn' : undefined}
+            hint={billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices'}
+          />
+        </StaggerCard>
+      </StaggerGrid>
 
-      <section className="pc-panel p-5 md:p-6">
-        <div className="mb-2 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-          <h2 className="m-0">Revenue by month</h2>
-          <p className="pc-legend m-0">
-            <span><i style={{ background: '#4a9eff' }} />Paid</span>
-            <span><i style={{ background: 'rgba(109,147,255,0.55)' }} />Outstanding</span>
-          </p>
-        </div>
-        <BarChart data={billing.monthly || []} />
-      </section>
+      <StaggerCard>
+        <Panel
+          className="p-5 md:p-6"
+          title="Revenue by month"
+          action={
+            <p className="pc-legend m-0">
+              <span>
+                <i style={{ background: '#4a9eff' }} />
+                Paid
+              </span>
+              <span>
+                <i style={{ background: 'rgba(109,147,255,0.55)' }} />
+                Outstanding
+              </span>
+            </p>
+          }
+        >
+          <BarChart data={billing.monthly || []} />
+        </Panel>
+      </StaggerCard>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Stat label="Tenants" value={counts.organizations} />
-        <Stat label="Modules" value={counts.modules} />
-        <Stat label="Org admins" value={counts.orgAdmins} />
-        <Stat label="Faculty" value={counts.faculty} />
-        <Stat label="Students" value={counts.applicants} />
-      </div>
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StaggerCard>
+          <Stat label="Tenants" value={counts.organizations} animateValue={counts.organizations} />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat label="Modules" value={counts.modules} animateValue={counts.modules} />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat label="Org admins" value={counts.orgAdmins} animateValue={counts.orgAdmins} />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat label="Faculty" value={counts.faculty} animateValue={counts.faculty} />
+        </StaggerCard>
+        <StaggerCard>
+          <Stat label="Students" value={counts.applicants} animateValue={counts.applicants} />
+        </StaggerCard>
+      </StaggerGrid>
 
-      <section className="pc-panel p-5 md:p-6">
-        <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-          <h2 className="m-0">Service health</h2>
-          <p className="m-0 font-mono text-[0.68rem] tracking-wide text-[var(--pc-muted)] uppercase">
-            Evaluated {formatWhen(data.evaluatedAt)}
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {services.map((service) => {
-            const up = service.status === 'up';
-            const isDatastore = service.name === 'PostgreSQL' || service.name === 'Redis';
-            return (
-              <div key={service.name} className="pc-service">
-                <div>
-                  <p className="m-0 flex items-center gap-2 font-semibold text-[var(--pc-text)]">
-                    <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
-                    {service.name}
-                  </p>
-                  <p className="m-0 mt-1 text-sm text-[var(--pc-muted)]">
-                    {isDatastore ? 'Ping time' : 'Response'}
-                  </p>
-                  <p className="m-0 mt-0.5 font-mono text-lg font-bold text-[var(--pc-text)]">
-                    {formatPing(service.latencyMs)}
-                  </p>
+      <StaggerCard>
+        <Panel
+          className="p-5 md:p-6"
+          title="Service health"
+          action={
+            <p className="m-0 font-mono text-[0.68rem] tracking-wide text-[var(--pc-muted)] uppercase">
+              Evaluated {formatWhen(data.evaluatedAt)}
+            </p>
+          }
+        >
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {services.map((service) => {
+              const up = service.status === 'up';
+              const isDatastore = service.name === 'PostgreSQL' || service.name === 'Redis';
+              return (
+                <div key={service.name} className={`pc-service pc-service-animated ${up ? 'is-up' : 'is-down'}`}>
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 flex items-center gap-2 font-semibold text-[var(--pc-text)]">
+                      <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
+                      {service.name}
+                    </p>
+                    <p className="m-0 mt-1 text-sm text-[var(--pc-muted)]">{isDatastore ? 'Ping time' : 'Response'}</p>
+                    <p className="m-0 mt-0.5 font-mono text-lg font-bold text-[var(--pc-text)]">
+                      {up && service.latencyMs != null ? (
+                        <AnimatedNumber value={service.latencyMs} format={(n) => `${Math.round(n)} ms`} />
+                      ) : (
+                        formatPing(service.latencyMs)
+                      )}
+                    </p>
+                    <PingBar ms={service.latencyMs} up={up} />
+                  </div>
+                  <span className={`tag ${up ? 'tag-allied' : 'tag-nursing'}`}>{up ? 'Up' : 'Down'}</span>
                 </div>
-                <span className={`tag ${up ? 'tag-allied' : 'tag-nursing'}`}>{up ? 'Up' : 'Down'}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Stat label="API uptime" value={formatUptime(data.uptime?.seconds)} hint={`Started ${formatWhen(data.uptime?.startedAt)}`} />
-          <Stat label="Memory RSS" value={`${memory.rssMb} MB`} hint={`Heap ${memory.heapMb} MB`} />
-        </div>
-      </section>
+              );
+            })}
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Stat label="API uptime" value={formatUptime(data.uptime?.seconds)} hint={`Started ${formatWhen(data.uptime?.startedAt)}`} />
+            <Stat label="Memory RSS" value={`${memory.rssMb} MB`} hint={`Heap ${memory.heapMb} MB`} />
+          </div>
+        </Panel>
+      </StaggerCard>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="pc-panel p-5 md:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="m-0">Request volume</h2>
-            <Link to={`${SUPER_BASE}/audit`} className="text-sm font-semibold text-[var(--pc-accent)]">
-              Open traffic →
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Stat label="Last hour" value={traffic.lastHour} />
-            <Stat label="Last 24h" value={traffic.last24h} />
-            <Stat label="Errors 24h" value={traffic.errors24h} tone={traffic.errors24h ? 'warn' : undefined} />
-          </div>
-        </section>
+        <StaggerCard>
+          <Panel
+            className="p-5 md:p-6"
+            title="Request volume"
+            action={
+              <Link to={`${SUPER_BASE}/audit`} className="text-sm font-semibold text-[var(--pc-accent)]">
+                Open traffic →
+              </Link>
+            }
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Stat label="Last hour" value={traffic.lastHour} animateValue={traffic.lastHour} />
+              <Stat label="Last 24h" value={traffic.last24h} animateValue={traffic.last24h} />
+              <Stat
+                label="Errors 24h"
+                value={traffic.errors24h}
+                animateValue={traffic.errors24h}
+                tone={traffic.errors24h ? 'warn' : undefined}
+              />
+            </div>
+          </Panel>
+        </StaggerCard>
 
-        <section className="pc-panel p-5 md:p-6">
-          <h2>Runtime</h2>
-          <div className="grid gap-3">
-            <div className="pc-service">
-              <div>
-                <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Backend</p>
-                <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{versions.backend}</p>
-                <p className="m-0 text-sm">Node {versions.node}</p>
+        <StaggerCard>
+          <Panel className="p-5 md:p-6" title="Runtime">
+            <div className="grid gap-3">
+              <div className="pc-service pc-service-animated is-up">
+                <div>
+                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Backend</p>
+                  <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{versions.backend}</p>
+                  <p className="m-0 text-sm">Node {versions.node}</p>
+                </div>
+                <Pulse on />
               </div>
-              <Pulse on />
-            </div>
-            <div className="pc-service">
-              <div>
-                <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Console</p>
-                <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{FRONTEND_VERSION}</p>
-                <p className="m-0 text-sm">Platform UI</p>
+              <div className="pc-service pc-service-animated is-up">
+                <div>
+                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Console</p>
+                  <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{FRONTEND_VERSION}</p>
+                  <p className="m-0 text-sm">Platform UI</p>
+                </div>
+                <Pulse on />
               </div>
-              <Pulse on />
             </div>
-          </div>
-        </section>
+          </Panel>
+        </StaggerCard>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Link to={`${SUPER_BASE}/modules`} className="btn btn-primary">
-          Catalog
-        </Link>
-        <Link to={`${SUPER_BASE}/billing`} className="btn btn-outline">
-          Billing
-        </Link>
-        <Link to={`${SUPER_BASE}/organizations`} className="btn btn-outline">
-          Tenants
-        </Link>
-        <Link to={`${SUPER_BASE}/audit`} className="btn btn-outline">
-          Traffic log
-        </Link>
-      </div>
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <QuickAction to={`${SUPER_BASE}/organizations`} label="Tenants" hint="Manage campuses" icon={<IconBuildings />} />
+        <QuickAction to={`${SUPER_BASE}/modules`} label="Catalog" hint="Departments & modules" icon={<IconSwitches />} />
+        <QuickAction to={`${SUPER_BASE}/billing`} label="Billing" hint="Invoices & MRR" icon={<IconCard />} />
+        <QuickAction to={`${SUPER_BASE}/audit`} label="Traffic" hint="API audit log" icon={<IconPulse />} />
+      </StaggerGrid>
 
       {data.recent?.length > 0 && (
-        <section>
-          <h2>Recent tenants</h2>
-          <div className="pc-table-wrap">
-            <table className="pc-table">
-              <thead>
-                <tr>
-                  <th>Tenant</th>
-                  <th>Status</th>
-                  <th>Entitlements</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recent.map((org) => (
-                  <tr key={org.id}>
-                    <td>
-                      <Link to={`${SUPER_BASE}/organizations/${org.id}`}>{org.name}</Link>
-                      <div className="font-mono text-[0.68rem] text-[var(--pc-muted)]">{org.slug}</div>
-                    </td>
-                    <td>
-                      <span className={`tag ${org.status === 'active' ? 'tag-allied' : 'tag-nursing'}`}>{org.status}</span>
-                      {org.isPublic ? <span className="tag tag-allied ml-2">Public</span> : null}
-                    </td>
-                    <td>
-                      <div className="flex flex-wrap gap-1.5">
-                        {(org.departments || []).length
-                          ? org.departments.map((slug) => (
-                              <span key={slug} className="pc-chip">
-                                {slug}
-                              </span>
-                            ))
-                          : (org.modules || []).join(' · ') || 'None'}
-                      </div>
-                    </td>
+        <StaggerCard>
+          <section>
+            <h2>Recent tenants</h2>
+            <div className="pc-table-wrap">
+              <table className="pc-table">
+                <thead>
+                  <tr>
+                    <th>Tenant</th>
+                    <th>Status</th>
+                    <th>Entitlements</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {data.recent.map((org, i) => (
+                    <tr key={org.id} className="pc-table-row-animated" style={{ animationDelay: `${i * 40}ms` }}>
+                      <td>
+                        <Link to={`${SUPER_BASE}/organizations/${org.id}`}>{org.name}</Link>
+                        <div className="font-mono text-[0.68rem] text-[var(--pc-muted)]">{org.slug}</div>
+                      </td>
+                      <td>
+                        <span className={`tag ${org.status === 'active' ? 'tag-allied' : 'tag-nursing'}`}>{org.status}</span>
+                        {org.isPublic ? <span className="tag tag-allied ml-2">Public</span> : null}
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(org.departments || []).length
+                            ? org.departments.map((slug) => (
+                                <span key={slug} className="pc-chip">
+                                  {slug}
+                                </span>
+                              ))
+                            : (org.modules || []).join(' · ') || 'None'}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </StaggerCard>
       )}
     </div>
   );

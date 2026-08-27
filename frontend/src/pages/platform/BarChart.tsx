@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { formatMoney } from './money';
 
 type Point = { month?: string; label: string; paidCents?: number; outstandingCents?: number };
@@ -22,9 +23,19 @@ const axisMoney = (cents: number) => {
   return `${Math.round(n)}`;
 };
 
-/** Super-admin chart: dark canvas, blue line, square markers */
 export function BarChart({ data = [] }: { data?: Point[] }) {
+  const reduce = useReducedMotion();
   const [hover, setHover] = useState<number | null>(null);
+  const [draw, setDraw] = useState(false);
+
+  useEffect(() => {
+    if (reduce) {
+      setDraw(true);
+      return undefined;
+    }
+    const id = window.requestAnimationFrame(() => setDraw(true));
+    return () => window.cancelAnimationFrame(id);
+  }, [data, reduce]);
 
   const chart = useMemo(() => {
     const innerW = W - PAD.left - PAD.right;
@@ -42,6 +53,8 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
       xs,
       paidY: data.map((item) => y(item.paidCents || 0)),
       openY: data.map((item) => y(item.outstandingCents || 0)),
+      paidPath: linePath(xs, data.map((item) => y(item.paidCents || 0))),
+      openPath: linePath(xs, data.map((item) => y(item.outstandingCents || 0))),
       baseline: PAD.top + innerH,
     };
   }, [data]);
@@ -95,24 +108,28 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
         <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
         <line x1={PAD.left} y1={chart.baseline} x2={W - PAD.right} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
 
-        {/* Outstanding — secondary dashed line */}
-        <path
-          d={linePath(chart.xs, chart.openY)}
+        <motion.path
+          d={chart.openPath}
           fill="none"
           stroke="rgba(109,147,255,0.55)"
           strokeWidth="2"
           strokeDasharray="6 5"
           strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 0.4 }}
+          animate={{ pathLength: draw ? 1 : 0, opacity: 1 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
         />
 
-        {/* Paid — primary blue line */}
-        <path
-          d={linePath(chart.xs, chart.paidY)}
+        <motion.path
+          d={chart.paidPath}
           fill="none"
           stroke="#4a9eff"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: draw ? 1 : 0 }}
+          transition={{ duration: 1.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
         />
 
         {hover != null && (
@@ -128,7 +145,12 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
         )}
 
         {data.map((item, i) => (
-          <g key={item.month || item.label}>
+          <motion.g
+            key={item.month || item.label}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: draw ? 1 : 0, scale: draw ? 1 : 0 }}
+            transition={{ delay: 0.2 + i * 0.06, duration: 0.35 }}
+          >
             <rect
               x={chart.xs[i] - marker / 2}
               y={chart.paidY[i] - marker / 2}
@@ -141,16 +163,21 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
             <text x={chart.xs[i]} y={H - 12} fill="#ffffff" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">
               {i + 1}
             </text>
-          </g>
+          </motion.g>
         ))}
       </svg>
 
       {active && (
-        <div className="pc-chart-tip">
+        <motion.div
+          className="pc-chart-tip"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          key={active.label}
+        >
           <strong>{active.label}</strong>
           <span>Paid {formatMoney(active.paidCents)}</span>
           <span>Outstanding {formatMoney(active.outstandingCents)}</span>
-        </div>
+        </motion.div>
       )}
 
       <p className="pc-chart-footnote m-0 mt-2 text-center text-[0.68rem] text-[var(--pc-muted)]">

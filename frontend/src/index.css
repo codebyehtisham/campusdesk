@@ -1972,3 +1972,348 @@ html:has(.platform-shell),
     opacity: 0;
   }
 }
+
+/* —— Platform revamp: animated backdrop & UI —— */
+.platform-shell .pc-backdrop {
+  isolation: isolate;
+}
+
+.platform-shell .pc-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.45;
+  will-change: transform;
+}
+
+.platform-shell .pc-orb-a {
+  top: -8%;
+  right: -4%;
+  width: 42vw;
+  height: 42vw;
+  max-width: 520px;
+  max-height: 520px;
+  background: radial-gradient(circle, rgba(109, 147, 255, 0.55), transparent 70%);
+  animation: pc-orb-drift-a 18s ease-in-out infinite;
+}
+
+.platform-shell .pc-orb-b {
+  bottom: 8%;
+  left: -6%;
+  width: 36vw;
+  height: 36vw;
+  max-width: 440px;
+  max-height: 440px;
+  background: radial-gradient(circle, rgba(62, 224, 168, 0.35), transparent 70%);
+  animation: pc-orb-drift-b 22s ease-in-out infinite;
+}
+
+.platform-shell .pc-orb-c {
+  top: 38%;
+  left: 42%;
+  width: 28vw;
+  height: 28vw;
+  max-width: 360px;
+  max-height: 360px;
+  background: radial-gradient(circle, rgba(142, 176, 255, 0.28), transparent 70%);
+  animation: pc-orb-drift-c 26s ease-in-out infinite;
+}
+
+.platform-shell .pc-grid-drift {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(109, 147, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109, 147, 255, 0.04) 1px, transparent 1px);
+  background-size: 52px 52px;
+  animation: pc-grid-pan 40s linear infinite;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent);
+}
+
+.platform-shell .pc-title-gradient {
+  background: linear-gradient(120deg, #eef3ff 0%, #8eb0ff 45%, #3ee0a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.platform-shell .pc-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--pc-line);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(109, 147, 255, 0.1), rgba(16, 21, 31, 0.92) 45%, rgba(62, 224, 168, 0.06));
+  padding: 1.5rem 1.65rem 1.35rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.platform-shell .pc-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  transform: translateX(-100%);
+  animation: pc-shimmer-sweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.platform-shell .pc-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.platform-shell .pc-hero-meta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.platform-shell .pc-hero-clock-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.platform-shell .pc-hero-clock,
+.platform-shell .pc-live-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pc-live);
+  font-variant-numeric: tabular-nums;
+}
+
+.platform-shell .pc-shimmer {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--pc-accent), var(--pc-live), transparent);
+  background-size: 200% 100%;
+  animation: pc-shimmer-line 2.8s ease-in-out infinite;
+}
+
+.platform-shell .pc-glow-panel {
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.platform-shell .pc-glow-panel:hover {
+  box-shadow: 0 12px 40px rgba(109, 147, 255, 0.08);
+}
+
+.platform-shell .pc-stat {
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.platform-shell .pc-stat:hover {
+  border-color: rgba(109, 147, 255, 0.32);
+  box-shadow: 0 8px 28px rgba(109, 147, 255, 0.1);
+}
+
+.platform-shell .pc-service-animated {
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.platform-shell .pc-service-animated.is-up:hover {
+  border-color: rgba(62, 224, 168, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(62, 224, 168, 0.08);
+}
+
+.platform-shell .pc-service-animated.is-down {
+  border-color: rgba(255, 92, 122, 0.25);
+}
+
+.platform-shell .pc-ping-bar {
+  margin-top: 0.55rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.platform-shell .pc-ping-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.platform-shell .pc-ping-bar-fill.is-live {
+  background: linear-gradient(90deg, var(--pc-live), #7ef0c8);
+}
+
+.platform-shell .pc-ping-bar-fill.is-mid {
+  background: linear-gradient(90deg, var(--pc-accent), var(--pc-accent-2));
+}
+
+.platform-shell .pc-ping-bar-fill.is-warn {
+  background: linear-gradient(90deg, var(--pc-warn), #ff8fa3);
+}
+
+.platform-shell .pc-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid var(--pc-line);
+  border-radius: 14px;
+  background: linear-gradient(145deg, var(--pc-surface-2), var(--pc-surface));
+  padding: 1rem 1.1rem;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.platform-shell .pc-quick-action:hover {
+  border-color: rgba(109, 147, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(109, 147, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.platform-shell .pc-quick-action-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(109, 147, 255, 0.12);
+  color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-quick-action-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.platform-shell .pc-quick-action-copy strong {
+  font-size: 0.92rem;
+  color: var(--pc-text);
+}
+
+.platform-shell .pc-quick-action-copy small {
+  font-size: 0.75rem;
+  color: var(--pc-muted);
+}
+
+.platform-shell .pc-quick-action-arrow {
+  font-size: 1.1rem;
+  color: var(--pc-accent);
+  transition: transform 0.2s;
+}
+
+.platform-shell .pc-quick-action:hover .pc-quick-action-arrow {
+  transform: translateX(4px);
+}
+
+.platform-shell .pc-nav a {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-shell .pc-nav-active-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: rgba(109, 147, 255, 0.14);
+  box-shadow: inset 3px 0 0 var(--pc-accent);
+  z-index: 0;
+}
+
+.platform-shell .pc-nav a .pc-nav-icon,
+.platform-shell .pc-nav a:not(.is-active) {
+  position: relative;
+  z-index: 1;
+}
+
+.platform-shell .pc-nav a.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.platform-shell .pc-login-glow {
+  position: relative;
+  border-color: rgba(109, 147, 255, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.platform-shell .pc-login-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(109, 147, 255, 0.6), rgba(62, 224, 168, 0.35), rgba(109, 147, 255, 0.2));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: pc-border-glow 4s ease-in-out infinite;
+}
+
+.platform-shell .pc-mark-glow {
+  box-shadow: 0 0 24px rgba(109, 147, 255, 0.35);
+}
+
+.platform-shell .pc-table-row-animated {
+  animation: pc-row-in 0.45s ease both;
+}
+
+.platform-shell .is-spinning {
+  opacity: 0.75;
+}
+
+@keyframes pc-orb-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-4%, 6%) scale(1.08); }
+}
+
+@keyframes pc-orb-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5%, -4%) scale(1.06); }
+}
+
+@keyframes pc-orb-drift-c {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-3%, 3%); }
+}
+
+@keyframes pc-grid-pan {
+  0% { background-position: 0 0; }
+  100% { background-position: 52px 52px; }
+}
+
+@keyframes pc-shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  50%, 100% { transform: translateX(100%); }
+}
+
+@keyframes pc-shimmer-line {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pc-border-glow {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+@keyframes pc-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-shell .pc-orb,
+  .platform-shell .pc-grid-drift,
+  .platform-shell .pc-hero::after,
+  .platform-shell .pc-shimmer,
+  .platform-shell .pc-login-glow::before,
+  .platform-shell .pc-table-row-animated {
+    animation: none !important;
+  }
+}
