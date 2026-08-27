@@ -43,6 +43,23 @@ export const DEFAULT_COLORS: ThemeColors = {
 
 export const DEFAULT_THEME: SiteTheme = { template: 'heritage', colors: { ...DEFAULT_COLORS } };
 
+/** Product teal — matches frontend `index.css` @theme (Campus Desk brand). */
+export const PRODUCT_PRIMARY = '#0f5c5c';
+export const PRODUCT_INK = '#0a3d3d';
+export const PRODUCT_PAPER = '#ffffff';
+
+const LEGACY_BLUE = '#1a4fd6';
+
+/** QR modules: org theme when customized, otherwise product teal. */
+export const qrBrandColors = (theme?: SiteTheme | null) => {
+  const colors = sanitizeTheme(theme).colors;
+  const dark =
+    colors.primary && colors.primary !== LEGACY_BLUE && colors.primary !== DEFAULT_COLORS.primary
+      ? colors.primary
+      : PRODUCT_PRIMARY;
+  return { dark, light: colors.paper || PRODUCT_PAPER };
+};
+
 const sanitizeColors = (input: unknown = {}): ThemeColors => {
   const source = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
   const out = { ...DEFAULT_COLORS };

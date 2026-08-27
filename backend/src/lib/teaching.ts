@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import QRCode from 'qrcode';
+import { qrBrandColors, type SiteTheme } from './theme.js';
 
 export const WEEKDAYS = [
   { value: 1, label: 'Monday', short: 'Mon' },
@@ -48,10 +49,12 @@ export const newQrToken = () => randomBytes(16).toString('hex');
 
 export const qrPayload = (token: string) => `explore-attend:${token}`;
 
-export const qrImage = (token: string) =>
-  QRCode.toDataURL(qrPayload(token), {
+export const qrImage = (token: string, theme?: SiteTheme | null) => {
+  const brand = qrBrandColors(theme);
+  return QRCode.toDataURL(qrPayload(token), {
     width: 280,
     margin: 1,
     errorCorrectionLevel: 'M',
-    color: { dark: '#1a4fd6', light: '#ffffff' },
+    color: { dark: brand.dark, light: brand.light },
   });
+};

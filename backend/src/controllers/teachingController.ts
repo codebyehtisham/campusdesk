@@ -4,6 +4,7 @@ import { prisma } from '../config/db.js';
 import { evaluateFence, parseFence, parseScanLocation } from '../lib/geofence.js';
 import { buildSessionRoster, sessionAttendanceFlags } from '../lib/sessionRoster.js';
 import { hasModule, orgId } from '../lib/tenant.js';
+import { sanitizeTheme } from '../lib/theme.js';
 import { getSiteSettings } from './settingsController.js';
 import { dayStamp, jsToWeekday, newQrToken, QR_TTL_MS, qrImage, qrPayload } from '../lib/teaching.js';
 
@@ -70,6 +71,11 @@ const sessionPayload = async (
   organizationId: string
 ) => {
   const flags = await sessionAttendanceFlags(organizationId);
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { theme: true },
+  });
+  const theme = sanitizeTheme(org?.theme);
   return {
     id: session.id,
     classId: session.classId,
@@ -81,7 +87,7 @@ const sessionPayload = async (
     status: session.status,
     qrToken: session.qrToken,
     qrPayload: qrPayload(session.qrToken),
-    qrImage: await qrImage(session.qrToken),
+    qrImage: await qrImage(session.qrToken, theme),
     qrExpiresAt: session.qrExpiresAt.toISOString(),
     attendanceLocationEnabled: flags.attendanceLocationEnabled,
     roster: await buildSessionRoster(session.classId, session.id, organizationId),
