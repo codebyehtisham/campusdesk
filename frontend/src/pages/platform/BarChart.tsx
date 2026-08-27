@@ -115,7 +115,7 @@ export function BarChart({ data = [], compact = false }: { data?: Point[]; compa
         <motion.path
           d={chart.openPath}
           fill="none"
-          stroke="rgba(109,147,255,0.55)"
+          stroke="rgba(45,212,191,0.45)"
           strokeWidth="2"
           strokeDasharray="6 5"
           strokeLinecap="round"
@@ -127,7 +127,7 @@ export function BarChart({ data = [], compact = false }: { data?: Point[]; compa
         <motion.path
           d={chart.paidPath}
           fill="none"
-          stroke="#4a9eff"
+          stroke="#2dd4bf"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -160,7 +160,7 @@ export function BarChart({ data = [], compact = false }: { data?: Point[]; compa
               y={chart.paidY[i] - marker / 2}
               width={marker}
               height={marker}
-              fill="#4a9eff"
+              fill="#2dd4bf"
               stroke="#ffffff"
               strokeWidth={hover === i ? 1.5 : 0}
             />
