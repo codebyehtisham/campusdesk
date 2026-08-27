@@ -179,37 +179,58 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 const PORT = Number(process.env.PORT || 5050);
 
-const start = async () => {
-  try {
-    await prisma.$connect();
-    console.log('PostgreSQL connected');
-  } catch (err) {
-    console.error(`PostgreSQL connection error: ${(err as Error).message}`);
-    console.error('Refusing to start without PostgreSQL. Set DATABASE_URL to a postgres:// URL.');
-    process.exit(1);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const warmConnections = async () => {
+  const dbUrl = process.env.DATABASE_URL?.trim() || '';
+  if (!/^postgres(ql)?:\/\//i.test(dbUrl)) {
+    console.error('DATABASE_URL is missing or invalid — set a postgres:// URL on Railway.');
+    return;
   }
 
-  try {
-    const redis = await requireRedis();
-    console.log(`Redis connected (${redis.latencyMs}ms)`);
-  } catch (err) {
-    console.error(`Redis connection error: ${(err as Error).message}`);
-    console.error('Refusing to start without Redis. Set REDIS_URL (and unset REDIS_DISABLED).');
-    process.exit(1);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    if (isR2Configured()) {
-      verifyR2ConnectionSafe().then((ok) => {
-        if (ok) console.log(`File storage: Cloudflare R2 write OK (${r2Bucket()})`);
-        else console.error(`File storage: R2 keys present but Put/Get failed — ${r2LastVerify().error}`);
-      });
-    } else if (isR2Disabled()) {
-      console.warn('File storage: local disk (R2_DISABLED=1)');
-    } else {
-      console.error('File storage: R2 keys missing — uploads will fail until R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY are set');
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
+    try {
+      await prisma.$connect();
+      console.log('PostgreSQL connected');
+      break;
+    } catch (err) {
+      console.warn(`PostgreSQL connect attempt ${attempt}/30 failed: ${(err as Error).message}`);
+      if (attempt === 30) {
+        console.error('PostgreSQL still unreachable after 30 attempts.');
+        return;
+      }
+      await sleep(2000);
     }
+  }
+
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
+    try {
+      const redis = await requireRedis();
+      console.log(`Redis connected (${redis.latencyMs}ms)`);
+      break;
+    } catch (err) {
+      console.warn(`Redis connect attempt ${attempt}/30 failed: ${(err as Error).message}`);
+      if (attempt === 30) console.error('Redis still unreachable after 30 attempts.');
+      else await sleep(2000);
+    }
+  }
+
+  if (isR2Configured()) {
+    verifyR2ConnectionSafe().then((ok) => {
+      if (ok) console.log(`File storage: Cloudflare R2 write OK (${r2Bucket()})`);
+      else console.error(`File storage: R2 keys present but Put/Get failed — ${r2LastVerify().error}`);
+    });
+  } else if (isR2Disabled()) {
+    console.warn('File storage: local disk (R2_DISABLED=1)');
+  } else {
+    console.error('File storage: R2 keys missing — uploads will fail until R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY are set');
+  }
+};
+
+const start = () => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server listening on port ${PORT}`);
+    void warmConnections();
   });
 };
 
