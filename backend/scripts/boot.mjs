@@ -75,21 +75,23 @@ const main = async () => {
   const flushRequested = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
   if (flushRequested) {
     if (process.env.APP_ENV !== 'development') {
-      console.error('');
-      console.error('FATAL: CONFIRM_DB_FLUSH is only allowed when APP_ENV=development.');
-      console.error('Remove CONFIRM_DB_FLUSH from production immediately.');
-      console.error('');
-      process.exit(1);
+      console.warn('');
+      console.warn('CONFIRM_DB_FLUSH is set but APP_ENV is not development — skipping flush so the service can start.');
+      console.warn('Set APP_ENV=development on the dev service, or remove CONFIRM_DB_FLUSH.');
+      console.warn('');
+    } else {
+      console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');
+      await run('npx', ['tsx', 'src/scripts/flush-db.ts']);
+      console.warn('Flush done. Remove CONFIRM_DB_FLUSH from Railway variables before the next deploy.');
     }
-    console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');
-    await run('npx', ['tsx', 'src/scripts/flush-db.ts']);
   }
 
   const skipSeed = ['1', 'true', 'yes'].includes(String(process.env.SKIP_SEED || '').trim().toLowerCase());
   if (!skipSeed) {
     await run('npx', ['tsx', 'src/seed/seed.ts']);
   } else {
-    console.warn('SKIP_SEED=1 — demo organisations and users were not re-seeded.');
+    console.warn('SKIP_SEED=1 — running superadmin ensure only (no demo org/users).');
+    await run('npx', ['tsx', 'src/scripts/ensure-superadmin.ts']);
   }
   console.log('');
   console.log('Seeded login accounts:');
