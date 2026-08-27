@@ -82,6 +82,26 @@ const runStep = async (label, distRel, srcRel, { required = true } = {}) => {
   }
 };
 
+/** Run a script in the background so boot can start the HTTP server immediately. */
+const runBackground = (label, distRel, srcRel) => {
+  const [command, ...args] = scriptCommand(distRel, srcRel);
+  console.log(`Starting ${label} in background…`);
+  const child = spawn(command, args, {
+    cwd: backendRoot,
+    stdio: 'inherit',
+    env: process.env,
+    shell: process.platform === 'win32',
+    detached: false,
+  });
+  child.on('exit', (code) => {
+    if (code === 0) console.log(`${label} finished.`);
+    else console.warn(`${label} exited with ${code} (server keeps running).`);
+  });
+  child.on('error', (err) => {
+    console.warn(`${label} failed to start: ${err.message}`);
+  });
+};
+
 const main = async () => {
   const pushArgs = ['prisma', 'db', 'push', '--skip-generate'];
   if (process.env.FORCE_DB_RESET === '1') {
@@ -108,7 +128,7 @@ const main = async () => {
 
   const skipSeed = ['1', 'true', 'yes'].includes(String(process.env.SKIP_SEED || '').trim().toLowerCase());
   if (!skipSeed) {
-    await runStep('Demo seed', 'dist/seed/seed.js', 'src/seed/seed.ts', { required: false });
+    runBackground('Demo seed', 'dist/seed/seed.js', 'src/seed/seed.ts');
   } else {
     console.warn('SKIP_SEED=1 — running superadmin ensure only (no demo org/users).');
     await runStep('Superadmin ensure', 'dist/scripts/ensure-superadmin.js', 'src/scripts/ensure-superadmin.ts', {
@@ -117,6 +137,7 @@ const main = async () => {
   }
 
   console.log('');
+  console.log('Starting API server (demo seed may still be running in background)…');
   console.log('Seeded login accounts:');
   if (!skipSeed) {
     console.log(`  Org admin   /org-admin          ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}`);
