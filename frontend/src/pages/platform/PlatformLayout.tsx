@@ -57,7 +57,7 @@ function NavItem({ item, onNavigate }: { item: (typeof navGroups)[0]['items'][0]
           {isActive && !reduce ? (
             <motion.span layoutId="pc-nav-active" className="pc-nav-active-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
           ) : null}
-          <span className="relative z-1 flex items-center gap-2">
+          <span className="relative z-10 flex items-center gap-2">
             <span className="pc-nav-icon">
               <item.icon />
             </span>
@@ -150,7 +150,7 @@ export default function PlatformLayout() {
   return (
     <div className="platform-shell min-h-svh">
       <PlatformBackdrop />
-      <div className="relative z-1 flex min-h-svh w-full">
+      <div className="relative z-10 flex min-h-svh w-full">
         <AnimatePresence>
           {open ? (
             <motion.button

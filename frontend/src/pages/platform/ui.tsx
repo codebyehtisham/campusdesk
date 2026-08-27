@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AnimatedNumber, ease, fadeUp } from './motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatedNumber, ease } from './motion';
 
 export function Pulse({ on = true, tone = 'live' }: { on?: boolean; tone?: 'live' | 'warn' }) {
   const cls = !on ? 'pc-pulse-off' : tone === 'warn' ? 'pc-pulse-warn' : 'pc-pulse-live';
@@ -171,7 +171,7 @@ export function Stat({
   return (
     <motion.div
       className={`pc-stat ${tone === 'warn' ? 'is-warn' : tone === 'live' ? 'is-live' : ''}`}
-      variants={fadeUp}
+      initial={false}
       whileHover={reduce ? undefined : { y: -2, transition: { duration: 0.18 } }}
     >
       <p>{label}</p>
@@ -189,7 +189,7 @@ export function Panel({ children, className = '', title, action }: { children: R
   return (
     <motion.section
       className={`pc-panel pc-glow-panel ${className}`}
-      variants={fadeUp}
+      initial={false}
       whileHover={reduce ? undefined : { borderColor: 'rgba(109, 147, 255, 0.28)' }}
     >
       {(title || action) && (
