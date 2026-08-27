@@ -34,10 +34,10 @@ export async function ensureOrgProgrammes(organizationId: string) {
   return created;
 }
 
-/** Ensure programmes exist for every active education institute. */
+/** Ensure programmes exist for every active non-hospital institute. */
 export async function ensureEducationProgrammes() {
   const orgs = await prisma.organization.findMany({
-    where: { status: 'active', kind: 'education' },
+    where: { status: 'active', kind: { not: 'hospital' } },
     select: { id: true, slug: true },
   });
   let totalCreated = 0;

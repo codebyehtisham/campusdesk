@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { orgId } from '../lib/tenant.js';
+import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 import { minutes, parseDay, parseTime } from '../lib/teaching.js';
 
 const teacherSelect = { id: true, name: true, email: true };
@@ -92,7 +93,7 @@ export const getTeachingAdmin = async (req: Request, res: Response) => {
     const organizationId = requireOrg(req, res);
     if (!organizationId) return;
 
-    const [classes, slots, teachers, programmes, students] = await Promise.all([
+    const [classes, slots, teachers, students] = await Promise.all([
       prisma.classSection.findMany({
         where: { organizationId },
         orderBy: [{ active: 'desc' }, { name: 'asc' }],
@@ -108,17 +109,32 @@ export const getTeachingAdmin = async (req: Request, res: Response) => {
         orderBy: { name: 'asc' },
         select: { ...teacherSelect, blocked: true },
       }),
-      prisma.course.findMany({
-        where: { organizationId },
-        orderBy: { order: 'asc' },
-        select: courseSelect,
-      }),
       prisma.attendancePerson.findMany({
         where: { organizationId, kind: 'student', active: true },
         orderBy: { name: 'asc' },
         select: personSelect,
       }),
     ]);
+
+    let programmes = await prisma.course.findMany({
+      where: { organizationId },
+      orderBy: { order: 'asc' },
+      select: courseSelect,
+    });
+    if (!programmes.length) {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { kind: true },
+      });
+      if (org?.kind !== 'hospital') {
+        await ensureOrgProgrammes(organizationId);
+        programmes = await prisma.course.findMany({
+          where: { organizationId },
+          orderBy: { order: 'asc' },
+          select: courseSelect,
+        });
+      }
+    }
 
     res.json({
       classes: classes.map(toClass),

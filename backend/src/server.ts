@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
+import { ensurePlatformCatalog } from './lib/seedCatalog.js';
+import { ensureEducationProgrammes } from './lib/seedProgrammes.js';
 import { isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, readStoredObject, sanitizeStorageKey, verifyR2ConnectionSafe, countR2Objects } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
@@ -211,8 +213,18 @@ const warmConnections = async () => {
     } catch (err) {
       console.warn(`Redis connect attempt ${attempt}/30 failed: ${(err as Error).message}`);
       if (attempt === 30) console.error('Redis still unreachable after 30 attempts.');
-      else await sleep(2000);
+      else       await sleep(2000);
     }
+  }
+
+  try {
+    await ensurePlatformCatalog();
+    const programmes = await ensureEducationProgrammes();
+    if (programmes.created) {
+      console.log(`Programmes: seeded ${programmes.created} course(s) across ${programmes.orgs} org(s).`);
+    }
+  } catch (err) {
+    console.warn(`Startup data ensure failed: ${(err as Error).message}`);
   }
 
   if (isR2Configured()) {
