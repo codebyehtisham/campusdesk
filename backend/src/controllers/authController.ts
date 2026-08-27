@@ -86,8 +86,7 @@ export const loginApplicant = async (req: Request, res: Response) => {
 
     if (!user || user.role !== 'applicant') {
       return res.status(401).json({
-        message:
-          'Email or password is incorrect. If you registered before a recent deploy, create a new account — the server database may have been reset.',
+        message: 'Email or password is incorrect. No applicant account found for this email — create an account first.',
       });
     }
     if (!(await matchPassword(password, user.password))) {

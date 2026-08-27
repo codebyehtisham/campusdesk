@@ -2,10 +2,9 @@ import { createClient } from 'redis';
 
 let client: ReturnType<typeof createClient> | null = null;
 let connecting: Promise<ReturnType<typeof createClient> | null> | null = null;
-let redisDisabled = false;
 
-const CONNECT_MS = 1500;
-const COMMAND_MS = 1500;
+const CONNECT_MS = 4000;
+const COMMAND_MS = 2000;
 
 const withTimeout = <T>(promise: Promise<T>, ms: number, label: string) =>
   new Promise<T>((resolve, reject) => {
@@ -22,13 +21,15 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, label: string) =>
     );
   });
 
+const redisUrl = () => process.env.REDIS_URL?.trim() || '';
+
+export const redisConfigured = () => Boolean(redisUrl()) && process.env.REDIS_DISABLED !== '1';
+
 const connect = async () => {
-  if (redisDisabled) return null;
   if (client?.isOpen) return client;
 
-  const url = process.env.REDIS_URL?.trim();
+  const url = redisUrl();
   if (!url || process.env.REDIS_DISABLED === '1') {
-    redisDisabled = true;
     return null;
   }
 
@@ -36,9 +37,9 @@ const connect = async () => {
     url,
     socket: {
       connectTimeout: CONNECT_MS,
-      reconnectStrategy: false,
+      reconnectStrategy: (retries) => Math.min(retries * 200, 3000),
     },
-    commandsQueueMaxLength: 32,
+    commandsQueueMaxLength: 64,
   });
   next.on('error', (err) => {
     console.error(`Redis error: ${err.message}`);
@@ -50,7 +51,6 @@ const connect = async () => {
     return client;
   } catch (err) {
     console.error(`Redis connection error: ${(err as Error).message}`);
-    redisDisabled = true;
     try {
       await next.disconnect();
     } catch {
@@ -61,7 +61,6 @@ const connect = async () => {
 };
 
 export const getRedis = async () => {
-  if (redisDisabled) return null;
   if (client?.isOpen) return client;
   if (!connecting) {
     connecting = connect().finally(() => {
@@ -83,6 +82,17 @@ export const pingRedis = async () => {
   }
 };
 
+export const requireRedis = async () => {
+  if (!redisConfigured()) {
+    throw new Error('REDIS_URL is required. Add a Redis plugin and set REDIS_URL.');
+  }
+  const ping = await pingRedis();
+  if (ping.status !== 'up') {
+    throw new Error('Redis is unreachable. Check REDIS_URL.');
+  }
+  return ping;
+};
+
 export const cacheGet = async <T>(key: string): Promise<T | null> => {
   try {
     const redis = await getRedis();
@@ -100,7 +110,7 @@ export const cacheSet = async (key: string, value: unknown, ttlSeconds: number) 
     if (!redis) return;
     await withTimeout(redis.set(key, JSON.stringify(value), { EX: ttlSeconds }), COMMAND_MS, 'Redis set');
   } catch {
-    /* cache is optional */
+    /* best-effort cache */
   }
 };
 
@@ -111,7 +121,7 @@ export const cacheDel = async (...keys: string[]) => {
     if (!redis) return;
     await withTimeout(redis.del(keys), COMMAND_MS, 'Redis del');
   } catch {
-    /* cache is optional */
+    /* best-effort cache */
   }
 };
 

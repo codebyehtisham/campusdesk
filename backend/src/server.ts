@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
-import { pingRedis } from './config/redis.js';
+import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
@@ -144,8 +144,19 @@ const start = async () => {
     console.log('PostgreSQL connected');
   } catch (err) {
     console.error(`PostgreSQL connection error: ${(err as Error).message}`);
-    console.error('Starting the server anyway — check DATABASE_URL in backend/.env');
+    console.error('Refusing to start without PostgreSQL. Set DATABASE_URL to a postgres:// URL.');
+    process.exit(1);
   }
+
+  try {
+    const redis = await requireRedis();
+    console.log(`Redis connected (${redis.latencyMs}ms)`);
+  } catch (err) {
+    console.error(`Redis connection error: ${(err as Error).message}`);
+    console.error('Refusing to start without Redis. Set REDIS_URL (and unset REDIS_DISABLED).');
+    process.exit(1);
+  }
+
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });

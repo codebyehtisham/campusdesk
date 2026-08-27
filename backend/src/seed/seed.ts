@@ -15,7 +15,7 @@ const run = async () => {
   try {
     await prisma.$connect();
   } catch (err) {
-    console.error('Aborting seed — PostgreSQL is not connected. Check DATABASE_URL.');
+    console.error('Aborting seed — database is not connected. Check DATABASE_URL (PostgreSQL).');
     console.error((err as Error).message);
     process.exit(1);
   }

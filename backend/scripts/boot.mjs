@@ -1,20 +1,13 @@
 #!/usr/bin/env node
 /**
- * Production boot: ensure DATABASE_URL (sqlite file if unset), push schema, seed, start API.
- *
- * Persistence: mount a Railway volume at /data (or set DATA_DIR / an absolute file: DATABASE_URL).
- * Without a durable path, SQLite lives in the container filesystem and applicant accounts
- * disappear on every redeploy — login then returns "Email or password is incorrect."
+ * Production boot: require PostgreSQL + Redis, push schema, seed, start API.
  */
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.join(__dirname, '..');
-const volumeDataDir = '/data';
-const localDataDir = path.join(backendRoot, 'data');
 
 const DEMO_PASSWORD = 'CampusDesk2026!';
 const isDev = process.env.APP_ENV === 'development';
@@ -33,44 +26,29 @@ if (isDev) {
   console.log('');
 }
 
-const resolveSqliteFileUrl = (url) => {
-  if (!url.startsWith('file:')) return url;
-  let filePath = url.slice('file:'.length);
-  // Prisma accepts file:./relative and file:/absolute
-  if (filePath.startsWith('file:')) filePath = filePath.slice('file:'.length);
-  if (path.isAbsolute(filePath)) return `file:${filePath}`;
-  return `file:${path.resolve(backendRoot, filePath)}`;
-};
-
-const pickDataDir = () => {
-  if (process.env.DATA_DIR?.trim()) return path.resolve(process.env.DATA_DIR.trim());
-  try {
-    if (fs.existsSync(volumeDataDir) && fs.statSync(volumeDataDir).isDirectory()) {
-      return volumeDataDir;
-    }
-  } catch {
-    /* ignore */
-  }
-  return localDataDir;
-};
-
-if (!process.env.DATABASE_URL?.trim()) {
-  const dataDir = pickDataDir();
-  fs.mkdirSync(dataDir, { recursive: true });
-  const dbPath = path.join(dataDir, 'campusdesk.db');
-  process.env.DATABASE_URL = `file:${dbPath}`;
-  console.log(`DATABASE_URL unset — using SQLite at ${dbPath}`);
-  if (dataDir === volumeDataDir) {
-    console.log('Using Railway volume mount /data (applicant accounts will survive redeploys).');
-  } else {
-    console.warn(
-      'WARNING: SQLite is on the container filesystem. Mount a volume at /data (or set DATA_DIR) so accounts survive redeploys.'
-    );
-  }
-} else {
-  process.env.DATABASE_URL = resolveSqliteFileUrl(process.env.DATABASE_URL.trim());
-  console.log(`Using DATABASE_URL from environment → ${process.env.DATABASE_URL}`);
+const databaseUrl = process.env.DATABASE_URL?.trim() || '';
+if (!/^postgres(ql)?:\/\//i.test(databaseUrl)) {
+  console.error('');
+  console.error('FATAL: DATABASE_URL must be a PostgreSQL connection string.');
+  console.error('  Example: postgresql://user:pass@host:5432/campusdesk');
+  console.error('  On Railway: add the Postgres plugin and set DATABASE_URL=${{Postgres.DATABASE_URL}}');
+  console.error('  SQLite is not supported.');
+  console.error('');
+  process.exit(1);
 }
+
+const redisUrl = process.env.REDIS_URL?.trim() || '';
+if (!redisUrl || process.env.REDIS_DISABLED === '1') {
+  console.error('');
+  console.error('FATAL: Redis is required. Set REDIS_URL and do not set REDIS_DISABLED=1.');
+  console.error('  Example: redis://default:pass@host:6379');
+  console.error('  On Railway: add the Redis plugin and set REDIS_URL=${{Redis.REDIS_URL}}');
+  console.error('');
+  process.exit(1);
+}
+
+console.log('Using PostgreSQL DATABASE_URL from environment');
+console.log('Using Redis REDIS_URL from environment');
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -87,8 +65,6 @@ const run = (command, args) =>
   });
 
 const main = async () => {
-  // Do not pass --accept-data-loss on every boot — that can wipe rows when the schema drifts.
-  // Set FORCE_DB_RESET=1 only for an intentional empty rebuild.
   const pushArgs = ['prisma', 'db', 'push', '--skip-generate'];
   if (process.env.FORCE_DB_RESET === '1') {
     pushArgs.push('--accept-data-loss');

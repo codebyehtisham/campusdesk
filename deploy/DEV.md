@@ -13,8 +13,11 @@ Use a **separate Railway service** for development so you can test the mobile ap
 2. **New service** → **GitHub repo** → `codebyehtisham/campusdesk`.
 3. **Settings → Source → Branch** → set to `develop` (create this branch if needed).
 4. **Settings → Networking → Generate domain** — copy the HTTPS URL (e.g. `campusdesk-dev-xxxx.up.railway.app`).
+5. **Add plugins to this service:**
+   - **PostgreSQL** → Variables: `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+   - **Redis** → Variables: `REDIS_URL=${{Redis.REDIS_URL}}`
 
-Production keeps deploying from `main`; dev auto-deploys when you push to `develop`.
+Production keeps deploying from `main`; dev auto-deploys when you push to `develop`. Use **separate** Postgres/Redis plugins for prod and dev so data never mixes.
 
 ## 2. Dev environment variables
 
@@ -24,19 +27,11 @@ In the **dev service only**, set:
 APP_ENV=development
 JWT_SECRET=<long random string, different from production>
 PUBLIC_APP_URL=https://<your-dev-service>.up.railway.app
-REDIS_DISABLED=1
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
 ```
 
-**Persist applicant accounts** (required on both prod and dev, or logins break after every deploy):
-
-1. Railway → service → **Volumes** → add a volume.
-2. Mount path: `/data`
-3. Leave `DATABASE_URL` unset (boot writes `file:/data/campusdesk.db`), or set:
-   `DATABASE_URL=file:/data/campusdesk.db`
-
-Without `/data`, SQLite lives on the ephemeral container disk — every redeploy wipes users and sign-in returns “Email or password is incorrect.”
-
-Optional: set `DATA_DIR` to another absolute folder if you mount the volume elsewhere.
+Do **not** set `REDIS_DISABLED`. SQLite is not supported — boot will refuse to start without PostgreSQL and Redis.
 
 Demo logins are seeded on every boot (same as production):
 
@@ -49,7 +44,16 @@ Demo logins are seeded on every boot (same as production):
 curl -s https://<your-dev-service>.up.railway.app/api/health
 ```
 
-Expect `"environment":"development"` in the JSON.
+Expect:
+
+```json
+{
+  "status": "ok",
+  "environment": "development",
+  "db": "connected",
+  "cache": "connected"
+}
+```
 
 ## 4. Point the iOS app at dev
 
@@ -79,18 +83,13 @@ git merge develop
 git push origin main
 ```
 
-## Health check fields
+## Production checklist
 
-`GET /api/health` returns:
+On the **production** Railway service:
 
-```json
-{
-  "status": "ok",
-  "environment": "development",
-  "url": "https://your-dev-service.up.railway.app",
-  "db": "connected",
-  "cache": "disconnected"
-}
-```
+1. PostgreSQL plugin attached → `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+2. Redis plugin attached → `REDIS_URL=${{Redis.REDIS_URL}}`
+3. Remove any SQLite `file:` `DATABASE_URL` and any `REDIS_DISABLED=1`
+4. Redeploy after variables are set
 
-Use `environment` in the mobile app or Postman to confirm you are not hitting production.
+Without Postgres + Redis, `npm start` exits immediately (by design).

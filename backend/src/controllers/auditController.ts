@@ -8,7 +8,7 @@ const buildFilter = (req: Request): Prisma.AuditLogWhereInput => {
   if (req.query.organization) filter.organizationId = String(req.query.organization);
   if (req.query.method) filter.method = String(req.query.method).toUpperCase();
   if (req.query.role) {
-    filter.actor = { path: '$.role', equals: String(req.query.role) };
+    filter.actor = { path: ['role'], equals: String(req.query.role) };
   }
   if (req.query.q) {
     const q = String(req.query.q);
@@ -16,8 +16,8 @@ const buildFilter = (req: Request): Prisma.AuditLogWhereInput => {
       { url: { contains: q } },
       { ip: { contains: q } },
       { userAgent: { contains: q } },
-      { actor: { path: '$.email', string_contains: q } },
-      { actor: { path: '$.role', string_contains: q } },
+      { actor: { path: ['email'], string_contains: q } },
+      { actor: { path: ['role'], string_contains: q } },
     ];
   }
   return filter;
