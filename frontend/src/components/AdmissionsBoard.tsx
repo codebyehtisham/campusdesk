@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ADMIN_BASE, FACULTY_BASE } from '../admin/paths';
 import api from '../api/client';
 import { canDecideAdmissions } from '../data/roles';
 import { countDocuments, initials, statusClass, statusLabel } from '../lib/admissionReview';
+
+const ease = [0.22, 1, 0.36, 1] as const;
 
 const SECTIONS = [
   {
@@ -11,32 +14,57 @@ const SECTIONS = [
     label: 'Pending',
     description: 'Submitted applications waiting for an officer decision.',
     match: (status) => status === 'submitted',
-    tone: 'border-amber-200 bg-amber-50 text-amber-900',
+    tone: 'is-pending',
+    icon: '⏳',
   },
   {
     key: 'draft',
     label: 'In progress',
     description: 'Students still filling the form.',
     match: (status) => ['not_started', 'in_progress'].includes(status),
-    tone: 'border-cardinal/20 bg-cardinal-pale/40 text-cardinal',
+    tone: 'is-draft',
+    icon: '✏️',
   },
   {
     key: 'accepted',
     label: 'Accepted',
     description: 'Accepted students are added to the student roster for LMS and attendance enrollment.',
     match: (status) => status === 'accepted',
-    tone: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    tone: 'is-accepted',
+    icon: '✓',
   },
   {
     key: 'rejected',
     label: 'Rejected',
     description: 'Rejected applications. Officers can accept them later if circumstances change.',
     match: (status) => status === 'rejected',
-    tone: 'border-crimson/20 bg-crimson-pale text-crimson-dark',
+    tone: 'is-rejected',
+    icon: '✕',
   },
 ];
 
+function AnimatedCount({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  useEffect(() => {
+    const from = display;
+    const to = value;
+    if (from === to) return undefined;
+    const start = performance.now();
+    const duration = 500;
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      setDisplay(from + (to - from) * (1 - (1 - t) ** 3));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <>{Math.round(display)}</>;
+}
+
 export default function AdmissionsBoard({ authScope, role }) {
+  const reduce = useReducedMotion();
   const [rows, setRows] = useState([]);
   const [section, setSection] = useState('pending');
   const [query, setQuery] = useState('');
@@ -78,99 +106,109 @@ export default function AdmissionsBoard({ authScope, role }) {
   return (
     <div>
       {!canDecide && (
-        <p className="mb-5 rounded-2xl border border-cardinal/15 bg-cardinal-pale px-4 py-3 text-sm font-semibold text-cardinal">
+        <motion.p
+          className="admit-notice mb-5"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           {role === 'admin'
             ? 'Organisation admins can open or close admissions and view records. Only admissions officers can accept or reject.'
             : 'View-only access. You can open applications but cannot accept or reject.'}
-        </p>
+        </motion.p>
       )}
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {SECTIONS.map((item) => (
-          <button
+        {SECTIONS.map((item, i) => (
+          <motion.button
             key={item.key}
             type="button"
             onClick={() => setSection(item.key)}
-            className={`rounded-[1.25rem] border p-4 text-left transition ${
-              section === item.key ? `${item.tone} ring-2 ring-cardinal/20` : 'border-border bg-white hover:border-cardinal/20'
-            }`}
+            className={`admit-tab ${item.tone} ${section === item.key ? 'is-active' : ''}`}
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06, duration: 0.35, ease }}
+            whileHover={reduce ? undefined : { y: -2 }}
+            whileTap={reduce ? undefined : { scale: 0.98 }}
           >
-            <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wide text-text-muted">{item.label}</p>
-            <p className="m-0 mt-1 text-2xl font-bold text-ink">{counts[item.key] || 0}</p>
-          </button>
+            <span className="admit-tab-icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            <span className="admit-tab-copy">
+              <span className="admit-tab-label">{item.label}</span>
+              <span className="admit-tab-count">
+                <AnimatedCount value={counts[item.key] || 0} />
+              </span>
+            </span>
+          </motion.button>
         ))}
       </div>
 
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <p className="m-0 max-w-xl text-sm text-text-muted">{activeSection.description}</p>
-        <label className="flex w-full max-w-sm flex-col gap-1 text-sm font-semibold text-ink sm:w-auto">
-          Search
+        <label className="admit-search">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-text-muted" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
           <input
-            className="field py-2.5"
-            placeholder="Name or email…"
+            placeholder="Search name or email…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
       </div>
 
-      {error && (
-        <p className="mb-5 rounded-2xl bg-crimson-pale px-4 py-3 text-sm font-bold text-crimson-dark">{error}</p>
-      )}
+      {error && <p className="admit-error mb-5">{error}</p>}
 
       {loading ? (
-        <div className="glass rounded-[1.6rem] p-10 text-center text-text-muted">Loading student records…</div>
+        <div className="admit-empty">
+          <div className="admit-spinner" aria-hidden="true" />
+          <p className="m-0">Loading student records…</p>
+        </div>
       ) : filteredRows.length === 0 ? (
-        <div className="glass rounded-[1.6rem] p-10 text-center">
-          <h3>No {activeSection.label.toLowerCase()} applications</h3>
-          <p className="m-0 text-text-muted">
+        <div className="admit-empty">
+          <p className="m-0 text-lg font-bold text-ink">No {activeSection.label.toLowerCase()} applications</p>
+          <p className="m-0 mt-1 text-text-muted">
             {query ? 'Try a different search or switch tabs.' : 'Switch tabs to see other groups.'}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[1.4rem] border border-border bg-white shadow-sm">
-          <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-4 border-b border-border bg-bg/60 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted md:grid">
-            <span>Applicant</span>
-            <span>Email</span>
-            <span>Documents</span>
-            <span className="text-right">Action</span>
-          </div>
-          <ul className="divide-y divide-border">
-            {filteredRows.map((row) => {
-              const files = countDocuments(row.answers);
-              return (
-                <li key={row.id} className="flex flex-col gap-4 px-5 py-4 transition hover:bg-bg/40 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] md:items-center md:gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cardinal-pale text-xs font-bold text-cardinal">
-                      {initials(row.student?.name)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="m-0 truncate font-bold text-ink">{row.student?.name || 'Applicant'}</p>
-                        <span className={`rounded-full px-2 py-0.5 text-[0.6rem] font-bold ${statusClass[row.status]}`}>
-                          {statusLabel[row.status]}
-                        </span>
-                      </div>
-                      {row.submittedAt ? (
-                        <p className="m-0 mt-0.5 text-xs text-text-muted">
-                          Submitted {new Date(row.submittedAt).toLocaleDateString()}
-                        </p>
-                      ) : null}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredRows.map((row, i) => {
+            const files = countDocuments(row.answers);
+            return (
+              <motion.article
+                key={row.id}
+                className="admit-card"
+                initial={reduce ? false : { opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.35, ease }}
+                whileHover={reduce ? undefined : { y: -4, transition: { duration: 0.2 } }}
+              >
+                <div className="admit-card-head">
+                  <span className="admit-avatar">{initials(row.student?.name)}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="m-0 truncate text-base font-bold text-ink">{row.student?.name || 'Applicant'}</h3>
+                      <span className={`admit-status ${statusClass[row.status]}`}>{statusLabel[row.status]}</span>
                     </div>
+                    <p className="m-0 mt-0.5 truncate text-sm text-text-muted">{row.student?.email}</p>
                   </div>
-                  <p className="m-0 truncate text-sm text-text-muted md:py-0">{row.student?.email}</p>
-                  <p className="m-0 text-sm font-semibold text-ink">
-                    {files ? `${files} file${files === 1 ? '' : 's'}` : '—'}
-                  </p>
-                  <div className="md:text-right">
-                    <Link to={`${reviewBase}/${row.id}`} className="btn btn-primary w-full py-2.5 text-sm md:w-auto">
-                      Review →
-                    </Link>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                </div>
+                <div className="admit-card-meta">
+                  <span>{files ? `${files} document${files === 1 ? '' : 's'}` : 'No documents'}</span>
+                  {row.submittedAt ? (
+                    <span>Submitted {new Date(row.submittedAt).toLocaleDateString()}</span>
+                  ) : (
+                    <span>Not submitted</span>
+                  )}
+                </div>
+                <Link to={`${reviewBase}/${row.id}`} className="btn btn-primary w-full py-2.5 text-sm">
+                  Open student file →
+                </Link>
+              </motion.article>
+            );
+          })}
         </div>
       )}
     </div>

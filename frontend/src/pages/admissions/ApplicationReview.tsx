@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ADMIN_BASE, FACULTY_BASE } from '../../admin/paths';
 import { getAdmin } from '../../auth/adminSession';
 import { getStaff } from '../../auth/staffSession';
@@ -15,6 +15,8 @@ import {
   statusClass,
   statusLabel,
 } from '../../lib/admissionReview';
+
+const ease = [0.22, 1, 0.36, 1] as const;
 
 function FolderIcon({ open = false, className = 'h-4 w-4' }) {
   return (
@@ -40,10 +42,27 @@ function FileIcon({ className = 'h-4 w-4' }) {
   );
 }
 
-function ChevronIcon({ className = 'h-4 w-4' }) {
+function ProgressRing({ pct, size = 56 }: { pct: number; size?: number }) {
+  const r = (size - 6) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} className="review-progress-ring" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
+      <motion.circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="white"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        initial={{ strokeDashoffset: c }}
+        animate={{ strokeDashoffset: offset }}
+        transition={{ duration: 0.9, ease }}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
     </svg>
   );
 }
@@ -66,28 +85,13 @@ function FieldValue({ field, value }) {
   return <span className="text-sm font-semibold text-ink">{String(value)}</span>;
 }
 
-function Breadcrumb({ items }) {
-  return (
-    <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-1 text-sm">
-      {items.map((item, index) => (
-        <span key={item} className="flex items-center gap-1">
-          {index > 0 ? <ChevronIcon className="h-3.5 w-3.5 text-text-muted" /> : null}
-          <span className={index === items.length - 1 ? 'font-bold text-ink' : 'font-medium text-text-muted'}>
-            {item}
-          </span>
-        </span>
-      ))}
-    </nav>
-  );
-}
-
 function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
   if (!doc) {
     return (
-      <div className="flex h-full min-h-[20rem] flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-border bg-white/60 p-8 text-center">
-        <FileIcon className="mb-3 h-10 w-10 text-cardinal/50" />
+      <div className="review-preview-empty">
+        <FileIcon className="mb-3 h-12 w-12 text-cardinal/40" />
         <p className="m-0 font-semibold text-ink">Select a document</p>
-        <p className="m-0 mt-1 max-w-xs text-sm text-text-muted">Choose a file from the folder list to preview it here.</p>
+        <p className="m-0 mt-1 max-w-xs text-sm text-text-muted">Pick a file from the list to preview it here.</p>
       </div>
     );
   }
@@ -104,25 +108,29 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
         </div>
         <div className="flex items-center gap-1">
           <button type="button" className="btn btn-outline-light px-3 py-1.5 text-xs" disabled={!hasPrev} onClick={onPrev}>
-            Prev
+            ← Prev
           </button>
           <button type="button" className="btn btn-outline-light px-3 py-1.5 text-xs" disabled={!hasNext} onClick={onNext}>
-            Next
+            Next →
           </button>
         </div>
       </div>
-      <div className="min-h-[20rem] flex-1 overflow-hidden rounded-[1.25rem] border border-border bg-[#f4f7f7] shadow-inner">
+      <div className="review-preview-frame">
         {doc.image ? (
-          <img
+          <motion.img
+            key={doc.key}
             src={doc.href}
             alt={doc.name || doc.label}
-            className="mx-auto h-full max-h-[min(72vh,720px)] w-full object-contain p-4"
+            className="review-preview-image"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease }}
           />
         ) : doc.pdf ? (
-          <iframe title={doc.label} src={doc.href} className="h-[min(72vh,720px)] w-full bg-white" />
+          <iframe title={doc.label} src={doc.href} className="review-preview-iframe" />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-3 py-16 text-cardinal">
-            <FileIcon className="h-12 w-12" />
+          <div className="flex h-full flex-col items-center justify-center gap-3 py-16">
+            <FileIcon className="h-12 w-12 text-cardinal" />
             <p className="m-0 text-sm font-semibold text-ink">Preview not available for this file type</p>
           </div>
         )}
@@ -141,6 +149,7 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
 
 export default function ApplicationReview({ portal = 'staff' }) {
   const { id } = useParams();
+  const reduce = useReducedMotion();
   const authScope = portal === 'admin' ? 'admin' : 'staff';
   const listPath = portal === 'admin' ? `${ADMIN_BASE}/admissions` : `${FACULTY_BASE}/admissions`;
   const role = portal === 'admin' ? getAdmin()?.role || 'admin' : getStaff()?.role;
@@ -152,7 +161,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [expanded, setExpanded] = useState({ documents: true });
-  const [active, setActive] = useState({ type: 'documents' });
+  const [active, setActive] = useState({ type: 'overview' });
   const [confirmReject, setConfirmReject] = useState(false);
   const [mobilePane, setMobilePane] = useState('browse');
 
@@ -164,8 +173,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
       .then((res) => {
         setDetail(res.data);
         setError('');
-        const docs = collectDocuments(res.data?.form, res.data?.answers);
-        if (docs.length) setActive({ type: 'document', key: docs[0].key });
+        setActive({ type: 'overview' });
       })
       .catch((err) => {
         setError(err.response?.data?.message || 'Could not load this application.');
@@ -222,108 +230,109 @@ export default function ApplicationReview({ portal = 'staff' }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-        selected
-          ? 'bg-white text-cardinal shadow-sm'
-          : 'text-white/85 hover:bg-white/10 hover:text-white'
-      } ${className}`}
+      className={`review-nav-item ${selected ? 'is-active' : ''} ${className}`}
     >
       {children}
     </button>
   );
 
-  const breadcrumbs = () => {
-    if (active.type === 'overview') return ['Application', 'Overview'];
-    if (active.type === 'documents') return ['Application', 'Documents'];
-    if (active.type === 'document' && selectedDoc) {
-      return ['Application', 'Documents', selectedDoc.label];
-    }
-    if (active.type === 'section' && selectedGroup) {
-      return ['Application', selectedGroup.title];
-    }
-    return ['Application'];
-  };
+  const tabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'documents', label: `Documents (${documents.length})` },
+  ];
 
   return (
-    <div className="flex min-h-svh flex-col bg-[#eef3f3]">
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-white/95 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
-          <Link
-            to={listPath}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-bold text-ink transition hover:border-cardinal/30 hover:text-cardinal"
-          >
-            ← All applications
+    <div className="review-shell flex min-h-svh flex-col">
+      <div className="review-backdrop pointer-events-none fixed inset-0" aria-hidden="true" />
+
+      <header className="review-topbar">
+        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+          <Link to={listPath} className="review-back-link">
+            ← Back to list
           </Link>
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cardinal to-cardinal-light text-sm font-bold text-white shadow-md">
-              {initials(student?.name)}
-            </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="m-0 truncate text-lg font-bold text-ink sm:text-xl">{student?.name || 'Applicant'}</h1>
-                {detail ? (
-                  <span className={`rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold ${statusClass[detail.status]}`}>
-                    {statusLabel[detail.status]}
-                  </span>
-                ) : null}
-              </div>
-              <p className="m-0 truncate text-sm text-text-muted">{student?.email || 'Loading…'}</p>
-            </div>
-          </div>
-          {detail && !loading ? (
-            <div className="hidden items-center gap-3 md:flex">
-              <div className="min-w-[8rem]">
-                <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wide text-text-muted">Completion</p>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-border">
-                  <div className="h-full rounded-full bg-gradient-to-r from-cardinal to-cardinal-light" style={{ width: `${progress.pct}%` }} />
-                </div>
-                <p className="m-0 mt-1 text-xs font-bold text-ink">{progress.pct}% · {documents.length} docs</p>
-              </div>
-            </div>
-          ) : null}
         </div>
       </header>
 
       {(error || notice) && (
-        <div className="mx-auto w-full max-w-[1800px] px-4 pt-3 sm:px-6">
-          {error ? (
-            <p className="m-0 rounded-2xl border border-crimson/20 bg-crimson-pale px-4 py-3 text-sm font-bold text-crimson-dark">
-              {error}
-            </p>
-          ) : null}
-          {notice ? (
-            <p className="m-0 rounded-2xl border border-cardinal/20 bg-cardinal-pale px-4 py-3 text-sm font-bold text-cardinal">
-              {notice}
-            </p>
-          ) : null}
+        <div className="relative z-10 mx-auto w-full max-w-[1800px] px-4 pt-3 sm:px-6">
+          <AnimatePresence>
+            {error ? (
+              <motion.p className="review-alert is-error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                {error}
+              </motion.p>
+            ) : null}
+            {notice ? (
+              <motion.p className="review-alert is-success" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                {notice}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
         </div>
       )}
 
       {loading ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-text-muted">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-cardinal/20 border-t-cardinal" />
-          <p className="m-0">Loading application…</p>
+        <div className="review-loading">
+          <div className="admit-spinner" />
+          <p className="m-0">Loading student file…</p>
         </div>
       ) : !detail ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10">
+        <div className="review-loading">
           <p className="m-0 text-text-muted">Application not found.</p>
-          <Link to={listPath} className="btn btn-primary">
+          <Link to={listPath} className="btn btn-primary mt-4">
             Back to admissions
           </Link>
         </div>
       ) : (
         <>
-          <div className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col lg:flex-row lg:gap-0 lg:px-2 lg:py-4">
-            <aside
-              className={`shrink-0 bg-gradient-to-b from-[#0f5c5c] to-[#0a4848] text-white lg:mx-2 lg:w-72 lg:rounded-[1.25rem] lg:shadow-xl ${
-                mobilePane === 'browse' ? 'block' : 'hidden lg:block'
-              }`}
-            >
-              <div className="border-b border-white/10 px-4 py-4">
-                <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/55">File explorer</p>
-                <p className="m-0 mt-1 text-sm font-bold">Application folders</p>
+          <motion.section
+            className="review-profile"
+            initial={reduce ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease }}
+          >
+            <div className="mx-auto flex max-w-[1800px] flex-col gap-5 px-4 py-6 sm:flex-row sm:items-center sm:px-6">
+              <div className="relative shrink-0">
+                <span className="review-profile-avatar">{initials(student?.name)}</span>
+                <div className="review-profile-ring">
+                  <ProgressRing pct={progress.pct} size={88} />
+                  <span className="review-profile-pct">{progress.pct}%</span>
+                </div>
               </div>
-              <nav className="max-h-[50vh] overflow-y-auto p-2 lg:max-h-[calc(100vh-11rem)]">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="review-profile-name m-0">{student?.name || 'Applicant'}</h1>
+                  <span className={`admit-status ${statusClass[detail.status]}`}>{statusLabel[detail.status]}</span>
+                </div>
+                <p className="m-0 mt-1 text-white/80">{student?.email}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="review-chip">{documents.length} documents</span>
+                  <span className="review-chip">
+                    {progress.requiredDone}/{progress.requiredTotal} required fields
+                  </span>
+                  {detail.submittedAt ? (
+                    <span className="review-chip">Submitted {new Date(detail.submittedAt).toLocaleDateString()}</span>
+                  ) : (
+                    <span className="review-chip">Not yet submitted</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+                {documents.length > 0 ? (
+                  <button type="button" className="btn btn-primary py-2.5 text-sm" onClick={() => selectDocument(documents[0].key)}>
+                    Review documents
+                  </button>
+                ) : null}
+                <button type="button" className="btn btn-outline-light border-white/30 py-2.5 text-sm text-white hover:bg-white/10" onClick={() => setActive({ type: 'overview' })}>
+                  View overview
+                </button>
+              </div>
+            </div>
+          </motion.section>
+
+          <div className="relative z-1 mx-auto flex w-full max-w-[1800px] flex-1 flex-col lg:flex-row lg:gap-4 lg:px-4 lg:pb-4">
+            <aside className={`review-sidebar ${mobilePane === 'browse' ? 'block' : 'hidden lg:block'}`}>
+              <p className="review-sidebar-label">Student file</p>
+              <nav className="review-nav">
                 {sidebarItem(active.type === 'overview', () => setActive({ type: 'overview' }), <>Overview</>)}
 
                 <div className="mt-1">
@@ -336,22 +345,18 @@ export default function ApplicationReview({ portal = 'staff' }) {
                     <>
                       <FolderIcon open={expanded.documents} className="h-4 w-4 shrink-0" />
                       <span className="flex-1 truncate">Documents</span>
-                      <span className="rounded-full bg-white/15 px-2 py-0.5 text-[0.65rem]">{documents.length}</span>
+                      <span className="review-nav-badge">{documents.length}</span>
                     </>,
                     'justify-between'
                   )}
-                  {expanded.documents ? (
-                    <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-3 ml-3">
+                  {expanded.documents && documents.length ? (
+                    <ul className="review-doc-list">
                       {documents.map((doc) => (
                         <li key={doc.key}>
                           <button
                             type="button"
                             onClick={() => selectDocument(doc.key)}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition ${
-                              active.type === 'document' && active.key === doc.key
-                                ? 'bg-white/15 text-white'
-                                : 'text-white/70 hover:bg-white/10 hover:text-white'
-                            }`}
+                            className={`review-doc-item ${active.type === 'document' && active.key === doc.key ? 'is-active' : ''}`}
                           >
                             <FileIcon className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{doc.label}</span>
@@ -362,24 +367,18 @@ export default function ApplicationReview({ portal = 'staff' }) {
                   ) : null}
                 </div>
 
-                <p className="mb-1 mt-4 px-3 text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-white/45">
-                  Form sections
-                </p>
-                {groups.map((group, index) => {
+                <p className="review-sidebar-section">Form sections</p>
+                {groups.map((group) => {
                   const stats = sectionProgress(group, detail.answers);
                   return (
-                    <div key={group.id} className="mt-0.5">
+                    <div key={group.id}>
                       {sidebarItem(
                         active.type === 'section' && active.id === group.id,
                         () => setActive({ type: 'section', id: group.id }),
                         <>
                           <FolderIcon className="h-4 w-4 shrink-0" />
                           <span className="flex-1 truncate">{group.title}</span>
-                          <span
-                            className={`rounded-full px-1.5 py-0.5 text-[0.6rem] ${
-                              stats.complete ? 'bg-emerald-400/25 text-emerald-100' : 'bg-white/15'
-                            }`}
-                          >
+                          <span className={`review-nav-badge ${stats.complete ? 'is-complete' : ''}`}>
                             {stats.filled}/{stats.total}
                           </span>
                         </>,
@@ -391,43 +390,51 @@ export default function ApplicationReview({ portal = 'staff' }) {
               </nav>
             </aside>
 
-            <main
-              className={`min-w-0 flex-1 px-4 py-4 sm:px-6 lg:px-6 ${
-                mobilePane === 'preview' ? 'block' : 'hidden lg:block'
-              }`}
-            >
-              <div className="mb-3 flex gap-2 lg:hidden">
-                <button
-                  type="button"
-                  className={`flex-1 rounded-full py-2 text-sm font-bold ${mobilePane === 'browse' ? 'bg-cardinal text-white' : 'bg-white text-ink'}`}
-                  onClick={() => setMobilePane('browse')}
-                >
+            <main className={`review-main ${mobilePane === 'preview' ? 'block' : 'hidden lg:block'}`}>
+              <div className="review-mobile-tabs lg:hidden">
+                <button type="button" className={mobilePane === 'browse' ? 'is-active' : ''} onClick={() => setMobilePane('browse')}>
                   Folders
                 </button>
-                <button
-                  type="button"
-                  className={`flex-1 rounded-full py-2 text-sm font-bold ${mobilePane === 'preview' ? 'bg-cardinal text-white' : 'bg-white text-ink'}`}
-                  onClick={() => setMobilePane('preview')}
-                >
-                  Preview
+                <button type="button" className={mobilePane === 'preview' ? 'is-active' : ''} onClick={() => setMobilePane('preview')}>
+                  Content
                 </button>
               </div>
 
-              <div className="rounded-[1.5rem] border border-border/70 bg-white p-5 shadow-sm sm:p-8 min-h-[28rem]">
-                <Breadcrumb items={breadcrumbs()} />
+              <div className="review-panel">
+                <div className="review-tabs hidden lg:flex">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      className={
+                        (tab.key === 'overview' && active.type === 'overview') ||
+                        (tab.key === 'documents' && (active.type === 'documents' || active.type === 'document'))
+                          ? 'is-active'
+                          : ''
+                      }
+                      onClick={() =>
+                        tab.key === 'overview'
+                          ? setActive({ type: 'overview' })
+                          : setActive(documents.length ? { type: 'document', key: documents[0].key } : { type: 'documents' })
+                      }
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`${active.type}-${active.key || active.id || 'root'}`}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.22, ease }}
                   >
                     {active.type === 'overview' && (
                       <div>
-                        <h2 className="mb-1 text-2xl font-bold text-ink">Application overview</h2>
-                        <p className="m-0 mb-6 text-sm text-text-muted">Summary before you review documents and answers.</p>
+                        <h2 className="review-panel-title">Application overview</h2>
+                        <p className="review-panel-hint">Key details before reviewing documents and form answers.</p>
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                           {[
                             ['Applicant', student?.name],
@@ -436,29 +443,31 @@ export default function ApplicationReview({ portal = 'staff' }) {
                             ['Documents', `${documents.length} uploaded`],
                             ['Required fields', `${progress.requiredDone}/${progress.requiredTotal}`],
                             ['Submitted', detail.submittedAt ? new Date(detail.submittedAt).toLocaleString() : 'Not yet'],
-                          ].map(([label, value]) => (
-                            <div key={label} className="rounded-2xl border border-border bg-bg/40 px-4 py-4">
-                              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
-                              <p className="m-0 mt-1 text-sm font-bold text-ink">{value}</p>
-                            </div>
+                          ].map(([label, value], i) => (
+                            <motion.div
+                              key={label}
+                              className="review-stat-card"
+                              initial={reduce ? false : { opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.05, duration: 0.3, ease }}
+                            >
+                              <p className="review-stat-label">{label}</p>
+                              <p className="review-stat-value">{value}</p>
+                            </motion.div>
                           ))}
                         </div>
                         {documents.length > 0 ? (
-                          <button
-                            type="button"
-                            className="btn btn-primary mt-6"
-                            onClick={() => selectDocument(documents[0].key)}
-                          >
-                            Start with documents →
+                          <button type="button" className="btn btn-primary mt-6" onClick={() => selectDocument(documents[0].key)}>
+                            Start document review →
                           </button>
                         ) : null}
                       </div>
                     )}
 
                     {(active.type === 'documents' || active.type === 'document') && (
-                      <div className="grid gap-6 xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
+                      <div className="grid gap-6 xl:grid-cols-[minmax(240px,300px)_minmax(0,1fr)]">
                         <div>
-                          <h2 className="mb-3 text-lg font-bold text-ink">Files</h2>
+                          <h2 className="review-panel-title text-lg!">All files</h2>
                           <ul className="space-y-2">
                             {documents.map((doc) => {
                               const selected = active.type === 'document' && active.key === doc.key;
@@ -467,18 +476,10 @@ export default function ApplicationReview({ portal = 'staff' }) {
                                   <button
                                     type="button"
                                     onClick={() => selectDocument(doc.key)}
-                                    className={`flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition ${
-                                      selected
-                                        ? 'border-cardinal bg-cardinal-pale/50 shadow-sm'
-                                        : 'border-border bg-white hover:border-cardinal/25'
-                                    }`}
+                                    className={`review-file-card ${selected ? 'is-selected' : ''}`}
                                   >
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-bg">
-                                      {doc.image ? (
-                                        <img src={doc.href} alt="" className="h-full w-full object-cover" />
-                                      ) : (
-                                        <FileIcon className="h-5 w-5 text-cardinal" />
-                                      )}
+                                    <div className="review-file-thumb">
+                                      {doc.image ? <img src={doc.href} alt="" /> : <FileIcon className="h-6 w-6 text-cardinal" />}
                                     </div>
                                     <div className="min-w-0">
                                       <p className="m-0 truncate text-sm font-bold text-ink">{doc.label}</p>
@@ -490,9 +491,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
                             })}
                           </ul>
                           {!documents.length ? (
-                            <p className="rounded-xl bg-bg/60 px-4 py-8 text-center text-sm text-text-muted">
-                              No documents uploaded yet.
-                            </p>
+                            <p className="rounded-xl bg-bg/60 px-4 py-8 text-center text-sm text-text-muted">No documents uploaded yet.</p>
                           ) : null}
                         </div>
                         <DocumentPreview
@@ -507,33 +506,26 @@ export default function ApplicationReview({ portal = 'staff' }) {
 
                     {active.type === 'section' && selectedGroup && (
                       <div>
-                        <h2 className="mb-1 text-2xl font-bold text-ink">{selectedGroup.title}</h2>
-                        {selectedGroup.description ? (
-                          <p className="m-0 mb-6 text-sm text-text-muted">{selectedGroup.description}</p>
-                        ) : null}
+                        <h2 className="review-panel-title">{selectedGroup.title}</h2>
+                        {selectedGroup.description ? <p className="review-panel-hint">{selectedGroup.description}</p> : null}
                         <dl className="grid gap-3 lg:grid-cols-2">
-                          {(selectedGroup.fields || []).map((field) => (
-                            <div
+                          {(selectedGroup.fields || []).map((field, i) => (
+                            <motion.div
                               key={field.key}
-                              className={`rounded-2xl border px-4 py-4 ${
-                                field.type === 'file'
-                                  ? 'border-cardinal/25 bg-cardinal-pale/20 lg:col-span-2'
-                                  : 'border-border bg-bg/30'
-                              }`}
+                              className={`review-field-card ${field.type === 'file' ? 'is-file lg:col-span-2' : ''}`}
+                              initial={reduce ? false : { opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.03, duration: 0.28, ease }}
                             >
-                              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
-                                {field.required ? <span className="h-1.5 w-1.5 rounded-full bg-crimson" /> : null}
+                              <dt className="review-field-label">
+                                {field.required ? <span className="review-required" /> : null}
                                 {field.label}
                               </dt>
                               <dd className="m-0 mt-2">
                                 {field.type === 'file' && detail.answers?.[field.key]?.url ? (
                                   <div className="flex flex-wrap items-center gap-3">
                                     <FieldValue field={field} value={detail.answers[field.key]} />
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-light py-1.5 text-xs"
-                                      onClick={() => selectDocument(field.key)}
-                                    >
+                                    <button type="button" className="btn btn-outline-light py-1.5 text-xs" onClick={() => selectDocument(field.key)}>
                                       Preview file
                                     </button>
                                   </div>
@@ -541,7 +533,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
                                   <FieldValue field={field} value={detail.answers?.[field.key]} />
                                 )}
                               </dd>
-                            </div>
+                            </motion.div>
                           ))}
                         </dl>
                       </div>
@@ -553,33 +545,26 @@ export default function ApplicationReview({ portal = 'staff' }) {
           </div>
 
           {canAct ? (
-            <footer className="sticky bottom-0 z-30 border-t border-border bg-white/95 px-4 py-4 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.15)] backdrop-blur-xl sm:px-6">
+            <footer className="review-footer">
               <div className="mx-auto flex max-w-[1800px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="m-0 text-sm font-bold text-ink">Decision for {student?.name}</p>
-                  <p className="m-0 text-xs text-text-muted">
-                    Accept adds them to the student roster. Reject closes this application.
-                  </p>
-                  {confirmReject ? (
-                    <p className="m-0 mt-2 text-xs font-bold text-crimson">Tap Reject again to confirm.</p>
-                  ) : null}
+                  <p className="m-0 text-xs text-text-muted">Accept enrolls them on the roster. Reject closes the application.</p>
+                  {confirmReject ? <p className="m-0 mt-2 text-xs font-bold text-crimson">Tap Reject again to confirm.</p> : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <motion.button
                     type="button"
-                    className="btn btn-navy min-w-[9rem] py-2.5 text-sm"
+                    className="btn btn-navy min-w-[10rem] py-2.5 text-sm"
                     disabled={saving}
                     onClick={() => decide('accepted')}
+                    whileTap={reduce ? undefined : { scale: 0.97 }}
                   >
                     {saving ? 'Saving…' : detail.status === 'accepted' ? '✓ Accepted' : 'Accept student'}
-                  </button>
+                  </motion.button>
                   <button
                     type="button"
-                    className={`min-w-[9rem] rounded-full border px-5 py-2.5 text-sm font-bold disabled:opacity-50 ${
-                      confirmReject
-                        ? 'border-crimson bg-crimson text-white'
-                        : 'border-crimson/25 bg-crimson-pale text-crimson'
-                    }`}
+                    className={`review-reject-btn ${confirmReject ? 'is-confirm' : ''}`}
                     disabled={saving}
                     onClick={() => decide('rejected')}
                   >
@@ -594,7 +579,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
               </div>
             </footer>
           ) : !canDecide ? (
-            <footer className="border-t border-border bg-cardinal-pale/50 px-4 py-3 text-center text-sm font-semibold text-cardinal sm:px-6">
+            <footer className="review-footer is-readonly">
               View-only access — only admissions officers can accept or reject applicants.
             </footer>
           ) : null}
