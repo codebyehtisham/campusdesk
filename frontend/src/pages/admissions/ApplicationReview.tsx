@@ -43,11 +43,11 @@ function FileIcon({ className = 'h-4 w-4' }) {
 }
 
 function ProgressRing({ pct, size = 56 }: { pct: number; size?: number }) {
-  const r = (size - 6) / 2;
+  const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (pct / 100) * c;
   return (
-    <svg width={size} height={size} className="review-progress-ring" aria-hidden="true">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="review-progress-ring" aria-hidden="true">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
       <motion.circle
         cx={size / 2}
@@ -287,12 +287,12 @@ export default function ApplicationReview({ portal = 'staff' }) {
                 ← Back to applications
               </Link>
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-              <div className="relative shrink-0">
+              <div className="review-avatar-wrap">
+                <ProgressRing pct={progress.pct} size={92} />
                 <span className="review-profile-avatar">{initials(student?.name)}</span>
-                <div className="review-profile-ring">
-                  <ProgressRing pct={progress.pct} size={88} />
-                  <span className="review-profile-pct">{progress.pct}%</span>
-                </div>
+                <span className="review-profile-pct" aria-label={`${progress.pct}% complete`}>
+                  {progress.pct}%
+                </span>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -390,10 +390,10 @@ export default function ApplicationReview({ portal = 'staff' }) {
             <main className={`review-main ${mobilePane === 'preview' ? 'block' : 'hidden lg:block'}`}>
               <div className="review-mobile-tabs lg:hidden">
                 <button type="button" className={mobilePane === 'browse' ? 'is-active' : ''} onClick={() => setMobilePane('browse')}>
-                  Folders
+                  File menu
                 </button>
                 <button type="button" className={mobilePane === 'preview' ? 'is-active' : ''} onClick={() => setMobilePane('preview')}>
-                  Content
+                  Details
                 </button>
               </div>
 
