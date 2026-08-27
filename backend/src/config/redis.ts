@@ -125,6 +125,33 @@ export const cacheDel = async (...keys: string[]) => {
   }
 };
 
+/** Delete exact keys plus any Redis keys matching `prefix*`. */
+export const cacheDelPrefix = async (...prefixes: string[]) => {
+  if (!prefixes.length) return;
+  try {
+    const redis = await getRedis();
+    if (!redis) return;
+    for (const prefix of prefixes) {
+      if (!prefix) continue;
+      await withTimeout(redis.del(prefix), COMMAND_MS, 'Redis del');
+      let cursor = 0;
+      do {
+        const result = await withTimeout(
+          redis.scan(cursor, { MATCH: `${prefix}:*`, COUNT: 64 }),
+          COMMAND_MS,
+          'Redis scan'
+        );
+        cursor = Number(result.cursor);
+        if (result.keys?.length) {
+          await withTimeout(redis.del(result.keys), COMMAND_MS, 'Redis del pattern');
+        }
+      } while (cursor !== 0);
+    }
+  } catch {
+    /* best-effort cache */
+  }
+};
+
 export const CACHE_KEYS = {
   publicOrg: 'org:public',
   publicSettings: 'settings:public',

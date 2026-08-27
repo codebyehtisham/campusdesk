@@ -24,21 +24,21 @@ const navGroups = [
   {
     title: 'Platform',
     items: [
-      { to: `${SUPER_BASE}/dashboard`, label: 'Control', icon: IconDashboard },
-      { to: `${SUPER_BASE}/organizations`, label: 'Tenants', icon: IconBuildings },
-      { to: `${SUPER_BASE}/modules`, label: 'Catalog', icon: IconSwitches },
+      { to: `${SUPER_BASE}/dashboard`, label: 'Command', hint: 'Live ops hub', icon: IconDashboard },
+      { to: `${SUPER_BASE}/organizations`, label: 'Tenants', hint: 'Campuses & hospitals', icon: IconBuildings },
+      { to: `${SUPER_BASE}/modules`, label: 'Catalog', hint: 'Departments & modules', icon: IconSwitches },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { to: `${SUPER_BASE}/billing`, label: 'Billing', icon: IconCard },
-      { to: `${SUPER_BASE}/audit`, label: 'Traffic', icon: IconPulse },
+      { to: `${SUPER_BASE}/billing`, label: 'Billing', hint: 'MRR & invoices', icon: IconCard },
+      { to: `${SUPER_BASE}/audit`, label: 'Traffic', hint: 'API request log', icon: IconPulse },
     ],
   },
   {
     title: 'Account',
-    items: [{ to: `${SUPER_BASE}/settings`, label: 'Access', icon: IconKey }],
+    items: [{ to: `${SUPER_BASE}/settings`, label: 'Access', hint: 'Operator password', icon: IconKey }],
   },
 ];
 
@@ -51,17 +51,21 @@ function NavItem({ item, onNavigate }: { item: (typeof navGroups)[0]['items'][0]
   const reduce = useReducedMotion();
 
   return (
-    <NavLink to={item.to} onClick={onNavigate} className={({ isActive }) => (isActive ? 'is-active' : '')}>
+    <NavLink to={item.to} onClick={onNavigate} className={({ isActive }) => `pc-nav-link ${isActive ? 'is-active' : ''}`}>
       {({ isActive }) => (
         <>
           {isActive && !reduce ? (
             <motion.span layoutId="pc-nav-active" className="pc-nav-active-bg" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
           ) : null}
-          <span className="relative z-10 flex items-center gap-2">
-            <span className="pc-nav-icon">
-              <item.icon />
-            </span>
-            {item.label}
+          <span className="pc-nav-icon">
+            <item.icon />
+          </span>
+          <span className="pc-nav-copy">
+            <strong>{item.label}</strong>
+            <small>{item.hint}</small>
+          </span>
+          <span className="pc-nav-chevron" aria-hidden="true">
+            ›
           </span>
         </>
       )}
@@ -89,27 +93,28 @@ export default function PlatformLayout() {
 
   const sidebar = (
     <>
-      <Link to={`${SUPER_BASE}/dashboard`} className="mb-6 flex items-center gap-3" onClick={() => setOpen(false)}>
+      <Link to={`${SUPER_BASE}/dashboard`} className="pc-rail-brand" onClick={() => setOpen(false)}>
         <motion.span
-          className="pc-mark"
+          className="pc-mark pc-mark-glow"
           aria-hidden="true"
-          whileHover={reduce ? undefined : { rotate: 8, scale: 1.05 }}
+          whileHover={reduce ? undefined : { rotate: 6, scale: 1.06 }}
           transition={{ type: 'spring', stiffness: 400, damping: 18 }}
         >
           <IconDashboard />
         </motion.span>
         <span className="pc-brand-meta leading-tight">
-          <strong>Control plane</strong>
-          <small className="text-[0.62rem] font-medium tracking-[0.12em] text-[var(--pc-muted)] uppercase">
-            Superuser
-          </small>
+          <strong>Campus Desk</strong>
+          <small>Control plane</small>
         </span>
       </Link>
 
-      <p className="pc-rail-live mb-5">
-        <Pulse on />
-        System live
-      </p>
+      <div className="pc-rail-status">
+        <span className="pc-rail-status-pill is-live">
+          <Pulse on />
+          Systems live
+        </span>
+        <LiveClock className="pc-rail-clock" />
+      </div>
 
       <div className="pc-nav-scroll">
         {navGroups.map((group, gi) => (
@@ -137,12 +142,17 @@ export default function PlatformLayout() {
           </span>
           <div className="pc-rail-user-meta">
             <strong>{account?.email || 'platform'}</strong>
-            <small>Restricted access</small>
+            <small>Superuser · restricted</small>
           </div>
         </div>
-        <button type="button" className="pc-rail-signout" onClick={handleSignOut}>
-          Sign out
-        </button>
+        <div className="pc-rail-actions">
+          <Link to={`${SUPER_BASE}/organizations`} className="pc-rail-action" onClick={() => setOpen(false)}>
+            + Tenant
+          </Link>
+          <button type="button" className="pc-rail-signout" onClick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
       </div>
     </>
   );
@@ -166,7 +176,7 @@ export default function PlatformLayout() {
         </AnimatePresence>
 
         <aside
-          className={`pc-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 transition-transform duration-300 ease-out md:static md:min-h-svh md:translate-x-0 ${
+          className={`pc-rail pc-rail-premium fixed inset-y-0 left-0 z-40 flex w-[17.5rem] flex-col p-4 transition-transform duration-300 ease-out md:static md:min-h-svh md:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >

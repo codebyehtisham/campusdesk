@@ -2098,6 +2098,55 @@ html:has(.platform-shell),
   border-right: 1px solid var(--pc-line);
 }
 
+.platform-shell .pc-rail-premium {
+  background:
+    radial-gradient(420px 220px at 0% 0%, rgba(109, 147, 255, 0.14), transparent 60%),
+    radial-gradient(320px 180px at 100% 100%, rgba(62, 224, 168, 0.08), transparent 55%),
+    linear-gradient(175deg, #0c111c 0%, #080b12 100%);
+  box-shadow: inset -1px 0 0 rgba(109, 147, 255, 0.08);
+}
+
+.platform-shell .pc-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+
+.platform-shell .pc-rail-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1.15rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--pc-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.platform-shell .pc-rail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pc-live);
+}
+
+.platform-shell .pc-rail-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--pc-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .platform-shell .pc-nav-scroll {
   flex: 1;
   overflow-y: auto;
@@ -2132,44 +2181,128 @@ html:has(.platform-shell),
   gap: 2px;
 }
 
-.platform-shell .pc-nav a {
+.platform-shell .pc-nav a,
+.platform-shell .pc-nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  border-radius: 10px;
-  padding: 0.65rem 0.8rem;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 0.7rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--pc-muted);
-  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
 }
 
 .platform-shell .pc-nav-icon {
   display: inline-flex;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(109, 147, 255, 0.06);
+  border-radius: 9px;
+  background: rgba(109, 147, 255, 0.08);
   color: inherit;
+  z-index: 1;
 }
 
-.platform-shell .pc-nav a:hover {
+.platform-shell .pc-nav-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.05rem;
+  z-index: 1;
+}
+
+.platform-shell .pc-nav-copy strong {
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: inherit;
+  line-height: 1.2;
+}
+
+.platform-shell .pc-nav-copy small {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--pc-muted);
+  opacity: 0.85;
+  line-height: 1.25;
+}
+
+.platform-shell .pc-nav-chevron {
+  z-index: 1;
+  font-size: 1.1rem;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+  color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-nav a:hover,
+.platform-shell .pc-nav-link:hover {
   background: var(--pc-surface);
   color: var(--pc-text);
+  transform: translateX(2px);
 }
 
-.platform-shell .pc-nav a.is-active {
-  background: rgba(109, 147, 255, 0.14);
+.platform-shell .pc-nav-link:hover .pc-nav-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.platform-shell .pc-nav a.is-active,
+.platform-shell .pc-nav-link.is-active {
+  background: transparent;
   color: var(--pc-text);
-  box-shadow: inset 3px 0 0 var(--pc-accent);
+  box-shadow: none;
 }
 
-.platform-shell .pc-nav a.is-active .pc-nav-icon {
-  background: rgba(109, 147, 255, 0.18);
+.platform-shell .pc-nav a.is-active .pc-nav-icon,
+.platform-shell .pc-nav-link.is-active .pc-nav-icon {
+  background: rgba(109, 147, 255, 0.2);
   color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-nav a.is-active .pc-nav-copy small,
+.platform-shell .pc-nav-link.is-active .pc-nav-copy small {
+  color: var(--pc-accent-2);
+}
+
+.platform-shell .pc-nav a.is-active .pc-nav-chevron,
+.platform-shell .pc-nav-link.is-active .pc-nav-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.platform-shell .pc-rail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.platform-shell .pc-rail-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(109, 147, 255, 0.35);
+  padding: 0.55rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pc-accent-2);
+  background: rgba(109, 147, 255, 0.1);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.platform-shell .pc-rail-action:hover {
+  background: rgba(109, 147, 255, 0.18);
+  border-color: rgba(109, 147, 255, 0.5);
 }
 
 .platform-shell .pc-rail-foot {
@@ -3130,14 +3263,15 @@ html:has(.platform-shell),
 .platform-shell .pc-nav-active-bg {
   position: absolute;
   inset: 0;
-  border-radius: 10px;
-  background: rgba(109, 147, 255, 0.14);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(109, 147, 255, 0.2), rgba(109, 147, 255, 0.08));
   box-shadow: inset 3px 0 0 var(--pc-accent);
   z-index: 0;
 }
 
-.platform-shell .pc-nav a .pc-nav-icon,
-.platform-shell .pc-nav a:not(.is-active) {
+.platform-shell .pc-nav-link .pc-nav-icon,
+.platform-shell .pc-nav-link .pc-nav-copy,
+.platform-shell .pc-nav-link .pc-nav-chevron {
   position: relative;
   z-index: 1;
 }

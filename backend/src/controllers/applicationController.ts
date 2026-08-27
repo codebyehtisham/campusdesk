@@ -8,14 +8,31 @@ import {
   formatPhone,
   isCnicField,
   isPhoneField,
+  parseAdmissionForm,
+  parseStoredAdmissionForm,
   publicAdmissionForm,
   stringifyAnswers,
   validateAnswers,
   type AnswerMap,
+  type AdmissionForm,
 } from '../lib/admissionForm.js';
 import { loadOrgAdmissionForm } from './admissionFormController.js';
 
 type AppWithPeople = Application & { user: User | null; reviewedBy: User | null };
+
+const formFromSnapshot = (raw: string | null | undefined): AdmissionForm | null => {
+  if (!raw) return null;
+  const stored = parseStoredAdmissionForm(raw);
+  if (stored == null) return null;
+  return parseAdmissionForm(stored);
+};
+
+const resolveReviewForm = async (organizationId: string, application: Application) => {
+  const snap = formFromSnapshot(application.formSnapshot);
+  if (snap) return publicAdmissionForm(snap);
+  const live = await loadOrgAdmissionForm(organizationId);
+  return publicAdmissionForm(live);
+};
 
 const toApplication = (doc: Application, extras: Record<string, unknown> = {}) => ({
   id: doc.id,
@@ -62,10 +79,12 @@ export const getMine = async (req: Request, res: Response) => {
       update: {},
       create: { userId: req.user.id, organizationId, status: 'not_started' },
     });
-    const form = await loadOrgAdmissionForm(organizationId);
+    const form = editableStatuses.has(application.status)
+      ? publicAdmissionForm(await loadOrgAdmissionForm(organizationId))
+      : await resolveReviewForm(organizationId, application);
     res.json(
       toApplication(application, {
-        form: publicAdmissionForm(form),
+        form,
         editable: editableStatuses.has(application.status),
       })
     );
@@ -156,6 +175,7 @@ export const submitMine = async (req: Request, res: Response) => {
         answers: stringifyAnswers(answers),
         status: 'submitted',
         submittedAt: new Date(),
+        formSnapshot: JSON.stringify(publicAdmissionForm(form)),
       },
     });
     res.json(
@@ -198,10 +218,10 @@ export const getOne = async (req: Request, res: Response) => {
     if (!application || application.user?.role !== 'applicant') {
       return res.status(404).json({ message: 'Application not found' });
     }
-    const form = await loadOrgAdmissionForm(organizationId!);
+    const form = await resolveReviewForm(organizationId!, application);
     res.json({
       ...toStaffApplication(application, true),
-      form: publicAdmissionForm(form),
+      form,
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load application', error: (err as Error).message });

@@ -237,6 +237,8 @@ model Application {
   user           User              @relation("ApplicantApplications", fields: [userId], references: [id], onDelete: Cascade)
   status         ApplicationStatus @default(not_started)
   answers        String            @default("{}")
+  /// JSON snapshot of the admissions form schema at submit time (so review stays stable if the live template changes).
+  formSnapshot   String?
   submittedAt    DateTime?
   reviewedById   String?
   reviewedBy     User?             @relation("ApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)

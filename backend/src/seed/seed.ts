@@ -166,6 +166,14 @@ const run = async () => {
       console.log('Attendance roster seeded.');
     }
 
+    const existingSettings = await prisma.setting.findUnique({ where: { organizationId: explore.id } });
+    const existingForm = existingSettings?.admissionForm ?? '';
+    const hasCustomForm =
+      Boolean(existingForm) &&
+      existingForm !== '' &&
+      existingForm !== '{}' &&
+      process.env.SEED_RESET_FORMS !== '1';
+
     await prisma.setting.upsert({
       where: { organizationId: explore.id },
       update: {
@@ -173,7 +181,8 @@ const run = async () => {
         campusLatitude: 31.5497,
         campusLongitude: 74.3436,
         campusRadiusMeters: 250,
-        admissionForm: JSON.stringify(defaultAdmissionForm()),
+        // Never clobber a form the org admin already customized (unless SEED_RESET_FORMS=1).
+        ...(hasCustomForm ? {} : { admissionForm: JSON.stringify(defaultAdmissionForm()) }),
       },
       create: {
         organizationId: explore.id,
@@ -185,6 +194,9 @@ const run = async () => {
         admissionForm: JSON.stringify(defaultAdmissionForm()),
       },
     });
+    if (hasCustomForm) {
+      console.log('Preserved existing admission form (not overwritten by seed).');
+    }
 
     const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD || '';

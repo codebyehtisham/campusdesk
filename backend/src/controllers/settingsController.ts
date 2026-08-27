@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { Organization } from '@prisma/client';
 import { prisma } from '../config/db.js';
-import { CACHE_KEYS, cacheDel, cacheGet, cacheSet } from '../config/redis.js';
+import { CACHE_KEYS, cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../config/redis.js';
 import { getPublicOrganization, hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
 import { sanitizeTheme } from '../lib/theme.js';
 import { parseFence } from '../lib/geofence.js';
@@ -70,7 +70,8 @@ export const updateSettings = async (req: Request, res: Response) => {
       where: { id: settings.id },
       data: { admissionsOpen: req.body.admissionsOpen },
     });
-    await cacheDel(CACHE_KEYS.publicSettings, CACHE_KEYS.publicOrg);
+    await cacheDelPrefix(CACHE_KEYS.publicSettings);
+    await cacheDel(CACHE_KEYS.publicOrg);
     res.json({ admissionsOpen: updated.admissionsOpen });
   } catch (err) {
     res.status(400).json({ message: 'Failed to update settings', error: (err as Error).message });

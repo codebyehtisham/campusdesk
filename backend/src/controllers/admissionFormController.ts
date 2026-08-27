@@ -14,7 +14,7 @@ import {
 } from '../lib/admissionForm.js';
 import { hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
 import { brandFields } from '../middleware/auth.js';
-import { CACHE_KEYS, cacheDel } from '../config/redis.js';
+import { CACHE_KEYS, cacheDel, cacheDelPrefix } from '../config/redis.js';
 
 const uploadsRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../uploads');
 
@@ -64,7 +64,8 @@ export const saveAdminAdmissionForm = async (req: Request, res: Response) => {
       where: { id: settings.id },
       data: { admissionForm: JSON.stringify(form) },
     });
-    await cacheDel(CACHE_KEYS.publicSettings, CACHE_KEYS.publicOrg);
+    await cacheDelPrefix(CACHE_KEYS.publicSettings);
+    await cacheDel(CACHE_KEYS.publicOrg);
     res.json(form);
   } catch (err) {
     res.status(400).json({ message: 'Failed to save admission form', error: (err as Error).message });
