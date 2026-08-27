@@ -4,11 +4,12 @@ import { fileURLToPath } from 'node:url';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { CACHE_KEYS, cacheDel } from '../config/redis.js';
-import { deleteObject, isR2Configured, putObject } from '../lib/storage.js';
+import { deleteObject, isR2Disabled, putObject } from '../lib/storage.js';
 import { orgId } from '../lib/tenant.js';
 import { brandFields } from '../middleware/auth.js';
 
 const uploadsRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../uploads');
+const allowLocalUploads = () => isR2Disabled();
 const EXT: Record<string, string> = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
@@ -66,14 +67,7 @@ export const saveLogo = async (req: Request, res: Response) => {
     const key = `${organizationId}/${filename}`;
     let logo: string;
 
-    if (isR2Configured()) {
-      const stored = await putObject({ key, body: buffer, contentType: mime });
-      logo = stored.url;
-      for (const leftover of Object.values(EXT)) {
-        if (leftover === ext) continue;
-        await deleteObject(`${organizationId}/logo${leftover}`);
-      }
-    } else {
+    if (allowLocalUploads()) {
       const dir = path.join(uploadsRoot, organizationId);
       await mkdir(dir, { recursive: true });
       await writeFile(path.join(dir, filename), buffer);
@@ -82,6 +76,13 @@ export const saveLogo = async (req: Request, res: Response) => {
         await unlink(path.join(dir, `logo${leftover}`)).catch(() => undefined);
       }
       logo = `/uploads/${key}?v=${Date.now()}`;
+    } else {
+      const stored = await putObject({ key, body: buffer, contentType: mime });
+      logo = stored.url;
+      for (const leftover of Object.values(EXT)) {
+        if (leftover === ext) continue;
+        await deleteObject(`${organizationId}/logo${leftover}`);
+      }
     }
 
     const updated = await prisma.organization.update({

@@ -25,23 +25,38 @@ export function initials(name = '') {
 
 export function collectDocuments(form, answers) {
   const docs = [];
+  const seen = new Set();
+
+  const pushDoc = (fieldKey, label, groupTitle, groupId, value) => {
+    if (!value?.url || seen.has(fieldKey)) return;
+    seen.add(fieldKey);
+    docs.push({
+      key: fieldKey,
+      label: label || fieldKey,
+      groupTitle: groupTitle || 'Documents',
+      groupId: groupId || 'documents',
+      ...value,
+      href: resolveUploadUrl(value.url),
+      image: isImageMime(value.mime),
+      pdf: isPdfMime(value.mime, value.name),
+    });
+  };
+
   for (const group of form?.groups || []) {
     for (const field of group.fields || []) {
       if (field.type !== 'file') continue;
-      const value = answers?.[field.key];
-      if (!value?.url) continue;
-      docs.push({
-        key: field.key,
-        label: field.label,
-        groupTitle: group.title,
-        groupId: group.id,
-        ...value,
-        href: resolveUploadUrl(value.url),
-        image: isImageMime(value.mime),
-        pdf: isPdfMime(value.mime, value.name),
-      });
+      pushDoc(field.key, field.label, group.title, group.id, answers?.[field.key]);
     }
   }
+
+  // Include file answers even if the live/snapshot form no longer lists the field.
+  if (answers && typeof answers === 'object') {
+    for (const [key, value] of Object.entries(answers)) {
+      if (!value || typeof value !== 'object' || !value.url) continue;
+      pushDoc(key, key.replace(/_/g, ' '), 'Documents', 'documents', value);
+    }
+  }
+
   return docs;
 }
 

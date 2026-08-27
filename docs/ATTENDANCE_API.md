@@ -25,9 +25,17 @@ All protected routes use `Authorization: Bearer <token>`.
 {
   "email": "student@explorecollege.org",
   "password": "student123",
-  "institute": "explore"
+  "institute": "explore",
+  "client": "mobile"
 }
+```
 
+`client` values:
+- `"mobile"` — Campus Desk app. Login is **blocked until** the student has at least one class enrollment.
+- `"web"` — student web portal (`/login`). Login is **blocked** once the student is assigned to a class (must use the mobile app).
+- `"apply"` or omitted — admissions apply web flow (no class gate).
+
+```json
 // Response 200
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -54,6 +62,10 @@ All protected routes use `Authorization: Bearer <token>`.
   }
 }
 ```
+
+**403 examples**
+- Web after class assignment: `{ "code": "USE_MOBILE_APP", "message": "…Play Store or the App Store…" }`
+- Mobile before class assignment: `{ "code": "CLASS_NOT_ASSIGNED", "message": "…not assigned to a class yet…" }`
 
 **Mobile rule:** fetch GPS on scan **only when** `attendanceLocationEnabled` is `true`.  
 When `false`, omit `latitude` / `longitude` / `accuracy` from the scan body.

@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -23,16 +24,29 @@ export function r2PublicBaseUrl() {
   return raw || '';
 }
 
+/** Local disk only when explicitly opted out (dev). Production must use R2. */
+export function isR2Disabled() {
+  return ['1', 'true', 'yes'].includes(String(process.env.R2_DISABLED || '').trim().toLowerCase());
+}
+
 export function isR2Configured() {
+  if (isR2Disabled()) return false;
   return Boolean(process.env.R2_ACCESS_KEY_ID?.trim() && process.env.R2_SECRET_ACCESS_KEY?.trim());
+}
+
+export function assertR2Ready() {
+  if (isR2Disabled()) return;
+  if (!process.env.R2_ACCESS_KEY_ID?.trim() || !process.env.R2_SECRET_ACCESS_KEY?.trim()) {
+    throw new Error(
+      'Cloudflare R2 is not configured. Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY on the server (or R2_DISABLED=1 for local-only).'
+    );
+  }
 }
 
 let client: S3Client | null = null;
 
 function getClient() {
-  if (!isR2Configured()) {
-    throw new Error('R2 is not configured. Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY.');
-  }
+  assertR2Ready();
   if (!client) {
     client = new S3Client({
       region: process.env.R2_REGION || 'auto',
@@ -42,6 +56,9 @@ function getClient() {
         accessKeyId: process.env.R2_ACCESS_KEY_ID!.trim(),
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!.trim(),
       },
+      // Newer AWS SDKs send checksum headers R2 rejects — disable unless required.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
   return client;
@@ -61,15 +78,21 @@ export async function putObject(params: {
   contentType: string;
 }) {
   const key = params.key.replace(/^\/+/, '');
-  await getClient().send(
-    new PutObjectCommand({
-      Bucket: r2Bucket(),
-      Key: key,
-      Body: params.body,
-      ContentType: params.contentType,
-      CacheControl: 'public, max-age=31536000, immutable',
-    })
-  );
+  try {
+    await getClient().send(
+      new PutObjectCommand({
+        Bucket: r2Bucket(),
+        Key: key,
+        Body: params.body,
+        ContentType: params.contentType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      })
+    );
+  } catch (err) {
+    const message = (err as Error).message || 'R2 upload failed';
+    console.error(`[r2] PutObject failed key=${key}:`, message);
+    throw new Error(`Could not store file in Cloudflare R2: ${message}`);
+  }
   return { key, url: publicObjectUrl(key, Date.now()) };
 }
 
@@ -100,6 +123,11 @@ export async function getObject(key: string) {
     contentType: result.ContentType || 'application/octet-stream',
     contentLength: result.ContentLength,
   };
+}
+
+export async function verifyR2Connection() {
+  assertR2Ready();
+  await getClient().send(new HeadBucketCommand({ Bucket: r2Bucket() }));
 }
 
 export function sanitizeStorageKey(raw: string) {

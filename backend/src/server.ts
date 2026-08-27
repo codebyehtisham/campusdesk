@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
-import { getObject, isR2Configured, r2Bucket, sanitizeStorageKey } from './lib/storage.js';
+import { getObject, isR2Configured, isR2Disabled, r2Bucket, sanitizeStorageKey, verifyR2Connection } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -102,17 +102,22 @@ app.use('/uploads', async (req, res, next) => {
     return res.sendFile(localPath);
   }
 
-  if (!isR2Configured()) return res.status(404).end();
+  if (!isR2Configured()) {
+    console.warn(`[uploads] missing object and R2 not configured: ${key}`);
+    return res.status(404).json({ message: 'File not found' });
+  }
   try {
     const object = await getObject(key);
-    if (!object.body) return res.status(404).end();
+    if (!object.body) return res.status(404).json({ message: 'File not found' });
     res.setHeader('Content-Type', object.contentType);
     if (object.contentLength != null) res.setHeader('Content-Length', String(object.contentLength));
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     if (req.method === 'HEAD') return res.status(200).end();
     await pipeline(object.body, res);
-  } catch {
-    if (!res.headersSent) res.status(404).end();
+  } catch (err) {
+    console.error(`[uploads] R2 get failed key=${key}:`, (err as Error).message);
+    if (!res.headersSent) res.status(404).json({ message: 'File not found' });
   }
 });
 
@@ -122,7 +127,8 @@ app.get('/api/health', async (_req, res) => {
     status: 'ok',
     environment: appEnvironment(),
     url: publicAppUrl(),
-    storage: isR2Configured() ? 'r2' : 'local',
+    storage: isR2Configured() ? 'r2' : isR2Disabled() ? 'local' : 'unconfigured',
+    r2Bucket: isR2Configured() ? r2Bucket() : undefined,
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
     postgres: { status: postgres.status, latencyMs: postgres.latencyMs },
@@ -188,7 +194,15 @@ const start = async () => {
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`File storage: ${isR2Configured() ? `Cloudflare R2 (${r2Bucket()})` : 'local disk (set R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY)'}`);
+    if (isR2Configured()) {
+      verifyR2Connection()
+        .then(() => console.log(`File storage: Cloudflare R2 ready (${r2Bucket()})`))
+        .catch((err) => console.error(`File storage: R2 check failed — ${(err as Error).message}`));
+    } else if (isR2Disabled()) {
+      console.warn('File storage: local disk (R2_DISABLED=1)');
+    } else {
+      console.error('File storage: R2 keys missing — uploads will fail until R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY are set');
+    }
   });
 };
 

@@ -66,6 +66,29 @@ const toStaffApplication = (doc: AppWithPeople, includeAnswers = false) => ({
     : null,
 });
 
+/** Make /uploads/... paths absolute so officer/faculty UIs can fetch docs reliably. */
+const absolutizeFileAnswers = (answers: AnswerMap, baseUrl: string): AnswerMap => {
+  const base = baseUrl.replace(/\/+$/, '');
+  if (!base) return answers;
+  const next: AnswerMap = { ...answers };
+  for (const [key, value] of Object.entries(answers)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+    const file = value as { url?: string };
+    if (typeof file.url !== 'string' || !file.url.startsWith('/')) continue;
+    next[key] = { ...file, url: `${base}${file.url}` };
+  }
+  return next;
+};
+
+const requestPublicBase = (req: Request) => {
+  const configured = String(process.env.PUBLIC_APP_URL || process.env.APP_URL || '').trim();
+  if (configured) return configured.replace(/\/+$/, '');
+  const host = req.get('x-forwarded-host') || req.get('host');
+  if (!host) return '';
+  const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  return `${proto}://${host}`;
+};
+
 const editableStatuses = new Set(['not_started', 'in_progress']);
 
 export const getMine = async (req: Request, res: Response) => {
@@ -219,8 +242,11 @@ export const getOne = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Application not found' });
     }
     const form = await resolveReviewForm(organizationId!, application);
+    const base = requestPublicBase(req);
+    const answers = absolutizeFileAnswers(asAnswerMap(application.answers), base);
     res.json({
-      ...toStaffApplication(application, true),
+      ...toStaffApplication(application, false),
+      answers,
       form,
     });
   } catch (err) {

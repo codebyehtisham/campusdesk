@@ -2,10 +2,16 @@
 export function resolveUploadUrl(url: string | undefined | null) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+  const path = url.startsWith('/') ? url : `/${url}`;
+
+  // Same-origin first so Vite `/uploads` proxy (dev) and Railway monorepo (prod) both work.
+  if (typeof window !== 'undefined' && path.startsWith('/uploads')) {
+    return `${window.location.origin}${path}`;
+  }
+
   const apiBase =
     import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5050/api' : '/api');
   const origin = apiBase.replace(/\/api\/?$/, '') || (typeof window !== 'undefined' ? window.location.origin : '');
-  const path = url.startsWith('/') ? url : `/${url}`;
   return `${origin}${path}`;
 }
 

@@ -64,6 +64,7 @@ export default function ApplicantLogin({
           : {
               email: form.email.trim().toLowerCase(),
               password: form.password.trim(),
+              client: 'apply',
               ...(instituteSlug ? { institute: instituteSlug } : {}),
             };
       const res = await api.post(path, payload);

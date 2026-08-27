@@ -12,12 +12,13 @@ import {
   publicAdmissionForm,
   sanitizeAdmissionFormInput,
 } from '../lib/admissionForm.js';
-import { isR2Configured, putObject } from '../lib/storage.js';
+import { isR2Disabled, putObject } from '../lib/storage.js';
 import { hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
 import { brandFields } from '../middleware/auth.js';
 import { CACHE_KEYS, cacheDel, cacheDelPrefix } from '../config/redis.js';
 
 const uploadsRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../uploads');
+const allowLocalUploads = () => isR2Disabled();
 
 const EXT: Record<string, string> = {
   'image/png': '.png',
@@ -179,14 +180,14 @@ export const uploadApplicationFile = async (req: Request, res: Response) => {
     const filename = `${fieldKey}${ext}`;
     const key = `${organizationId}/applications/${application.id}/${filename}`;
     let url: string;
-    if (isR2Configured()) {
-      const stored = await putObject({ key, body: buffer, contentType: mime });
-      url = stored.url;
-    } else {
+    if (allowLocalUploads()) {
       const dir = path.join(uploadsRoot, organizationId, 'applications', application.id);
       await mkdir(dir, { recursive: true });
       await writeFile(path.join(dir, filename), buffer);
       url = `/uploads/${key}?v=${Date.now()}`;
+    } else {
+      const stored = await putObject({ key, body: buffer, contentType: mime });
+      url = stored.url;
     }
     const name = clipFilename(req.body.name) || `${fieldKey}${ext}`;
     res.json({ url, name, size: buffer.length, mime });

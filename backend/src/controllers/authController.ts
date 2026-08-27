@@ -16,6 +16,11 @@ import {
 import { hasModule, isUniqueError, resolveOrganizationByInstitute } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 
+const USE_MOBILE_APP_MESSAGE =
+  'Campus tools are available in the Campus Desk mobile app. Download Campus Desk from the Play Store or the App Store and sign in with the same credentials.';
+const MOBILE_AWAIT_CLASS_MESSAGE =
+  'Your account is not assigned to a class yet. Once administration assigns your classes, sign in again from the Campus Desk mobile app.';
+
 const requireLinkedOrg = (org: Organization | null, res: Response): org is Organization => {
   if (!org) {
     res.status(403).json({ message: 'Account is not linked to an organisation.' });
@@ -23,6 +28,55 @@ const requireLinkedOrg = (org: Organization | null, res: Response): org is Organ
   }
   return true;
 };
+
+async function applicantHasClassEnrollment(user: { email: string; organizationId: string | null }) {
+  if (!user.organizationId) return false;
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email) return false;
+  const person = await prisma.attendancePerson.findFirst({
+    where: {
+      organizationId: user.organizationId,
+      kind: 'student',
+      email,
+      active: true,
+    },
+    select: { id: true },
+  });
+  if (!person) return false;
+  const enrollment = await prisma.classEnrollment.findFirst({
+    where: { personId: person.id },
+    select: { id: true },
+  });
+  return Boolean(enrollment);
+}
+
+async function enforceApplicantClientGate(
+  req: Request,
+  res: Response,
+  user: { email: string; organizationId: string | null }
+) {
+  const client = String(req.body.client || req.body.platform || '')
+    .trim()
+    .toLowerCase();
+  if (client !== 'web' && client !== 'mobile') return true;
+
+  const enrolled = await applicantHasClassEnrollment(user);
+  if (client === 'web' && enrolled) {
+    res.status(403).json({
+      code: 'USE_MOBILE_APP',
+      message: USE_MOBILE_APP_MESSAGE,
+    });
+    return false;
+  }
+  if (client === 'mobile' && !enrolled) {
+    res.status(403).json({
+      code: 'CLASS_NOT_ASSIGNED',
+      message: MOBILE_AWAIT_CLASS_MESSAGE,
+    });
+    return false;
+  }
+  return true;
+}
 
 export const registerApplicant = async (req: Request, res: Response) => {
   try {
@@ -132,6 +186,7 @@ export const loginApplicant = async (req: Request, res: Response) => {
           update: {},
           create: { userId: user.id, organizationId: target.id, status: 'not_started' },
         });
+        if (!(await enforceApplicantClientGate(req, res, updated))) return;
         return res.json(await authPayloadForOrg(updated, target));
       }
     }
@@ -144,6 +199,7 @@ export const loginApplicant = async (req: Request, res: Response) => {
       });
     }
 
+    if (!(await enforceApplicantClientGate(req, res, user))) return;
     return res.json(await authPayloadForOrg(user, org));
   } catch (err) {
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
