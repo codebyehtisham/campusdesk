@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import api from '../../api/client';
 import { signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE } from '../../admin/paths';
-import { FRONTEND_VERSION } from '../../version';
 import {
   IconBuildings,
   IconCard,
-  IconDashboard,
+  IconKey,
   IconPulse,
   IconSwitches,
 } from '../../components/nav/ConsoleIcons';
-import { AnimatedNumber, LiveClock, PingBar, QuickAction, ShimmerLine, StaggerCard, StaggerGrid } from './motion';
-import { Banner, PageHead, Panel, Pulse, Stat } from './ui';
+import { AnimatedNumber, LiveClock, PingBar, ShimmerLine, StaggerCard, StaggerGrid } from './motion';
+import { Banner, Pulse } from './ui';
 import { BarChart } from './BarChart';
 import { formatMoney } from './money';
 
@@ -37,13 +37,14 @@ const empty = {
   },
 };
 
+const ease = [0.22, 1, 0.36, 1] as const;
+
 function formatWhen(iso) {
   if (!iso) return '—';
   try {
     return new Date(iso).toLocaleString(undefined, {
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -57,14 +58,9 @@ function formatUptime(seconds) {
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (d) return `${d}d ${h}h ${m}m`;
+  if (d) return `${d}d ${h}h`;
   if (h) return `${h}h ${m}m`;
-  return `${m}m ${s % 60}s`;
-}
-
-function formatPing(ms) {
-  if (ms == null || Number.isNaN(ms)) return '—';
-  return `${Math.round(ms)} ms`;
+  return `${m}m`;
 }
 
 function pingTone(ms, up) {
@@ -80,6 +76,67 @@ function greeting() {
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+const COMMAND_GROUPS = [
+  {
+    title: 'Tenants',
+    desc: 'Campuses & hospitals on the platform',
+    actions: [
+      { to: `${SUPER_BASE}/organizations`, label: 'All tenants', hint: 'Browse, search, open records' },
+      { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Education or hospital org' },
+    ],
+  },
+  {
+    title: 'Entitlements',
+    desc: 'Global catalog every tenant inherits',
+    actions: [
+      { to: `${SUPER_BASE}/modules`, label: 'Departments', hint: 'Publish or hide departments' },
+      { to: `${SUPER_BASE}/modules`, label: 'Modules', hint: 'LMS, admissions, attendance…' },
+    ],
+  },
+  {
+    title: 'Billing',
+    desc: 'Subscriptions & invoices',
+    actions: [
+      { to: `${SUPER_BASE}/billing`, label: 'Billing overview', hint: 'MRR, outstanding, per-tenant' },
+      { to: `${SUPER_BASE}/billing`, label: 'Generate invoices', hint: 'Run monthly billing cycle' },
+    ],
+  },
+  {
+    title: 'Observability',
+    desc: 'Traffic, health, runtime',
+    actions: [
+      { to: `${SUPER_BASE}/audit`, label: 'API traffic log', hint: 'Requests, errors, payloads' },
+      { to: `${SUPER_BASE}/dashboard`, label: 'Live health', hint: 'Postgres, Redis, API pings' },
+    ],
+  },
+  {
+    title: 'Per-tenant control',
+    desc: 'Open any tenant to manage',
+    actions: [
+      { to: `${SUPER_BASE}/organizations`, label: 'Lock / suspend', hint: 'Service gate per campus' },
+      { to: `${SUPER_BASE}/organizations`, label: 'Theme & public site', hint: 'Branding & templates' },
+      { to: `${SUPER_BASE}/organizations`, label: 'Org admins', hint: 'Create, block, reset password' },
+    ],
+  },
+  {
+    title: 'Account',
+    desc: 'Operator access',
+    actions: [{ to: `${SUPER_BASE}/settings`, label: 'Change password', hint: 'Rotate platform credentials' }],
+  },
+];
+
+function CommandTile({ to, label, hint, delay = 0 }: { to: string; label: string; hint: string; delay?: number }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.35, ease }}>
+      <Link to={to} className="pc-cmd-tile">
+        <strong>{label}</strong>
+        <span>{hint}</span>
+        <em aria-hidden="true">→</em>
+      </Link>
+    </motion.div>
+  );
 }
 
 export default function PlatformDashboard() {
@@ -129,243 +186,162 @@ export default function PlatformDashboard() {
       ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="pc-hero">
+    <div className="pc-dash flex flex-col gap-5">
+      <section className="pc-hero pc-hero-compact">
         <div className="pc-hero-copy">
-          <p className="pc-kicker m-0">{greeting()}</p>
-          <h1 className="pc-title-gradient m-0 text-[clamp(1.6rem,3vw,2.35rem)]!">Operations command center</h1>
-          <p className="pc-hint m-0 mt-2 max-w-xl">
-            Live revenue, tenant health, infrastructure pings, and traffic — all in one place.
-          </p>
+          <p className="pc-kicker m-0">{greeting()} · command center</p>
+          <h1 className="pc-title-gradient m-0 text-[clamp(1.35rem,2.5vw,1.85rem)]!">Every platform action. One screen.</h1>
         </div>
         <div className="pc-hero-meta">
-          <div className="pc-hero-clock-wrap">
-            <span className="pc-kicker m-0">Live</span>
-            <LiveClock className="pc-hero-clock" />
-          </div>
+          <LiveClock className="pc-hero-clock" />
           <button
             type="button"
-            className={`btn btn-outline py-2.5 text-sm ${refreshing ? 'is-spinning' : ''}`}
+            className={`btn btn-outline py-2 text-sm ${refreshing ? 'is-spinning' : ''}`}
             onClick={() => load(true)}
             disabled={loading || refreshing}
           >
-            {refreshing ? 'Refreshing…' : 'Refresh data'}
+            {refreshing ? 'Syncing…' : 'Sync live'}
           </button>
         </div>
-        <ShimmerLine className="mt-5" />
+        <ShimmerLine className="mt-4" />
       </section>
-
-      <PageHead
-        kicker="Control plane"
-        title="Overview"
-        hint="Revenue, tenant count, service health, and request volume across the platform."
-      />
 
       <Banner>{error}</Banner>
 
-      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StaggerCard>
-          <Stat label="Total revenue" value={formatMoney(billing.totalPaidCents, billing.currency)} hint="All paid invoices" />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat label="This month" value={formatMoney(billing.monthPaidCents, billing.currency)} />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat
-            label="MRR"
-            value={formatMoney(billing.mrrCents, billing.currency)}
-            hint={`${billing.activeSubscriptions} active subscription${billing.activeSubscriptions === 1 ? '' : 's'}`}
-          />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat
-            label="Outstanding"
-            value={formatMoney(billing.outstandingCents, billing.currency)}
-            tone={billing.outstandingCents ? 'warn' : undefined}
-            hint={billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices'}
-          />
-        </StaggerCard>
+      <StaggerGrid className="pc-metric-strip" delay={0.02}>
+        {[
+          { label: 'Revenue', value: formatMoney(billing.totalPaidCents, billing.currency) },
+          { label: 'MRR', value: formatMoney(billing.mrrCents, billing.currency) },
+          { label: 'Tenants', value: counts.organizations, n: counts.organizations },
+          { label: 'Students', value: counts.applicants, n: counts.applicants },
+          { label: 'Traffic 24h', value: traffic.last24h, n: traffic.last24h },
+          { label: 'Errors', value: traffic.errors24h, n: traffic.errors24h, warn: traffic.errors24h > 0 },
+        ].map((m) => (
+          <StaggerCard key={m.label}>
+            <div className={`pc-metric-pill ${m.warn ? 'is-warn' : ''}`}>
+              <span>{m.label}</span>
+              <strong>{m.n != null ? <AnimatedNumber value={m.n} format={(v) => String(Math.round(v))} /> : m.value}</strong>
+            </div>
+          </StaggerCard>
+        ))}
       </StaggerGrid>
 
-      <StaggerCard>
-        <Panel
-          className="p-5 md:p-6"
-          title="Revenue by month"
-          action={
-            <p className="pc-legend m-0">
-              <span>
-                <i style={{ background: '#4a9eff' }} />
-                Paid
-              </span>
-              <span>
-                <i style={{ background: 'rgba(109,147,255,0.55)' }} />
-                Outstanding
-              </span>
-            </p>
-          }
-        >
-          <BarChart data={billing.monthly || []} />
-        </Panel>
-      </StaggerCard>
+      <div className="pc-bento">
+        <section className="pc-bento-main">
+          <div className="pc-bento-head">
+            <div>
+              <p className="pc-kicker m-0">Command hub</p>
+              <h2 className="m-0 text-base font-bold text-[var(--pc-text)]">All super-admin actions</h2>
+            </div>
+            <Link to={`${SUPER_BASE}/organizations`} className="btn btn-primary py-2 text-sm">
+              + Provision tenant
+            </Link>
+          </div>
+          <div className="pc-cmd-grid">
+            {COMMAND_GROUPS.map((group, gi) => (
+              <div key={group.title} className="pc-cmd-group">
+                <div className="pc-cmd-group-head">
+                  <h3 className="m-0">{group.title}</h3>
+                  <p className="m-0">{group.desc}</p>
+                </div>
+                <div className="pc-cmd-list">
+                  {group.actions.map((action, ai) => (
+                    <CommandTile key={`${group.title}-${action.label}`} {...action} delay={gi * 0.04 + ai * 0.03} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <StaggerCard>
-          <Stat label="Tenants" value={counts.organizations} animateValue={counts.organizations} />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat label="Modules" value={counts.modules} animateValue={counts.modules} />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat label="Org admins" value={counts.orgAdmins} animateValue={counts.orgAdmins} />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat label="Faculty" value={counts.faculty} animateValue={counts.faculty} />
-        </StaggerCard>
-        <StaggerCard>
-          <Stat label="Students" value={counts.applicants} animateValue={counts.applicants} />
-        </StaggerCard>
-      </StaggerGrid>
+        <aside className="pc-bento-side">
+          <div className="pc-panel pc-glow-panel p-4">
+            <p className="pc-kicker m-0 mb-2">Revenue trend</p>
+            <BarChart data={billing.monthly || []} compact />
+          </div>
 
-      <StaggerCard>
-        <Panel
-          className="p-5 md:p-6"
-          title="Service health"
-          action={
-            <p className="m-0 font-mono text-[0.68rem] tracking-wide text-[var(--pc-muted)] uppercase">
-              Evaluated {formatWhen(data.evaluatedAt)}
-            </p>
-          }
-        >
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {services.map((service) => {
-              const up = service.status === 'up';
-              const isDatastore = service.name === 'PostgreSQL' || service.name === 'Redis';
-              return (
-                <div key={service.name} className={`pc-service pc-service-animated ${up ? 'is-up' : 'is-down'}`}>
-                  <div className="min-w-0 flex-1">
-                    <p className="m-0 flex items-center gap-2 font-semibold text-[var(--pc-text)]">
-                      <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
-                      {service.name}
-                    </p>
-                    <p className="m-0 mt-1 text-sm text-[var(--pc-muted)]">{isDatastore ? 'Ping time' : 'Response'}</p>
-                    <p className="m-0 mt-0.5 font-mono text-lg font-bold text-[var(--pc-text)]">
-                      {up && service.latencyMs != null ? (
-                        <AnimatedNumber value={service.latencyMs} format={(n) => `${Math.round(n)} ms`} />
-                      ) : (
-                        formatPing(service.latencyMs)
-                      )}
-                    </p>
-                    <PingBar ms={service.latencyMs} up={up} />
+          <div className="pc-panel pc-glow-panel p-4">
+            <p className="pc-kicker m-0 mb-3">Infrastructure</p>
+            <div className="flex flex-col gap-2">
+              {services.map((service) => {
+                const up = service.status === 'up';
+                return (
+                  <div key={service.name} className={`pc-service pc-service-mini ${up ? 'is-up' : 'is-down'}`}>
+                    <div className="min-w-0">
+                      <p className="m-0 flex items-center gap-1.5 text-sm font-semibold text-[var(--pc-text)]">
+                        <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
+                        {service.name}
+                      </p>
+                      <p className="m-0 font-mono text-xs font-bold text-[var(--pc-muted)]">
+                        {up && service.latencyMs != null ? `${Math.round(service.latencyMs)} ms` : up ? 'Up' : 'Down'}
+                      </p>
+                      <PingBar ms={service.latencyMs} up={up} />
+                    </div>
                   </div>
-                  <span className={`tag ${up ? 'tag-allied' : 'tag-nursing'}`}>{up ? 'Up' : 'Down'}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Stat label="API uptime" value={formatUptime(data.uptime?.seconds)} hint={`Started ${formatWhen(data.uptime?.startedAt)}`} />
-            <Stat label="Memory RSS" value={`${memory.rssMb} MB`} hint={`Heap ${memory.heapMb} MB`} />
-          </div>
-        </Panel>
-      </StaggerCard>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <StaggerCard>
-          <Panel
-            className="p-5 md:p-6"
-            title="Request volume"
-            action={
-              <Link to={`${SUPER_BASE}/audit`} className="text-sm font-semibold text-[var(--pc-accent)]">
-                Open traffic →
-              </Link>
-            }
-          >
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Stat label="Last hour" value={traffic.lastHour} animateValue={traffic.lastHour} />
-              <Stat label="Last 24h" value={traffic.last24h} animateValue={traffic.last24h} />
-              <Stat
-                label="Errors 24h"
-                value={traffic.errors24h}
-                animateValue={traffic.errors24h}
-                tone={traffic.errors24h ? 'warn' : undefined}
-              />
+                );
+              })}
             </div>
-          </Panel>
-        </StaggerCard>
+            <p className="m-0 mt-3 text-[0.65rem] text-[var(--pc-muted)]">
+              Uptime {formatUptime(data.uptime?.seconds)} · RSS {memory.rssMb} MB · v{versions.backend}
+            </p>
+          </div>
 
-        <StaggerCard>
-          <Panel className="p-5 md:p-6" title="Runtime">
-            <div className="grid gap-3">
-              <div className="pc-service pc-service-animated is-up">
-                <div>
-                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Backend</p>
-                  <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{versions.backend}</p>
-                  <p className="m-0 text-sm">Node {versions.node}</p>
-                </div>
-                <Pulse on />
-              </div>
-              <div className="pc-service pc-service-animated is-up">
-                <div>
-                  <p className="m-0 text-[0.68rem] font-bold tracking-[0.16em] text-[var(--pc-muted)] uppercase">Console</p>
-                  <p className="mt-1 mb-0 text-lg font-bold text-[var(--pc-text)]">v{FRONTEND_VERSION}</p>
-                  <p className="m-0 text-sm">Platform UI</p>
-                </div>
-                <Pulse on />
-              </div>
+          <div className="pc-panel pc-glow-panel p-4">
+            <p className="pc-kicker m-0 mb-2">Quick jump</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { to: `${SUPER_BASE}/organizations`, icon: IconBuildings, label: 'Tenants' },
+                { to: `${SUPER_BASE}/modules`, icon: IconSwitches, label: 'Catalog' },
+                { to: `${SUPER_BASE}/billing`, icon: IconCard, label: 'Billing' },
+                { to: `${SUPER_BASE}/audit`, icon: IconPulse, label: 'Traffic' },
+                { to: `${SUPER_BASE}/settings`, icon: IconKey, label: 'Access' },
+              ].map((item) => (
+                <Link key={item.to + item.label} to={item.to} className="pc-jump-tile">
+                  <item.icon />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
-          </Panel>
-        </StaggerCard>
+          </div>
+        </aside>
       </div>
 
-      <StaggerGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <QuickAction to={`${SUPER_BASE}/organizations`} label="Tenants" hint="Manage campuses" icon={<IconBuildings />} />
-        <QuickAction to={`${SUPER_BASE}/modules`} label="Catalog" hint="Departments & modules" icon={<IconSwitches />} />
-        <QuickAction to={`${SUPER_BASE}/billing`} label="Billing" hint="Invoices & MRR" icon={<IconCard />} />
-        <QuickAction to={`${SUPER_BASE}/audit`} label="Traffic" hint="API audit log" icon={<IconPulse />} />
-      </StaggerGrid>
-
       {data.recent?.length > 0 && (
-        <StaggerCard>
-          <section>
-            <h2>Recent tenants</h2>
-            <div className="pc-table-wrap">
-              <table className="pc-table">
-                <thead>
-                  <tr>
-                    <th>Tenant</th>
-                    <th>Status</th>
-                    <th>Entitlements</th>
+        <section className="pc-panel pc-glow-panel p-4 md:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="m-0 text-sm font-bold">Recent tenants</h2>
+            <Link to={`${SUPER_BASE}/organizations`} className="text-xs font-semibold text-[var(--pc-accent)]">
+              View all →
+            </Link>
+          </div>
+          <div className="pc-table-wrap">
+            <table className="pc-table pc-table-compact">
+              <thead>
+                <tr>
+                  <th>Tenant</th>
+                  <th>Status</th>
+                  <th>Modules</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent.slice(0, 5).map((org) => (
+                  <tr key={org.id}>
+                    <td>
+                      <Link to={`${SUPER_BASE}/organizations/${org.id}`}>{org.name}</Link>
+                      <div className="font-mono text-[0.62rem] text-[var(--pc-muted)]">{org.slug}</div>
+                    </td>
+                    <td>
+                      <span className={`tag ${org.status === 'active' ? 'tag-allied' : 'tag-nursing'}`}>{org.status}</span>
+                    </td>
+                    <td className="text-xs text-[var(--pc-muted)]">
+                      {(org.departments || org.modules || []).slice(0, 3).join(' · ') || '—'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.recent.map((org, i) => (
-                    <tr key={org.id} className="pc-table-row-animated" style={{ animationDelay: `${i * 40}ms` }}>
-                      <td>
-                        <Link to={`${SUPER_BASE}/organizations/${org.id}`}>{org.name}</Link>
-                        <div className="font-mono text-[0.68rem] text-[var(--pc-muted)]">{org.slug}</div>
-                      </td>
-                      <td>
-                        <span className={`tag ${org.status === 'active' ? 'tag-allied' : 'tag-nursing'}`}>{org.status}</span>
-                        {org.isPublic ? <span className="tag tag-allied ml-2">Public</span> : null}
-                      </td>
-                      <td>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(org.departments || []).length
-                            ? org.departments.map((slug) => (
-                                <span key={slug} className="pc-chip">
-                                  {slug}
-                                </span>
-                              ))
-                            : (org.modules || []).join(' · ') || 'None'}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </StaggerCard>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   );

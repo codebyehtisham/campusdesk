@@ -4,10 +4,6 @@ import { formatMoney } from './money';
 
 type Point = { month?: string; label: string; paidCents?: number; outstandingCents?: number };
 
-const W = 720;
-const H = 260;
-const PAD = { top: 22, right: 22, bottom: 40, left: 52 };
-
 const linePath = (xs: number[], ys: number[]) =>
   xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
 
@@ -23,7 +19,7 @@ const axisMoney = (cents: number) => {
   return `${Math.round(n)}`;
 };
 
-export function BarChart({ data = [] }: { data?: Point[] }) {
+export function BarChart({ data = [], compact = false }: { data?: Point[]; compact?: boolean }) {
   const reduce = useReducedMotion();
   const [hover, setHover] = useState<number | null>(null);
   const [draw, setDraw] = useState(false);
@@ -35,18 +31,26 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
     }
     const id = window.requestAnimationFrame(() => setDraw(true));
     return () => window.cancelAnimationFrame(id);
-  }, [data, reduce]);
+  }, [data, reduce, compact]);
 
   const chart = useMemo(() => {
+    const W = compact ? 480 : 720;
+    const H = compact ? 140 : 260;
+    const PAD = compact
+      ? { top: 14, right: 14, bottom: 28, left: 40 }
+      : { top: 22, right: 22, bottom: 40, left: 52 };
     const innerW = W - PAD.left - PAD.right;
     const innerH = H - PAD.top - PAD.bottom;
     const maxVal = niceMax(data.map((item) => Math.max(item.paidCents || 0, item.outstandingCents || 0)));
-    const tickCount = 5;
+    const tickCount = compact ? 3 : 5;
     const ticks = Array.from({ length: tickCount + 1 }, (_, i) => Math.round((maxVal / tickCount) * i));
     const count = Math.max(data.length, 1);
     const xs = data.map((_, i) => PAD.left + (count === 1 ? innerW / 2 : (i / (count - 1)) * innerW));
     const y = (value: number) => PAD.top + innerH - (value / maxVal) * innerH;
     return {
+      W,
+      H,
+      PAD,
       innerH,
       maxVal,
       ticks,
@@ -57,15 +61,15 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
       openPath: linePath(xs, data.map((item) => y(item.outstandingCents || 0))),
       baseline: PAD.top + innerH,
     };
-  }, [data]);
+  }, [data, compact]);
 
   if (!data.length) {
-    return <p className="m-0 py-10 text-center text-sm text-[var(--pc-muted)]">No payment history yet.</p>;
+    return <p className="m-0 py-6 text-center text-sm text-[var(--pc-muted)]">No payment history yet.</p>;
   }
 
   const nearest = (clientX: number, target: SVGSVGElement) => {
     const rect = target.getBoundingClientRect();
-    const x = ((clientX - rect.left) / rect.width) * W;
+    const x = ((clientX - rect.left) / rect.width) * chart.W;
     let best = 0;
     let dist = Infinity;
     chart.xs.forEach((px, i) => {
@@ -82,31 +86,31 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
   const marker = 5;
 
   return (
-    <div className="pc-chart-wrap pc-chart-dark">
+    <div className={`pc-chart-wrap pc-chart-dark ${compact ? 'pc-chart-compact' : ''}`}>
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${chart.W} ${chart.H}`}
         className="pc-line-chart"
         role="img"
         aria-label="Revenue by month"
         onMouseMove={(e) => nearest(e.clientX, e.currentTarget)}
         onMouseLeave={() => setHover(null)}
       >
-        <rect x={0} y={0} width={W} height={H} fill="#050505" rx="8" />
+        <rect x={0} y={0} width={chart.W} height={chart.H} fill="#050505" rx="8" />
 
         {chart.ticks.map((tick) => {
-          const y = PAD.top + chart.innerH - (tick / chart.maxVal) * chart.innerH;
+          const y = chart.PAD.top + chart.innerH - (tick / chart.maxVal) * chart.innerH;
           return (
             <g key={tick}>
-              <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-              <text x={PAD.left - 10} y={y + 4} fill="#ffffff" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="end">
+              <line x1={chart.PAD.left} x2={chart.W - chart.PAD.right} y1={y} y2={y} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <text x={chart.PAD.left - 10} y={y + 4} fill="#ffffff" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="end">
                 {axisMoney(tick)}
               </text>
             </g>
           );
         })}
 
-        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
-        <line x1={PAD.left} y1={chart.baseline} x2={W - PAD.right} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
+        <line x1={chart.PAD.left} y1={chart.PAD.top} x2={chart.PAD.left} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
+        <line x1={chart.PAD.left} y1={chart.baseline} x2={chart.W - chart.PAD.right} y2={chart.baseline} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
 
         <motion.path
           d={chart.openPath}
@@ -136,7 +140,7 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
           <line
             x1={chart.xs[hover]}
             x2={chart.xs[hover]}
-            y1={PAD.top}
+            y1={chart.PAD.top}
             y2={chart.baseline}
             stroke="rgba(255,255,255,0.15)"
             strokeWidth="1"
@@ -160,7 +164,7 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
               stroke="#ffffff"
               strokeWidth={hover === i ? 1.5 : 0}
             />
-            <text x={chart.xs[i]} y={H - 12} fill="#ffffff" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">
+            <text x={chart.xs[i]} y={chart.H - 12} fill="#ffffff" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">
               {i + 1}
             </text>
           </motion.g>
@@ -180,9 +184,11 @@ export function BarChart({ data = [] }: { data?: Point[] }) {
         </motion.div>
       )}
 
-      <p className="pc-chart-footnote m-0 mt-2 text-center text-[0.68rem] text-[var(--pc-muted)]">
-        X-axis: month index · hover for values · blue = paid
-      </p>
+      {!compact && (
+        <p className="pc-chart-footnote m-0 mt-2 text-center text-[0.68rem] text-[var(--pc-muted)]">
+          X-axis: month index · hover for values · blue = paid
+        </p>
+      )}
     </div>
   );
 }

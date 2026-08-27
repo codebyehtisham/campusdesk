@@ -242,19 +242,11 @@ export default function ApplicationReview({ portal = 'staff' }) {
   ];
 
   return (
-    <div className="review-shell flex min-h-svh flex-col">
+    <div className="review-shell flex min-h-svh w-full flex-col">
       <div className="review-backdrop pointer-events-none fixed inset-0" aria-hidden="true" />
 
-      <header className="review-topbar">
-        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-          <Link to={listPath} className="review-back-link">
-            ← Back to list
-          </Link>
-        </div>
-      </header>
-
       {(error || notice) && (
-        <div className="relative z-10 mx-auto w-full max-w-[1800px] px-4 pt-3 sm:px-6">
+        <div className="relative z-20 w-full px-4 pt-3 sm:px-6 lg:px-8">
           <AnimatePresence>
             {error ? (
               <motion.p className="review-alert is-error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -285,12 +277,16 @@ export default function ApplicationReview({ portal = 'staff' }) {
       ) : (
         <>
           <motion.section
-            className="review-profile"
+            className="review-profile w-full"
             initial={reduce ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease }}
           >
-            <div className="mx-auto flex max-w-[1800px] flex-col gap-5 px-4 py-6 sm:flex-row sm:items-center sm:px-6">
+            <div className="review-profile-inner">
+              <Link to={listPath} className="review-back-link mb-4 inline-flex">
+                ← Back to applications
+              </Link>
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
               <div className="relative shrink-0">
                 <span className="review-profile-avatar">{initials(student?.name)}</span>
                 <div className="review-profile-ring">
@@ -316,20 +312,21 @@ export default function ApplicationReview({ portal = 'staff' }) {
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+              <div className="flex flex-wrap gap-2 lg:flex-col lg:items-end">
                 {documents.length > 0 ? (
-                  <button type="button" className="btn btn-primary py-2.5 text-sm" onClick={() => selectDocument(documents[0].key)}>
+                  <button type="button" className="review-profile-btn is-primary" onClick={() => selectDocument(documents[0].key)}>
                     Review documents
                   </button>
                 ) : null}
-                <button type="button" className="btn btn-outline-light border-white/30 py-2.5 text-sm text-white hover:bg-white/10" onClick={() => setActive({ type: 'overview' })}>
+                <button type="button" className="review-profile-btn" onClick={() => setActive({ type: 'overview' })}>
                   View overview
                 </button>
+              </div>
               </div>
             </div>
           </motion.section>
 
-          <div className="relative z-1 mx-auto flex w-full max-w-[1800px] flex-1 flex-col lg:flex-row lg:gap-4 lg:px-4 lg:pb-4">
+          <div className="review-workspace">
             <aside className={`review-sidebar ${mobilePane === 'browse' ? 'block' : 'hidden lg:block'}`}>
               <p className="review-sidebar-label">Student file</p>
               <nav className="review-nav">
@@ -545,8 +542,8 @@ export default function ApplicationReview({ portal = 'staff' }) {
           </div>
 
           {canAct ? (
-            <footer className="review-footer">
-              <div className="mx-auto flex max-w-[1800px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <footer className="review-footer w-full">
+              <div className="review-footer-inner flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="m-0 text-sm font-bold text-ink">Decision for {student?.name}</p>
                   <p className="m-0 text-xs text-text-muted">Accept enrolls them on the roster. Reject closes the application.</p>
