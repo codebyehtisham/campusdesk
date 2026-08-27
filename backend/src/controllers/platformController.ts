@@ -19,6 +19,7 @@ import { billingOverview } from '../lib/billing.js';
 import { sanitizeTheme } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
 import { getScheme, parseOrgKind, publicSchemes, seedOrgUnits } from '../lib/schemes.js';
+import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 
 const backendVersion = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../package.json'), 'utf8')
@@ -392,6 +393,9 @@ export const createOrganization = async (req: Request, res: Response) => {
       },
     });
     await seedOrgUnits(org.id, kind);
+    if (kind === 'education') {
+      await ensureOrgProgrammes(org.id);
+    }
     await bustOrgCache();
     res.status(201).json(toOrg(org, 0));
   } catch (err) {

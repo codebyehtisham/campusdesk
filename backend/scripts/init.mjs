@@ -68,6 +68,8 @@ const main = async () => {
 
   await runStep('Catalog ensure', 'dist/scripts/ensure-catalog.js', 'src/scripts/ensure-catalog.ts');
 
+  await runStep('Programmes ensure', 'dist/scripts/ensure-programmes.js', 'src/scripts/ensure-programmes.ts');
+
   const flushRequested = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
   if (flushRequested && isDev) {
     console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');

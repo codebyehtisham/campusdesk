@@ -164,3 +164,14 @@ DATABASE_URL='postgresql://...' npm run db:catalog
    - Click individual **modules** to enable them for that campus.
 
 Org `modules` and `departments` are JSON arrays on the organisation record; the org admin portal only shows modules you enable here.
+
+### Programmes (courses)
+
+Programmes are stored in the `Course` table per education organisation (used in Classes, admissions dropdown, and the public site). Every deploy runs `ensure-programmes` in background init. New education tenants also get default programmes on create.
+
+Manual restore:
+
+```bash
+cd backend
+DATABASE_URL='postgresql://...' npm run db:programmes
+```

@@ -1,3 +1,5 @@
+import { programmeOptions } from './seedProgrammes.js';
+
 export type AdmissionFieldType =
   | 'text'
   | 'textarea'
@@ -177,7 +179,7 @@ export const defaultAdmissionForm = (): AdmissionForm => ({
           label: 'Programme',
           type: 'select',
           required: true,
-          options: ['BSN', 'Post-RN BSN', 'Diploma in Midwifery', 'Allied Health'],
+          options: programmeOptions(),
           maxFileMb: 5,
           accept: '',
           placeholder: '',

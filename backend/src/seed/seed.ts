@@ -3,12 +3,13 @@ import type { InvoiceStatus, Prisma } from '@prisma/client';
 import { asStringList } from '../lib/lists.js';
 import { prisma } from '../config/db.js';
 import { ensurePlatformCatalog } from '../lib/seedCatalog.js';
+import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 import { DEFAULT_THEME } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
 import { seedOrgUnits } from '../lib/schemes.js';
 import { dayStamp, jsToWeekday, newQrToken, QR_TTL_MS } from '../lib/teaching.js';
 import { defaultAdmissionForm } from '../lib/admissionForm.js';
-import { careers, courses, faculty, news } from './content.js';
+import { careers, faculty, news } from './content.js';
 
 const run = async () => {
   try {
@@ -103,10 +104,10 @@ const run = async () => {
     await seedOrgUnits(explore.id, 'education');
 
     await prisma.faculty.deleteMany({ where: { organizationId: explore.id } });
-    await prisma.course.deleteMany({ where: { organizationId: explore.id } });
     await prisma.news.deleteMany({ where: { organizationId: explore.id } });
     await prisma.faculty.createMany({ data: faculty.map((item) => ({ ...item, organizationId: explore.id })) });
-    await prisma.course.createMany({ data: courses.map((item) => ({ ...item, organizationId: explore.id })) });
+    const programmesAdded = await ensureOrgProgrammes(explore.id);
+    if (programmesAdded) console.log(`Programmes seeded: ${programmesAdded} added for explore.`);
     await prisma.news.createMany({ data: news.map((item) => ({ ...item, organizationId: explore.id })) });
 
     if ((await prisma.career.count({ where: { organizationId: explore.id } })) === 0) {

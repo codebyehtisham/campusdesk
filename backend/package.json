@@ -13,6 +13,7 @@
     "seed": "tsx src/seed/seed.ts",
     "db:flush": "tsx src/scripts/flush-db.ts",
     "db:catalog": "tsx src/scripts/ensure-catalog.ts",
+    "db:programmes": "tsx src/scripts/ensure-programmes.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev"
