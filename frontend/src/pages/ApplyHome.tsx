@@ -197,26 +197,28 @@ export default function ApplyHome() {
   const shownBrand = orgBrand || brand;
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-bg">
+    <div className="relative min-h-svh overflow-x-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
       <div className="orb top-16 left-[8%] h-64 w-64 bg-cardinal/20" />
       <div className="orb right-[10%] bottom-[12%] h-72 w-72 bg-cardinal-light/25" />
 
-      <div className="relative z-1 flex min-h-svh items-center justify-center px-5 py-16">
+      <div className="relative z-1 flex min-h-svh justify-center px-5 py-16">
         {step === 'pick' ? (
-          <InstitutePicker
-            institutes={institutes}
-            loading={pickerLoading}
-            error={pickerError}
-            selecting={selecting}
-            onSelect={handleSelectInstitute}
-          />
+          <div className="my-auto w-full max-w-2xl">
+            <InstitutePicker
+              institutes={institutes}
+              loading={pickerLoading}
+              error={pickerError}
+              selecting={selecting}
+              onSelect={handleSelectInstitute}
+            />
+          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-lg"
+            className="my-auto w-full max-w-lg"
           >
             <div className="mb-6 flex items-center gap-3 px-1">
               <BrandMark org={shownBrand} size={48} />

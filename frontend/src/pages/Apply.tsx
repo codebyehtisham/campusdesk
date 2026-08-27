@@ -435,7 +435,7 @@ export default function Apply() {
   const activeStats = activeGroup ? sectionStats(activeGroup, answers) : null;
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-bg">
+    <div className="relative min-h-svh overflow-x-hidden bg-bg">
       <div className="hero-aurora" aria-hidden="true" />
       <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
       <div className="orb -top-10 left-[8%] h-64 w-64 bg-cardinal/15" />
@@ -601,7 +601,7 @@ export default function Apply() {
                 </div>
               </aside>
 
-              <div ref={panelRef}>
+              <div ref={panelRef} className="scroll-mt-28 min-w-0">
                 <AnimatePresence mode="wait">
                   {activeGroup && (
                     <motion.section
