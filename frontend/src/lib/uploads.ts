@@ -33,3 +33,12 @@ export function isPdfMime(mime: string | undefined, name?: string) {
   if (mime === 'application/pdf') return true;
   return Boolean(name?.toLowerCase().endsWith('.pdf'));
 }
+
+export function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.readAsDataURL(file);
+  });
+}

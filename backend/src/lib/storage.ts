@@ -2,6 +2,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -190,6 +191,21 @@ export async function verifyR2ConnectionSafe() {
     lastVerifyError = (err as Error).message || 'R2 verify failed';
     console.error('[r2] verify failed:', lastVerifyError);
     return false;
+  }
+}
+
+export async function countR2Objects() {
+  if (!isR2Configured()) return null;
+  try {
+    const result = await getClient().send(
+      new ListObjectsV2Command({
+        Bucket: r2Bucket(),
+        MaxKeys: 1000,
+      })
+    );
+    return result.KeyCount ?? result.Contents?.length ?? 0;
+  } catch {
+    return null;
   }
 }
 

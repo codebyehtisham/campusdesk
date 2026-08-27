@@ -15,7 +15,8 @@ import {
   statusClass,
   statusLabel,
 } from '../../lib/admissionReview';
-import { revokeStaffDocumentUrls, staffDocumentBlobUrl } from '../../lib/staffDocuments';
+import { revokeStaffDocumentUrls, staffDocumentBlobUrl, clearStaffDocumentCache } from '../../lib/staffDocuments';
+import { readFileAsDataUrl } from '../../lib/uploads';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -86,10 +87,11 @@ function FieldValue({ field, value }) {
   return <span className="text-sm font-semibold text-ink">{String(value)}</span>;
 }
 
-function DocumentPreview({ doc, previewHref, previewLoading, onPrev, onNext, hasPrev, hasNext }) {
+function DocumentPreview({ doc, previewHref, previewLoading, replacing, onReplace, onPrev, onNext, hasPrev, hasNext }) {
   const [broken, setBroken] = useState(false);
   const href = previewHref || '';
   const missing = Boolean(doc && !previewLoading && !href);
+  const inputId = doc ? `replace-${doc.key}` : 'replace-doc';
 
   useEffect(() => {
     setBroken(false);
@@ -135,8 +137,29 @@ function DocumentPreview({ doc, previewHref, previewLoading, onPrev, onNext, has
             <FileIcon className="h-12 w-12 text-crimson" />
             <p className="m-0 text-sm font-semibold text-ink">File missing from cloud storage</p>
             <p className="m-0 max-w-sm text-sm text-text-muted">
-              This document was not saved to Cloudflare R2. Ask the applicant to open Apply and use Replace documents.
+              The file metadata is saved but the actual file was never stored in R2 (common for applications
+              submitted before cloud storage was enabled). Upload a replacement below, or ask the applicant to use
+              Replace documents in Apply.
             </p>
+            {onReplace ? (
+              <>
+                <input
+                  id={inputId}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="sr-only"
+                  disabled={replacing}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = '';
+                    if (file) onReplace(file);
+                  }}
+                />
+                <label htmlFor={inputId} className="btn btn-primary py-2 text-sm">
+                  {replacing ? 'Uploading…' : 'Upload replacement'}
+                </label>
+              </>
+            ) : null}
           </div>
         ) : doc.image ? (
           <motion.img
@@ -206,6 +229,7 @@ export default function ApplicationReview({ portal = 'staff' }) {
   const [mobilePane, setMobilePane] = useState('browse');
   const [previewUrls, setPreviewUrls] = useState({});
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [replacingKey, setReplacingKey] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -260,6 +284,42 @@ export default function ApplicationReview({ portal = 'staff' }) {
   }, [id, portal, documents]);
 
   useEffect(() => () => revokeStaffDocumentUrls(id), [id]);
+
+  const reloadDocumentPreview = async (fieldKey: string) => {
+    if (!id) return;
+    const scope = portal === 'admin' ? 'admin' : 'staff';
+    clearStaffDocumentCache(id, fieldKey, scope);
+    try {
+      const href = await staffDocumentBlobUrl(id, fieldKey, scope);
+      setPreviewUrls((current) => ({ ...current, [fieldKey]: href }));
+    } catch {
+      setPreviewUrls((current) => ({ ...current, [fieldKey]: '' }));
+    }
+  };
+
+  const replaceDocument = async (fieldKey: string, file: File) => {
+    if (!id || !detail) return;
+    setReplacingKey(fieldKey);
+    setError('');
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const res = await api.post(
+        `/applications/${id}/files/${fieldKey}`,
+        { file: dataUrl, name: file.name },
+        { authScope }
+      );
+      setDetail((current) => ({
+        ...current,
+        answers: { ...(current?.answers || {}), [fieldKey]: res.data },
+      }));
+      await reloadDocumentPreview(fieldKey);
+      setNotice(`${res.data?.name || 'Document'} uploaded to cloud storage.`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not upload that document.');
+    } finally {
+      setReplacingKey('');
+    }
+  };
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -578,6 +638,12 @@ export default function ApplicationReview({ portal = 'staff' }) {
                           doc={selectedDoc}
                           previewHref={selectedDoc ? previewUrls[selectedDoc.key] : ''}
                           previewLoading={previewLoading}
+                          replacing={Boolean(selectedDoc && replacingKey === selectedDoc.key)}
+                          onReplace={
+                            selectedDoc && detail?.status !== 'accepted' && detail?.status !== 'rejected'
+                              ? (file) => replaceDocument(selectedDoc.key, file)
+                              : null
+                          }
                           hasPrev={docIndex > 0}
                           hasNext={docIndex >= 0 && docIndex < documents.length - 1}
                           onPrev={() => docIndex > 0 && selectDocument(documents[docIndex - 1].key)}

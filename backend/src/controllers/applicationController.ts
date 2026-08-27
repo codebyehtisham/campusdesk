@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';
 import { prisma } from '../config/db.js';
 import { readStoredObject, storageKeyFromFileUrl } from '../lib/storage.js';
+import { parseDataUrlUpload, storeApplicationFile } from '../lib/applicationFiles.js';
 import { orgId } from '../lib/tenant.js';
 import {
   asAnswerMap,
@@ -308,6 +309,62 @@ export const streamApplicationFile = async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({ message: 'Could not open document.', error: (err as Error).message });
     }
+  }
+};
+
+export const replaceApplicationFile = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    if (!organizationId) {
+      return res.status(403).json({ message: 'Account is not linked to an organisation.' });
+    }
+    const fieldKey = String(req.params.fieldKey || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 48);
+    if (!fieldKey) return res.status(400).json({ message: 'Document field is required.' });
+
+    const application = await prisma.application.findFirst({
+      where: { id: req.params.id, organizationId },
+      include: { user: true },
+    });
+    if (!application || application.user?.role !== 'applicant') {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    if (['accepted', 'rejected'].includes(application.status)) {
+      return res.status(400).json({ message: 'This application can no longer be edited.' });
+    }
+
+    const form = await loadOrgAdmissionForm(organizationId);
+    const field = form.groups.flatMap((g) => g.fields).find((f) => f.key === fieldKey && f.type === 'file');
+    if (!field) return res.status(400).json({ message: 'Unknown document field.' });
+
+    const parsed = parseDataUrlUpload(String(req.body.file || ''), req.body.name);
+    if ('error' in parsed) return res.status(400).json({ message: parsed.error });
+    const maxBytes = Math.max(0.5, field.maxFileMb || 5) * 1024 * 1024;
+    if (parsed.buffer.length > maxBytes) {
+      return res.status(400).json({ message: `File must be ${field.maxFileMb} MB or smaller.` });
+    }
+
+    const stored = await storeApplicationFile({
+      organizationId,
+      applicationId: application.id,
+      fieldKey,
+      buffer: parsed.buffer,
+      mime: parsed.mime,
+      name: parsed.name,
+    });
+    const fileMeta = { url: stored.url, name: stored.name, size: stored.size, mime: stored.mime };
+    const answers = { ...asAnswerMap(application.answers), [fieldKey]: fileMeta };
+    await prisma.application.update({
+      where: { id: application.id },
+      data: { answers: stringifyAnswers(answers) },
+    });
+
+    res.json(fileMeta);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message || 'Could not upload file.' });
   }
 };
 

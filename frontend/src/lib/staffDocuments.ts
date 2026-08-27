@@ -32,3 +32,12 @@ export function revokeStaffDocumentUrls(applicationId?: string) {
     }
   }
 }
+
+export function clearStaffDocumentCache(applicationId: string, fieldKey: string, authScope: 'admin' | 'staff') {
+  const key = cacheKey(applicationId, fieldKey, authScope);
+  const hit = cache.get(key);
+  if (hit) {
+    URL.revokeObjectURL(hit);
+    cache.delete(key);
+  }
+}

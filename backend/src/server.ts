@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
-import { isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, readStoredObject, sanitizeStorageKey, verifyR2ConnectionSafe } from './lib/storage.js';
+import { isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, readStoredObject, sanitizeStorageKey, verifyR2ConnectionSafe, countR2Objects } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -120,7 +120,11 @@ app.use('/uploads', async (req, res, next) => {
 });
 
 app.get('/api/health', async (_req, res) => {
-  const [postgres, redis] = await Promise.all([pingPostgres(), pingRedis()]);
+  const [postgres, redis, r2ObjectCount] = await Promise.all([
+    pingPostgres(),
+    pingRedis(),
+    isR2Configured() ? countR2Objects() : Promise.resolve(null),
+  ]);
   res.json({
     status: 'ok',
     environment: appEnvironment(),
@@ -128,6 +132,7 @@ app.get('/api/health', async (_req, res) => {
     storage: isR2Configured() ? 'r2' : isR2Disabled() ? 'local' : 'unconfigured',
     r2Bucket: isR2Configured() ? r2Bucket() : undefined,
     r2WriteOk: isR2Configured() ? r2LastVerify().ok : false,
+    r2ObjectCount: r2ObjectCount ?? undefined,
     r2Error: isR2Configured() && !r2LastVerify().ok ? r2LastVerify().error || undefined : undefined,
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
