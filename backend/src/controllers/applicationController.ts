@@ -277,8 +277,12 @@ export const streamApplicationFile = async (req: Request, res: Response) => {
     }
 
     const answers = asAnswerMap(application.answers);
-    const file = answers[fieldKey];
-    if (!file || typeof file !== 'object' || Array.isArray(file) || !file.url) {
+    const raw = answers[fieldKey];
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return res.status(404).json({ message: 'Document not found on this application.' });
+    }
+    const file = raw as { url?: string; mime?: string; name?: string };
+    if (!file.url) {
       return res.status(404).json({ message: 'Document not found on this application.' });
     }
 
