@@ -109,6 +109,8 @@ export const getMine = async (req: Request, res: Response) => {
       toApplication(application, {
         form,
         editable: editableStatuses.has(application.status),
+        documentsEditable:
+          editableStatuses.has(application.status) || application.status === 'submitted',
       })
     );
   } catch (err) {

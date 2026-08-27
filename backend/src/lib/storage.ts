@@ -11,6 +11,10 @@ import { Readable } from 'node:stream';
 const DEFAULT_ENDPOINT = 'https://fed2231335a1a08237a63ec5f77bc211.r2.cloudflarestorage.com';
 const DEFAULT_BUCKET = 'campusdesk';
 
+// Prevent AWS SDK default CRC32 checksums that break R2 Put/Get on some versions.
+process.env.AWS_REQUEST_CHECKSUM_CALCULATION ||= 'WHEN_REQUIRED';
+process.env.AWS_RESPONSE_CHECKSUM_VALIDATION ||= 'WHEN_REQUIRED';
+
 export function r2Endpoint() {
   return (process.env.R2_ENDPOINT || DEFAULT_ENDPOINT).replace(/\/+$/, '');
 }
@@ -44,6 +48,27 @@ export function assertR2Ready() {
 }
 
 let client: S3Client | null = null;
+let lastVerifyError = '';
+let lastVerifyOk = false;
+
+export function r2LastVerify() {
+  return { ok: lastVerifyOk, error: lastVerifyError };
+}
+
+function stripChecksumHeaders(headers: Record<string, string> | undefined) {
+  if (!headers) return;
+  for (const key of Object.keys(headers)) {
+    const lower = key.toLowerCase();
+    if (
+      lower.startsWith('x-amz-checksum-') ||
+      lower === 'x-amz-sdk-checksum-algorithm' ||
+      lower === 'x-amz-checksum-algorithm' ||
+      lower === 'x-amz-checksum-mode'
+    ) {
+      delete headers[key];
+    }
+  }
+}
 
 function getClient() {
   assertR2Ready();
@@ -56,10 +81,18 @@ function getClient() {
         accessKeyId: process.env.R2_ACCESS_KEY_ID!.trim(),
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!.trim(),
       },
-      // Newer AWS SDKs send checksum headers R2 rejects — disable unless required.
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
     });
+
+    client.middlewareStack.add(
+      (next) => async (args) => {
+        const request = args.request as { headers?: Record<string, string> };
+        stripChecksumHeaders(request.headers);
+        return next(args);
+      },
+      { step: 'build', name: 'stripR2ChecksumHeaders', priority: 'high' }
+    );
   }
   return client;
 }
@@ -125,9 +158,36 @@ export async function getObject(key: string) {
   };
 }
 
+/** Head bucket + write/read/delete a tiny object so we know Put actually works. */
 export async function verifyR2Connection() {
   assertR2Ready();
-  await getClient().send(new HeadBucketCommand({ Bucket: r2Bucket() }));
+  const s3 = getClient();
+  await s3.send(new HeadBucketCommand({ Bucket: r2Bucket() }));
+  const key = `_healthcheck/${Date.now()}.txt`;
+  const body = Buffer.from(`campusdesk-r2-ok-${Date.now()}`);
+  await putObject({ key, body, contentType: 'text/plain' });
+  const got = await getObject(key);
+  if (!got.body) throw new Error('R2 GetObject returned empty body after Put');
+  // Drain stream so the socket can close cleanly.
+  for await (const _chunk of got.body) {
+    /* discard */
+  }
+  await deleteObject(key);
+  lastVerifyOk = true;
+  lastVerifyError = '';
+  return true;
+}
+
+export async function verifyR2ConnectionSafe() {
+  try {
+    await verifyR2Connection();
+    return true;
+  } catch (err) {
+    lastVerifyOk = false;
+    lastVerifyError = (err as Error).message || 'R2 verify failed';
+    console.error('[r2] verify failed:', lastVerifyError);
+    return false;
+  }
 }
 
 export function sanitizeStorageKey(raw: string) {

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
-import { getObject, isR2Configured, isR2Disabled, r2Bucket, sanitizeStorageKey, verifyR2Connection } from './lib/storage.js';
+import { getObject, isR2Configured, isR2Disabled, r2Bucket, r2LastVerify, sanitizeStorageKey, verifyR2ConnectionSafe } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -129,6 +129,8 @@ app.get('/api/health', async (_req, res) => {
     url: publicAppUrl(),
     storage: isR2Configured() ? 'r2' : isR2Disabled() ? 'local' : 'unconfigured',
     r2Bucket: isR2Configured() ? r2Bucket() : undefined,
+    r2WriteOk: isR2Configured() ? r2LastVerify().ok : false,
+    r2Error: isR2Configured() && !r2LastVerify().ok ? r2LastVerify().error || undefined : undefined,
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
     postgres: { status: postgres.status, latencyMs: postgres.latencyMs },
@@ -195,9 +197,10 @@ const start = async () => {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     if (isR2Configured()) {
-      verifyR2Connection()
-        .then(() => console.log(`File storage: Cloudflare R2 ready (${r2Bucket()})`))
-        .catch((err) => console.error(`File storage: R2 check failed — ${(err as Error).message}`));
+      verifyR2ConnectionSafe().then((ok) => {
+        if (ok) console.log(`File storage: Cloudflare R2 write OK (${r2Bucket()})`);
+        else console.error(`File storage: R2 keys present but Put/Get failed — ${r2LastVerify().error}`);
+      });
     } else if (isR2Disabled()) {
       console.warn('File storage: local disk (R2_DISABLED=1)');
     } else {

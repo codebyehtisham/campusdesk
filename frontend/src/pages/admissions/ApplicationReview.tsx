@@ -86,6 +86,12 @@ function FieldValue({ field, value }) {
 }
 
 function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [doc?.key, doc?.href]);
+
   if (!doc) {
     return (
       <div className="review-preview-empty">
@@ -116,7 +122,15 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
         </div>
       </div>
       <div className="review-preview-frame">
-        {doc.image ? (
+        {broken ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+            <FileIcon className="h-12 w-12 text-crimson" />
+            <p className="m-0 text-sm font-semibold text-ink">File missing from cloud storage</p>
+            <p className="m-0 max-w-sm text-sm text-text-muted">
+              This document was not saved to Cloudflare R2. Ask the applicant to open Apply and use Replace documents.
+            </p>
+          </div>
+        ) : doc.image ? (
           <motion.img
             key={doc.key}
             src={doc.href}
@@ -125,9 +139,10 @@ function DocumentPreview({ doc, onPrev, onNext, hasPrev, hasNext }) {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, ease }}
+            onError={() => setBroken(true)}
           />
         ) : doc.pdf ? (
-          <iframe title={doc.label} src={doc.href} className="review-preview-iframe" />
+          <iframe title={doc.label} src={doc.href} className="review-preview-iframe" onError={() => setBroken(true)} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-16">
             <FileIcon className="h-12 w-12 text-cardinal" />

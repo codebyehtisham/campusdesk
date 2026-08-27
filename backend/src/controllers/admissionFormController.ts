@@ -5,12 +5,14 @@ import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { getSiteSettings } from './settingsController.js';
 import {
+  asAnswerMap,
   defaultAdmissionForm,
   emptyAdmissionForm,
   parseAdmissionForm,
   parseStoredAdmissionForm,
   publicAdmissionForm,
   sanitizeAdmissionFormInput,
+  stringifyAnswers,
 } from '../lib/admissionForm.js';
 import { isR2Disabled, putObject } from '../lib/storage.js';
 import { hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
@@ -172,7 +174,7 @@ export const uploadApplicationFile = async (req: Request, res: Response) => {
       update: {},
       create: { userId: req.user.id, organizationId, status: 'not_started' },
     });
-    if (['accepted', 'rejected', 'submitted'].includes(application.status)) {
+    if (['accepted', 'rejected'].includes(application.status)) {
       return res.status(400).json({ message: 'This application can no longer be edited.' });
     }
 
@@ -190,7 +192,23 @@ export const uploadApplicationFile = async (req: Request, res: Response) => {
       url = stored.url;
     }
     const name = clipFilename(req.body.name) || `${fieldKey}${ext}`;
-    res.json({ url, name, size: buffer.length, mime });
+    const fileMeta = { url, name, size: buffer.length, mime };
+
+    // Persist into answers immediately so officer review sees the new R2 URL
+    // even if the applicant does not click Save again.
+    const answers = {
+      ...asAnswerMap(application.answers),
+      [fieldKey]: fileMeta,
+    };
+    await prisma.application.update({
+      where: { id: application.id },
+      data: {
+        answers: stringifyAnswers(answers),
+        ...(application.status === 'not_started' ? { status: 'in_progress' } : {}),
+      },
+    });
+
+    res.json(fileMeta);
   } catch (err) {
     res.status(400).json({ message: (err as Error).message || 'Could not upload file.' });
   }
