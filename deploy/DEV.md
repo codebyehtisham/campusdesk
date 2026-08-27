@@ -83,6 +83,37 @@ git merge develop
 git push origin main
 ```
 
+## Flush dev database (Railway dashboard)
+
+Railway has no “run script” button. Use **environment variables + redeploy** on the **dev service only**:
+
+1. **Variables** → add:
+   - `CONFIRM_DB_FLUSH=1`
+   - `SKIP_SEED=1` (only superadmin left after flush; omit this if you want demo data re-seeded)
+2. Confirm `APP_ENV=development` is set on this service (required — flush is blocked on production).
+3. **Deploy** → **Redeploy** (or push any commit to `develop`).
+4. Watch deploy logs for `Database flush complete` and `Users remaining: 1`.
+5. **Remove `CONFIRM_DB_FLUSH`** from variables and redeploy again (so the next deploy does not flush again).
+6. When you want demo org/users back, remove `SKIP_SEED` and redeploy once.
+
+### Run flush from your Mac (alternative)
+
+1. Railway → **dev service** → **Postgres** plugin → **Connect** → copy `DATABASE_URL`.
+2. Railway → **Redis** plugin → copy `REDIS_URL`.
+3. Locally:
+
+```bash
+cd backend
+DATABASE_URL='postgresql://...' REDIS_URL='redis://...' CONFIRM_DB_FLUSH=1 npm run db:flush
+```
+
+Install the [Railway CLI](https://docs.railway.com/guides/cli) for a third option:
+
+```bash
+railway link   # pick dev service
+CONFIRM_DB_FLUSH=1 SKIP_SEED=1 railway run npm run db:flush --prefix backend
+```
+
 ## Production checklist
 
 On the **production** Railway service:

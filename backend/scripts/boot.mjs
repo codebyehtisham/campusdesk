@@ -71,15 +71,39 @@ const main = async () => {
     console.warn('FORCE_DB_RESET=1 — prisma db push will accept data loss.');
   }
   await run('npx', pushArgs);
-  await run('npx', ['tsx', 'src/seed/seed.ts']);
+
+  const flushRequested = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
+  if (flushRequested) {
+    if (process.env.APP_ENV !== 'development') {
+      console.error('');
+      console.error('FATAL: CONFIRM_DB_FLUSH is only allowed when APP_ENV=development.');
+      console.error('Remove CONFIRM_DB_FLUSH from production immediately.');
+      console.error('');
+      process.exit(1);
+    }
+    console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');
+    await run('npx', ['tsx', 'src/scripts/flush-db.ts']);
+  }
+
+  const skipSeed = ['1', 'true', 'yes'].includes(String(process.env.SKIP_SEED || '').trim().toLowerCase());
+  if (!skipSeed) {
+    await run('npx', ['tsx', 'src/seed/seed.ts']);
+  } else {
+    console.warn('SKIP_SEED=1 — demo organisations and users were not re-seeded.');
+  }
   console.log('');
   console.log('Seeded login accounts:');
-  console.log(`  Org admin   /org-admin          ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}`);
-  console.log(`  Officer     /faculty-portal     officer@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
-  console.log(`  Faculty     /faculty-portal     faculty@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
-  console.log(`  Super admin /x7k2m9q4p8n3       ${process.env.PLATFORM_EMAIL} / ${process.env.PLATFORM_PASSWORD}`);
-  console.log('  Student     /login              student@explorecollege.org / student123');
-  console.log('  Apply       /apply              pick institute (or ?institute=explore)');
+  if (!skipSeed) {
+    console.log(`  Org admin   /org-admin          ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}`);
+    console.log(`  Officer     /faculty-portal     officer@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
+    console.log(`  Faculty     /faculty-portal     faculty@explorecollege.org / ${process.env.ADMIN_PASSWORD}`);
+    console.log(`  Super admin /x7k2m9q4p8n3       ${process.env.PLATFORM_EMAIL} / ${process.env.PLATFORM_PASSWORD}`);
+    console.log('  Student     /login              student@explorecollege.org / student123');
+    console.log('  Apply       /apply              pick institute (or ?institute=explore)');
+  } else {
+    console.log(`  Super admin /x7k2m9q4p8n3       ${process.env.PLATFORM_EMAIL} / ${process.env.PLATFORM_PASSWORD}`);
+    console.log('  (Only superadmin remains — remove SKIP_SEED and redeploy to run demo seed again.)');
+  }
   console.log('');
   await run('node', ['dist/server.js']);
 };
