@@ -3,6 +3,7 @@
  * Production boot: require PostgreSQL + Redis, push schema, seed, start API.
  */
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -64,6 +65,23 @@ const run = (command, args) =>
     });
   });
 
+/** Prefer compiled dist/*.js on Railway; fall back to tsx in local dev. */
+const scriptCommand = (distRel, srcRel) => {
+  const distPath = path.join(backendRoot, distRel);
+  if (fs.existsSync(distPath)) return ['node', distRel];
+  return ['npx', 'tsx', srcRel];
+};
+
+const runStep = async (label, distRel, srcRel, { required = true } = {}) => {
+  const [command, ...args] = scriptCommand(distRel, srcRel);
+  try {
+    await run(command, args);
+  } catch (err) {
+    if (required) throw err;
+    console.warn(`${label} failed (continuing boot): ${err.message}`);
+  }
+};
+
 const main = async () => {
   const pushArgs = ['prisma', 'db', 'push', '--skip-generate'];
   if (process.env.FORCE_DB_RESET === '1') {
@@ -72,29 +90,32 @@ const main = async () => {
   }
   await run('npx', pushArgs);
 
-  await run('npx', ['tsx', 'src/scripts/ensure-catalog.ts']);
+  await runStep('Catalog ensure', 'dist/scripts/ensure-catalog.js', 'src/scripts/ensure-catalog.ts', { required: false });
 
   const flushRequested = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
   if (flushRequested) {
     if (process.env.APP_ENV !== 'development') {
       console.warn('');
       console.warn('CONFIRM_DB_FLUSH is set but APP_ENV is not development — skipping flush so the service can start.');
-      console.warn('Set APP_ENV=development on the dev service, or remove CONFIRM_DB_FLUSH.');
+      console.warn('Remove CONFIRM_DB_FLUSH from Railway variables.');
       console.warn('');
     } else {
       console.warn('CONFIRM_DB_FLUSH=1 — wiping dev data (superadmin accounts are kept).');
-      await run('npx', ['tsx', 'src/scripts/flush-db.ts']);
+      await runStep('Database flush', 'dist/scripts/flush-db.js', 'src/scripts/flush-db.ts');
       console.warn('Flush done. Remove CONFIRM_DB_FLUSH from Railway variables before the next deploy.');
     }
   }
 
   const skipSeed = ['1', 'true', 'yes'].includes(String(process.env.SKIP_SEED || '').trim().toLowerCase());
   if (!skipSeed) {
-    await run('npx', ['tsx', 'src/seed/seed.ts']);
+    await runStep('Demo seed', 'dist/seed/seed.js', 'src/seed/seed.ts', { required: false });
   } else {
     console.warn('SKIP_SEED=1 — running superadmin ensure only (no demo org/users).');
-    await run('npx', ['tsx', 'src/scripts/ensure-superadmin.ts']);
+    await runStep('Superadmin ensure', 'dist/scripts/ensure-superadmin.js', 'src/scripts/ensure-superadmin.ts', {
+      required: false,
+    });
   }
+
   console.log('');
   console.log('Seeded login accounts:');
   if (!skipSeed) {

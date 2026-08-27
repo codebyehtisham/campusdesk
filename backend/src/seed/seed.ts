@@ -417,8 +417,8 @@ const run = async () => {
       console.log('Campus subscription and payment history seeded for explore.');
     }
   } catch (err) {
-    console.error('Seeding failed:', (err as Error).message);
-    process.exitCode = 1;
+    console.error('Seeding failed:', err);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

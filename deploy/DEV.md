@@ -88,8 +88,8 @@ git push origin main
 Railway has no “run script” button. Use **environment variables + redeploy** on the **dev service only**:
 
 1. **Variables** → add:
-   - `CONFIRM_DB_FLUSH=1`
-   - `SKIP_SEED=1` (only superadmin left after flush; omit this if you want demo data re-seeded)
+   - `CONFIRM_DB_FLUSH=1` (optional — wipes tenant data on deploy; **remove after one deploy**)
+   - `SKIP_SEED=1` (optional — only if you flushed and want **only** superadmin, no demo org)
 2. Confirm `APP_ENV=development` is set on this service (required — flush is blocked on production).
 3. **Deploy** → **Redeploy** (or push any commit to `develop`).
 4. Watch deploy logs for `Database flush complete` and `Users remaining: 1`.
