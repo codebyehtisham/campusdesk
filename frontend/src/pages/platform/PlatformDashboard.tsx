@@ -57,13 +57,6 @@ function pingTone(ms, up) {
   return 'warn';
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
 const ACTIONS = [
   {
     to: `${SUPER_BASE}/organizations`,
@@ -108,6 +101,8 @@ const ACTIONS = [
     tone: 'default',
   },
 ];
+
+const KPI_TONES = ['teal', 'amber', 'mint', 'rose', 'sky', 'violet'] as const;
 
 export default function PlatformDashboard() {
   const navigate = useNavigate();
@@ -155,76 +150,120 @@ export default function PlatformDashboard() {
         { name: 'Redis', status: 'down' },
       ];
   const allUp = services.every((s) => s.status === 'up');
+  const upCount = services.filter((s) => s.status === 'up').length;
+  const healthPct = Math.round((upCount / Math.max(services.length, 1)) * 100);
+
+  const kpis = [
+    {
+      label: 'Total revenue',
+      value: formatMoney(billing.totalPaidCents, billing.currency),
+      hint: 'Paid invoices',
+      icon: IconCard,
+      delta: '+revenue',
+    },
+    {
+      label: 'MRR',
+      value: formatMoney(billing.mrrCents, billing.currency),
+      hint: `${billing.activeSubscriptions} active`,
+      icon: IconPulse,
+      delta: 'Recurring',
+    },
+    {
+      label: 'Outstanding',
+      value: formatMoney(billing.outstandingCents, billing.currency),
+      hint: billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices',
+      icon: IconCard,
+      warn: billing.outstandingCents > 0,
+      delta: billing.outstandingCents > 0 ? 'Due' : 'Clear',
+    },
+    {
+      label: 'Tenants',
+      value: counts.organizations,
+      n: counts.organizations,
+      hint: 'Live orgs',
+      icon: IconBuildings,
+      delta: 'Fleet',
+    },
+    {
+      label: 'Students',
+      value: counts.applicants,
+      n: counts.applicants,
+      hint: 'Applicants',
+      icon: IconSwitches,
+      delta: 'Pipeline',
+    },
+    {
+      label: 'Errors 24h',
+      value: traffic.errors24h,
+      n: traffic.errors24h,
+      hint: `${traffic.last24h} requests`,
+      icon: IconPulse,
+      warn: traffic.errors24h > 0,
+      delta: traffic.errors24h > 0 ? 'Watch' : 'Stable',
+    },
+  ];
 
   return (
     <div className="pc-dash">
       <Banner>{error}</Banner>
 
       <motion.header
-        className="pc-dash-hero"
-        initial={{ opacity: 0, y: 16 }}
+        className="pc-dash-banner"
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease }}
+        transition={{ duration: 0.4, ease }}
       >
-        <div className="pc-dash-hero-grid" aria-hidden="true" />
-        <div className="pc-dash-hero-copy">
-          <p className="pc-kicker m-0">
-            {greeting()} · operator console
+        <div className="pc-dash-banner-copy">
+          <p className="pc-dash-banner-kicker">Welcome back, operator</p>
+          <h1>Explore Campus Desk platform</h1>
+          <p>
+            Provision tenants, manage entitlements, and watch billing — redesigned control surface with your live stack.
           </p>
-          <h1 className="pc-dash-title">Mission control</h1>
-          <p className="pc-dash-sub">
-            Tenants, entitlements, billing, and live infrastructure — every super-admin move from one surface.
-          </p>
+          <div className="pc-dash-banner-actions">
+            <Link to={`${SUPER_BASE}/organizations`} className="pc-dash-banner-btn">
+              Provision tenant
+            </Link>
+            <button
+              type="button"
+              className={`pc-dash-banner-btn is-ghost ${refreshing ? 'is-spinning' : ''}`}
+              onClick={() => load(true)}
+              disabled={loading || refreshing}
+            >
+              {refreshing ? 'Syncing…' : 'Sync telemetry'}
+            </button>
+          </div>
         </div>
-        <div className="pc-dash-hero-aside">
-          <div className={`pc-health-orb ${allUp ? 'is-live' : 'is-warn'}`}>
+        <div className="pc-dash-banner-art" aria-hidden="true">
+          <div className="pc-dash-orb" />
+          <div className="pc-dash-orb is-2" />
+          <div className={`pc-dash-banner-status ${allUp ? 'is-live' : 'is-warn'}`}>
             <Pulse on={allUp} tone={allUp ? 'live' : 'warn'} />
             <div>
               <strong>{allUp ? 'All systems nominal' : 'Attention required'}</strong>
               <span>
-                {services.filter((s) => s.status === 'up').length}/{services.length} services up ·{' '}
-                <LiveClock />
+                {upCount}/{services.length} up · <LiveClock />
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            className={`btn btn-outline py-2.5 text-sm ${refreshing ? 'is-spinning' : ''}`}
-            onClick={() => load(true)}
-            disabled={loading || refreshing}
-          >
-            {refreshing ? 'Syncing…' : 'Sync telemetry'}
-          </button>
         </div>
       </motion.header>
 
       <StaggerGrid className="pc-kpi-row">
-        {[
-          { label: 'Total revenue', value: formatMoney(billing.totalPaidCents, billing.currency), hint: 'Paid invoices' },
-          { label: 'MRR', value: formatMoney(billing.mrrCents, billing.currency), hint: `${billing.activeSubscriptions} active` },
-          {
-            label: 'Outstanding',
-            value: formatMoney(billing.outstandingCents, billing.currency),
-            hint: billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices',
-            warn: billing.outstandingCents > 0,
-          },
-          { label: 'Tenants', value: counts.organizations, n: counts.organizations, hint: 'Live orgs' },
-          { label: 'Students', value: counts.applicants, n: counts.applicants, hint: 'Applicants' },
-          {
-            label: 'Errors 24h',
-            value: traffic.errors24h,
-            n: traffic.errors24h,
-            hint: `${traffic.last24h} requests`,
-            warn: traffic.errors24h > 0,
-          },
-        ].map((m) => (
+        {kpis.map((m, i) => (
           <StaggerCard key={m.label}>
-            <article className={`pc-kpi ${m.warn ? 'is-warn' : ''}`}>
-              <p className="pc-kpi-label">{m.label}</p>
+            <article className={`pc-kpi is-${KPI_TONES[i % KPI_TONES.length]} ${m.warn ? 'is-warn' : ''}`}>
+              <div className="pc-kpi-top">
+                <span className="pc-kpi-icon">
+                  <m.icon className="h-4 w-4" />
+                </span>
+                <span className="pc-kpi-delta">{m.delta}</span>
+              </div>
               <p className="pc-kpi-value">
                 {m.n != null ? <AnimatedNumber value={m.n} format={(v) => String(Math.round(v))} /> : m.value}
               </p>
+              <p className="pc-kpi-label">{m.label}</p>
               <p className="pc-kpi-hint">{m.hint}</p>
+              <span className="pc-kpi-spark" aria-hidden="true" />
             </article>
           </StaggerCard>
         ))}
@@ -234,8 +273,8 @@ export default function PlatformDashboard() {
         <section className="pc-ops-actions">
           <div className="pc-section-head">
             <div>
-              <p className="pc-kicker m-0">Operator moves</p>
-              <h2 className="m-0">What can you do?</h2>
+              <p className="pc-kicker m-0">Quick actions</p>
+              <h2 className="m-0">Operator moves</h2>
             </div>
           </div>
           <div className="pc-action-grid">
@@ -272,10 +311,22 @@ export default function PlatformDashboard() {
             <BarChart data={billing.monthly || []} compact />
           </section>
 
-          <section className="pc-glass-card">
+          <section className="pc-glass-card pc-project-card">
             <div className="pc-section-head is-tight">
-              <p className="pc-kicker m-0">Infrastructure</p>
-              <span className="pc-chip-mini">Live pings</span>
+              <div>
+                <p className="pc-kicker m-0">Infrastructure</p>
+                <h3 className="m-0 mt-1">Campus Desk stack</h3>
+              </div>
+              <span className="pc-chip-mini">v{versions.backend}</span>
+            </div>
+            <p className="pc-project-meta">
+              Release health · uptime {formatUptime(data.uptime?.seconds)}
+            </p>
+            <div className="pc-progress">
+              <div className="pc-progress-track">
+                <div className="pc-progress-fill" style={{ width: `${healthPct}%` }} />
+              </div>
+              <span>{healthPct}%</span>
             </div>
             <ul className="pc-infra-list">
               {services.map((service) => {
@@ -296,9 +347,7 @@ export default function PlatformDashboard() {
                 );
               })}
             </ul>
-            <p className="pc-infra-foot">
-              Uptime {formatUptime(data.uptime?.seconds)} · RSS {memory.rssMb} MB · API v{versions.backend}
-            </p>
+            <p className="pc-infra-foot">RSS {memory.rssMb} MB · Node {versions.node}</p>
           </section>
         </aside>
       </div>
