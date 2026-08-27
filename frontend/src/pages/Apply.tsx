@@ -5,6 +5,7 @@ import Reveal from '../components/Reveal';
 import { getApplicant, signOutApplicant } from '../auth/session';
 import { isLockedOrg, isSuspendedError } from '../auth/serviceLock';
 import api from '../api/client';
+import { CNIC_MAX_LENGTH, formatCnic, isCnicField } from '../lib/cnic';
 
 const statusLabel = {
   not_started: 'Not started',
@@ -73,6 +74,21 @@ function FieldInput({ field, value, disabled, onChange, onUpload }) {
         )}
         <p className="m-0 text-xs text-text-muted">Max {field.maxFileMb || 5} MB</p>
       </div>
+    );
+  }
+
+  if (isCnicField(field)) {
+    return (
+      <input
+        {...common}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={CNIC_MAX_LENGTH}
+        placeholder={field.placeholder || '34209-9090987-0'}
+        value={formatCnic(value || '')}
+        onChange={(e) => onChange(formatCnic(e.target.value))}
+      />
     );
   }
 

@@ -6,7 +6,8 @@ export type AdmissionFieldType =
   | 'number'
   | 'date'
   | 'select'
-  | 'file';
+  | 'file'
+  | 'cnic';
 
 export type AdmissionField = {
   id: string;
@@ -45,7 +46,27 @@ const FIELD_TYPES: AdmissionFieldType[] = [
   'date',
   'select',
   'file',
+  'cnic',
 ];
+
+/** Pakistani CNIC: 34209-9090987-0 (13 digits, 15 chars with hyphens). */
+export const CNIC_PATTERN = /^\d{5}-\d{7}-\d$/;
+export const CNIC_MAX_DIGITS = 13;
+export const CNIC_MAX_LENGTH = 15;
+
+export const formatCnic = (raw: unknown) => {
+  const digits = String(raw ?? '')
+    .replace(/\D/g, '')
+    .slice(0, CNIC_MAX_DIGITS);
+  if (digits.length <= 5) return digits;
+  if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+};
+
+export const isCnicField = (field: { type?: string; key?: string }) =>
+  field?.type === 'cnic' || String(field?.key || '').toLowerCase() === 'cnic';
+
+export const isValidCnic = (value: unknown) => CNIC_PATTERN.test(formatCnic(value));
 
 const clip = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
 
@@ -91,13 +112,13 @@ export const defaultAdmissionForm = (): AdmissionForm => ({
           id: 'cnic',
           key: 'cnic',
           label: 'CNIC / B-Form',
-          type: 'text',
+          type: 'cnic',
           required: true,
           options: [],
           maxFileMb: 5,
           accept: '',
-          placeholder: 'xxxxx-xxxxxxx-x',
-          helpText: '',
+          placeholder: '34209-9090987-0',
+          helpText: 'Format: 34209-9090987-0 (15 characters)',
           sortOrder: 1,
         },
         {
@@ -375,7 +396,11 @@ export const parseStoredAdmissionForm = (raw: unknown) => {
 export const validateAnswers = (form: AdmissionForm, answers: AnswerMap) => {
   const errors: string[] = [];
   for (const field of flattenFields(form)) {
-    const value = answers[field.key];
+    let value = answers[field.key];
+    if (isCnicField(field) && value != null && value !== '') {
+      value = formatCnic(value);
+      answers[field.key] = value;
+    }
     const empty =
       value == null ||
       value === '' ||
@@ -385,6 +410,9 @@ export const validateAnswers = (form: AdmissionForm, answers: AnswerMap) => {
       continue;
     }
     if (empty) continue;
+    if (isCnicField(field) && !isValidCnic(value)) {
+      errors.push(`${field.label} must look like 34209-9090987-0.`);
+    }
     if (field.type === 'select' && field.options.length && !field.options.includes(String(value))) {
       errors.push(`${field.label} has an invalid option.`);
     }

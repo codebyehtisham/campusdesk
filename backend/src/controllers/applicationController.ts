@@ -4,6 +4,8 @@ import { prisma } from '../config/db.js';
 import { orgId } from '../lib/tenant.js';
 import {
   asAnswerMap,
+  formatCnic,
+  isCnicField,
   publicAdmissionForm,
   stringifyAnswers,
   validateAnswers,
@@ -86,12 +88,14 @@ export const saveMine = async (req: Request, res: Response) => {
     }
 
     const form = await loadOrgAdmissionForm(organizationId);
-    const allowed = new Set(form.groups.flatMap((g) => g.fields.map((f) => f.key)));
+    const fields = form.groups.flatMap((g) => g.fields);
+    const allowed = new Set(fields.map((f) => f.key));
     const incoming = asAnswerMap(req.body.answers);
     const next: AnswerMap = { ...asAnswerMap(application.answers) };
     for (const [key, value] of Object.entries(incoming)) {
       if (!allowed.has(key)) continue;
-      next[key] = value;
+      const field = fields.find((f) => f.key === key);
+      next[key] = field && isCnicField(field) && value != null && value !== '' ? formatCnic(value) : value;
     }
 
     const updated = await prisma.application.update({

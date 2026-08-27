@@ -8,6 +8,7 @@ const FIELD_TYPES = [
   { value: 'textarea', label: 'Long text' },
   { value: 'email', label: 'Email' },
   { value: 'tel', label: 'Phone' },
+  { value: 'cnic', label: 'CNIC (34209-9090987-0)' },
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
   { value: 'select', label: 'Dropdown' },
@@ -331,6 +332,11 @@ export default function AdminAdmissionForm() {
                       onChange={(e) => updateField(activeGroup, fi, { helpText: e.target.value })}
                     />
                   </label>
+                  {field.type === 'cnic' && (
+                    <p className="m-0 text-xs font-medium text-text-muted md:col-span-2">
+                      Auto-formats as 34209-9090987-0 (max 15 characters).
+                    </p>
+                  )}
                   {field.type === 'select' && (
                     <label className="flex flex-col gap-1 text-sm font-semibold text-ink md:col-span-2">
                       Options (comma separated)
