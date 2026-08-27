@@ -11,7 +11,8 @@
     "build": "npm install --prefix frontend --include=dev && npm run build --prefix frontend && npm install --prefix backend --include=dev && npm run db:generate --prefix backend && npm run build --prefix backend",
     "start": "npm start --prefix backend",
     "db:up": "docker compose up -d postgres redis",
-    "seed": "npm run seed --prefix backend"
+    "seed": "npm run seed --prefix backend",
+    "db:flush": "npm run db:flush --prefix backend"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

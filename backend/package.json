@@ -10,6 +10,7 @@
     "start": "node scripts/boot.mjs",
     "start:server": "node dist/server.js",
     "seed": "tsx src/seed/seed.ts",
+    "db:flush": "tsx src/scripts/flush-db.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev"
