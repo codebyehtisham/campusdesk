@@ -111,18 +111,28 @@ const toAdmin = (doc: User) => ({
   createdAt: doc.createdAt,
 });
 
-export const platformDashboard = async (_req: Request, res: Response) => {
+export const platformDashboard = async (req: Request, res: Response) => {
   const started = Date.now();
+  const live = req.query.live === '1' || req.query.refresh === '1';
   try {
-    const cached = await cacheGet<unknown>(CACHE_KEYS.platformDashboard);
-    if (cached) return res.json(cached);
+    const [postgres, redis] = await Promise.all([pingPostgres(), pingRedis()]);
+    const liveServices = [
+      { name: 'API', status: 'up' as const, latencyMs: Date.now() - started },
+      postgres,
+      redis,
+    ];
+
+    if (!live) {
+      const cached = await cacheGet<Record<string, unknown>>(CACHE_KEYS.platformDashboard);
+      if (cached && typeof cached === 'object') {
+        return res.json({ ...cached, services: liveServices, evaluatedAt: new Date().toISOString() });
+      }
+    }
 
     const sinceHour = new Date(Date.now() - 60 * 60 * 1000);
     const sinceDay = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [postgres, redis, organizations, modules, orgAdmins, faculty, applicants, requestsHour, requestsDay, errorsDay, recent, billing] =
+    const [organizations, modules, orgAdmins, faculty, applicants, requestsHour, requestsDay, errorsDay, recent, billing] =
       await Promise.all([
-        pingPostgres(),
-        pingRedis(),
         prisma.organization.count(),
         prisma.module.count({ where: { active: true } }),
         prisma.user.count({ where: { role: 'admin' } }),
@@ -139,7 +149,7 @@ export const platformDashboard = async (_req: Request, res: Response) => {
     const payload = {
       counts: { organizations, modules, orgAdmins, faculty, applicants },
       recent: recent.map((org) => toOrg(org)),
-      services: [{ name: 'API', status: 'up', latencyMs: Date.now() - started }, postgres, redis],
+      services: liveServices,
       uptime: {
         seconds: Math.floor(process.uptime()),
         startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),

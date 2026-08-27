@@ -54,15 +54,31 @@ function formatUptime(seconds) {
   return `${m}m ${s % 60}s`;
 }
 
+function formatPing(ms) {
+  if (ms == null || Number.isNaN(ms)) return '—';
+  return `${ms} ms`;
+}
+
+function pingTone(ms, up) {
+  if (!up) return 'warn';
+  if (ms == null) return 'warn';
+  if (ms <= 50) return 'live';
+  if (ms <= 200) return undefined;
+  return 'warn';
+}
+
 export default function PlatformDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(empty);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const load = async () => {
+  const load = async (live = false) => {
     try {
-      const res = await api.get('/platform/dashboard', { authScope: 'platform' });
+      const res = await api.get('/platform/dashboard', {
+        authScope: 'platform',
+        params: live ? { live: 1 } : undefined,
+      });
       setData({ ...empty, ...res.data });
       setError('');
     } catch (err) {
@@ -101,7 +117,7 @@ export default function PlatformDashboard() {
         title="Operations"
         hint="Revenue, tenant count, service health, and request volume across the platform."
         actions={
-          <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={load} disabled={loading}>
+          <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={() => load(true)} disabled={loading}>
             {loading ? 'Refreshing…' : 'Refresh'}
           </button>
         }
@@ -150,15 +166,19 @@ export default function PlatformDashboard() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {services.map((service) => {
             const up = service.status === 'up';
+            const isDatastore = service.name === 'PostgreSQL' || service.name === 'Redis';
             return (
               <div key={service.name} className="pc-service">
                 <div>
                   <p className="m-0 flex items-center gap-2 font-semibold text-[var(--pc-text)]">
-                    <Pulse on={up} tone={up ? 'live' : 'warn'} />
+                    <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
                     {service.name}
                   </p>
-                  <p className="m-0 mt-1 text-sm">
-                    {service.latencyMs == null ? 'No response' : `${service.latencyMs}ms`}
+                  <p className="m-0 mt-1 text-sm text-[var(--pc-muted)]">
+                    {isDatastore ? 'Ping time' : 'Response'}
+                  </p>
+                  <p className="m-0 mt-0.5 font-mono text-lg font-bold text-[var(--pc-text)]">
+                    {formatPing(service.latencyMs)}
                   </p>
                 </div>
                 <span className={`tag ${up ? 'tag-allied' : 'tag-nursing'}`}>{up ? 'Up' : 'Down'}</span>

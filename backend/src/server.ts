@@ -98,6 +98,8 @@ app.get('/api/health', async (_req, res) => {
     url: publicAppUrl(),
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
+    postgres: { status: postgres.status, latencyMs: postgres.latencyMs },
+    redis: { status: redis.status, latencyMs: redis.latencyMs },
   });
 });
 

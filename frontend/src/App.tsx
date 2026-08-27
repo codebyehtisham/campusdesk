@@ -25,6 +25,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import FacultyLogin from './pages/faculty/FacultyLogin';
 import FacultyLayout, { RequireStaff } from './pages/faculty/FacultyLayout';
 import FacultyAdmissions from './pages/faculty/FacultyAdmissions';
+import ApplicationReview from './pages/admissions/ApplicationReview';
 import FacultyTimetable from './pages/faculty/FacultyTimetable';
 import FacultyCourses from './pages/faculty/FacultyCourses';
 import FacultyAttendance from './pages/faculty/FacultyAttendance';
@@ -77,6 +78,7 @@ function App() {
         <Route element={<RequireAdmin />}>
           <Route path="suspended" element={<ServiceSuspended portal="admin" />} />
           <Route element={<RequireActiveAdmin />}>
+            <Route path="admissions/review/:id" element={<ApplicationReview portal="admin" />} />
             <Route element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="admissions" element={<RequireModule slug="admissions"><AdminAdmissions /></RequireModule>} />
@@ -104,6 +106,7 @@ function App() {
         <Route element={<RequireStaff />}>
           <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
           <Route element={<RequireActiveStaff />}>
+            <Route path="admissions/review/:id" element={<ApplicationReview portal="staff" />} />
             <Route element={<FacultyLayout />}>
               <Route path="admissions" element={<FacultyAdmissions />} />
               <Route path="timetable" element={<FacultyTimetable />} />
