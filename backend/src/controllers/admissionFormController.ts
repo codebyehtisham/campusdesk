@@ -12,6 +12,7 @@ import {
   publicAdmissionForm,
   sanitizeAdmissionFormInput,
 } from '../lib/admissionForm.js';
+import { isR2Configured, putObject } from '../lib/storage.js';
 import { hasModule, orgId, resolveOrganizationByInstitute, sellableModules } from '../lib/tenant.js';
 import { brandFields } from '../middleware/auth.js';
 import { CACHE_KEYS, cacheDel, cacheDelPrefix } from '../config/redis.js';
@@ -175,11 +176,18 @@ export const uploadApplicationFile = async (req: Request, res: Response) => {
     }
 
     const ext = EXT[mime] || '.bin';
-    const dir = path.join(uploadsRoot, organizationId, 'applications', application.id);
-    await mkdir(dir, { recursive: true });
     const filename = `${fieldKey}${ext}`;
-    await writeFile(path.join(dir, filename), buffer);
-    const url = `/uploads/${organizationId}/applications/${application.id}/${filename}?v=${Date.now()}`;
+    const key = `${organizationId}/applications/${application.id}/${filename}`;
+    let url: string;
+    if (isR2Configured()) {
+      const stored = await putObject({ key, body: buffer, contentType: mime });
+      url = stored.url;
+    } else {
+      const dir = path.join(uploadsRoot, organizationId, 'applications', application.id);
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, filename), buffer);
+      url = `/uploads/${key}?v=${Date.now()}`;
+    }
     const name = clipFilename(req.body.name) || `${fieldKey}${ext}`;
     res.json({ url, name, size: buffer.length, mime });
   } catch (err) {

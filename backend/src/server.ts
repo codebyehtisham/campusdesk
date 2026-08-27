@@ -3,10 +3,12 @@ import cors from 'cors';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { prisma, pingPostgres } from './config/db.js';
 import { pingRedis, requireRedis } from './config/redis.js';
 import { appEnvironment, publicAppUrl } from './lib/env.js';
+import { getObject, isR2Configured, r2Bucket, sanitizeStorageKey } from './lib/storage.js';
 import { optionalAuth } from './middleware/auth.js';
 import { audit } from './middleware/audit.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -88,7 +90,31 @@ app.use(audit);
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+
+/** Serve legacy local files, then fall back to Cloudflare R2. */
+app.use('/uploads', async (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const key = sanitizeStorageKey(decodeURIComponent(req.path.replace(/^\//, '')));
+  if (!key) return res.status(404).end();
+
+  const localPath = path.join(uploadsDir, key);
+  if (localPath.startsWith(uploadsDir) && fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
+    return res.sendFile(localPath);
+  }
+
+  if (!isR2Configured()) return res.status(404).end();
+  try {
+    const object = await getObject(key);
+    if (!object.body) return res.status(404).end();
+    res.setHeader('Content-Type', object.contentType);
+    if (object.contentLength != null) res.setHeader('Content-Length', String(object.contentLength));
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    if (req.method === 'HEAD') return res.status(200).end();
+    await pipeline(object.body, res);
+  } catch {
+    if (!res.headersSent) res.status(404).end();
+  }
+});
 
 app.get('/api/health', async (_req, res) => {
   const [postgres, redis] = await Promise.all([pingPostgres(), pingRedis()]);
@@ -96,6 +122,7 @@ app.get('/api/health', async (_req, res) => {
     status: 'ok',
     environment: appEnvironment(),
     url: publicAppUrl(),
+    storage: isR2Configured() ? 'r2' : 'local',
     db: postgres.status === 'up' ? 'connected' : 'disconnected',
     cache: redis.status === 'up' ? 'connected' : 'disconnected',
     postgres: { status: postgres.status, latencyMs: postgres.latencyMs },
@@ -161,6 +188,7 @@ const start = async () => {
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`File storage: ${isR2Configured() ? `Cloudflare R2 (${r2Bucket()})` : 'local disk (set R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY)'}`);
   });
 };
 

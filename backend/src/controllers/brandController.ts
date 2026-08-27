@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { CACHE_KEYS, cacheDel } from '../config/redis.js';
+import { deleteObject, isR2Configured, putObject } from '../lib/storage.js';
 import { orgId } from '../lib/tenant.js';
 import { brandFields } from '../middleware/auth.js';
 
@@ -61,16 +62,28 @@ export const saveLogo = async (req: Request, res: Response) => {
     if (buffer.length > MAX_BYTES) return res.status(400).json({ message: 'Logo must be 1.5 MB or smaller.' });
 
     const ext = EXT[mime];
-    const dir = path.join(uploadsRoot, organizationId);
-    await mkdir(dir, { recursive: true });
     const filename = `logo${ext}`;
-    await writeFile(path.join(dir, filename), buffer);
-    for (const leftover of Object.values(EXT)) {
-      if (leftover === ext) continue;
-      await unlink(path.join(dir, `logo${leftover}`)).catch(() => undefined);
+    const key = `${organizationId}/${filename}`;
+    let logo: string;
+
+    if (isR2Configured()) {
+      const stored = await putObject({ key, body: buffer, contentType: mime });
+      logo = stored.url;
+      for (const leftover of Object.values(EXT)) {
+        if (leftover === ext) continue;
+        await deleteObject(`${organizationId}/logo${leftover}`);
+      }
+    } else {
+      const dir = path.join(uploadsRoot, organizationId);
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, filename), buffer);
+      for (const leftover of Object.values(EXT)) {
+        if (leftover === ext) continue;
+        await unlink(path.join(dir, `logo${leftover}`)).catch(() => undefined);
+      }
+      logo = `/uploads/${key}?v=${Date.now()}`;
     }
 
-    const logo = `/uploads/${organizationId}/${filename}?v=${Date.now()}`;
     const updated = await prisma.organization.update({
       where: { id: organizationId },
       data: { logo },
