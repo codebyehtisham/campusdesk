@@ -72,6 +72,8 @@ const main = async () => {
   }
   await run('npx', pushArgs);
 
+  await run('npx', ['tsx', 'src/scripts/ensure-catalog.ts']);
+
   const flushRequested = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
   if (flushRequested) {
     if (process.env.APP_ENV !== 'development') {

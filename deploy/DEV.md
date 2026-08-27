@@ -124,3 +124,29 @@ On the **production** Railway service:
 4. Redeploy after variables are set
 
 Without Postgres + Redis, `npm start` exits immediately (by design).
+
+## Platform catalog (modules & departments)
+
+The **Catalog** in super admin (`/x7k2m9q4p8n3/modules`) reads from `Department`, `Module`, and `Plan` tables. These are **platform-wide** — not tenant data — and are **not** deleted by `db:flush`.
+
+Every deploy runs `ensure-catalog` on boot so an empty catalog is repopulated automatically.
+
+### Restore catalog immediately
+
+**Option A — redeploy** (after this fix is on `develop`): push and let Railway boot run `ensure-catalog`.
+
+**Option B — local / Railway CLI:**
+
+```bash
+cd backend
+DATABASE_URL='postgresql://...' npm run db:catalog
+```
+
+### Enable modules for an organisation
+
+1. Super admin → **Catalog** — confirm departments and modules are listed (published / active).
+2. Super admin → **Organisations** → open the tenant → **Entitlements**:
+   - Toggle a **department** on.
+   - Click individual **modules** to enable them for that campus.
+
+Org `modules` and `departments` are JSON arrays on the organisation record; the org admin portal only shows modules you enable here.

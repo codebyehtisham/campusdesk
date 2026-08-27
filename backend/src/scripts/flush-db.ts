@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { prisma } from '../config/db.js';
 import { getRedis } from '../config/redis.js';
+import { ensurePlatformCatalog } from '../lib/seedCatalog.js';
 
 const CONFIRM = ['1', 'true', 'yes'].includes(String(process.env.CONFIRM_DB_FLUSH || '').trim().toLowerCase());
 
@@ -61,11 +62,11 @@ async function main() {
     prisma.subscription.deleteMany(),
     prisma.organization.deleteMany(),
     prisma.auditLog.deleteMany(),
-    prisma.module.deleteMany(),
-    prisma.department.deleteMany(),
-    prisma.plan.deleteMany(),
     prisma.user.deleteMany({ where: { role: { not: 'superadmin' } } }),
   ]);
+
+  await ensurePlatformCatalog();
+  console.log('Platform catalog restored (departments, modules, plans).');
 
   await flushRedis();
 

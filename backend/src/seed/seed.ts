@@ -2,8 +2,7 @@ import 'dotenv/config';
 import type { InvoiceStatus, Prisma } from '@prisma/client';
 import { asStringList } from '../lib/lists.js';
 import { prisma } from '../config/db.js';
-import { DEFAULT_DEPARTMENTS, DEFAULT_MODULES } from '../lib/tenant.js';
-import { DEFAULT_PLANS } from '../lib/billing.js';
+import { ensurePlatformCatalog } from '../lib/seedCatalog.js';
 import { DEFAULT_THEME } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
 import { seedOrgUnits } from '../lib/schemes.js';
@@ -50,25 +49,7 @@ const run = async () => {
       });
     }
 
-    for (const dept of DEFAULT_DEPARTMENTS) {
-      await prisma.department.upsert({
-        where: { slug: dept.slug },
-        update: { name: dept.name, description: dept.description, sortOrder: dept.sortOrder },
-        create: dept,
-      });
-    }
-    const departmentBySlug = Object.fromEntries(
-      (await prisma.department.findMany()).map((item) => [item.slug, item.id])
-    );
-    for (const item of DEFAULT_MODULES) {
-      const { departmentSlug, ...data } = item;
-      await prisma.module.upsert({
-        where: { slug: data.slug },
-        update: { ...data, departmentId: departmentBySlug[departmentSlug] || null },
-        create: { ...data, departmentId: departmentBySlug[departmentSlug] || null },
-      });
-    }
-    await prisma.module.deleteMany({ where: { slug: 'audit' } });
+    await ensurePlatformCatalog();
     const liveModules = await prisma.module.findMany({ where: { active: true }, include: { department: true } });
     const moduleSlugs = liveModules.map((item) => item.slug);
     const departmentSlugs = [...new Set(liveModules.map((item) => item.department?.slug).filter(Boolean))] as string[];
@@ -385,13 +366,6 @@ const run = async () => {
       console.log('Skipping super admin seed — set PLATFORM_EMAIL and PLATFORM_PASSWORD in backend/.env');
     }
 
-    for (const plan of DEFAULT_PLANS) {
-      await prisma.plan.upsert({
-        where: { slug: plan.slug },
-        update: plan,
-        create: { ...plan, currency: 'USD' },
-      });
-    }
     const campusPlan = await prisma.plan.findUnique({ where: { slug: 'campus' } });
     if (campusPlan && (await prisma.subscription.count({ where: { organizationId: explore.id } })) === 0) {
       const startedAt = new Date();
