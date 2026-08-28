@@ -1,14 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Campus Desk">
-  <rect width="64" height="64" rx="14" fill="#0F5C5C"/>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0a4545" />
+      <stop offset="0.55" stop-color="#0f5c5c" />
+      <stop offset="1" stop-color="#127575" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
   <path
-    fill="#F7FBFB"
-    d="M14 22.5c0-1.2.7-2.3 1.8-2.8l14.2-6.5a4 4 0 0 1 3.4 0l14.2 6.5c1.1.5 1.8 1.6 1.8 2.8v1.2c0 1.4-1.1 2.5-2.5 2.5H16.5A2.5 2.5 0 0 1 14 23.7v-1.2z"
+    fill="#ffffff"
+    d="M32 13.5 49.5 22v3.2L32 33.8 14.5 25.2V22L32 13.5z"
   />
   <path
-    fill="#D8EFEF"
-    d="M18 26.5h28v2.2c0 .7-.6 1.3-1.3 1.3H19.3c-.7 0-1.3-.6-1.3-1.3v-2.2z"
+    fill="#e8f6f6"
+    d="M18.5 27.2h27v5.4c0 1.35-1.1 2.45-2.45 2.45H21c-1.35 0-2.45-1.1-2.45-2.45v-5.4z"
   />
-  <rect x="16" y="32" width="32" height="3.2" rx="1.2" fill="#F7FBFB"/>
-  <rect x="20" y="38" width="24" height="2.2" rx="1.1" fill="#9FD0D0"/>
-  <rect x="24" y="43" width="16" height="2.2" rx="1.1" fill="#9FD0D0"/>
+  <path fill="#ffffff" d="M21 35.2h22v3.2c0 .9-.7 1.6-1.6 1.6h-18.8c-.9 0-1.6-.7-1.6-1.6v-3.2z" />
+  <circle cx="32" cy="22.2" r="1.6" fill="#ffffff" />
+  <path
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="1.35"
+    stroke-linecap="round"
+    d="M32 23.8v9.2"
+  />
+  <path
+    fill="#ffffff"
+    d="M29.2 32.4c0 1.55 1.25 2.8 2.8 2.8s2.8-1.25 2.8-2.8H29.2z"
+  />
 </svg>
