@@ -1,22 +1,16 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import Magnetic from '../../components/Magnetic';
+import CampusDeskMark from '../../components/CampusDeskMark';
 import { SUPER_BASE } from '../../admin/paths';
 import { getPlatform, signInPlatform } from '../../auth/platformSession';
 import api from '../../api/client';
-import { PlatformBackdrop, ease } from './motion';
-import { Pulse } from './ui';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
 
-const fieldVariants = {
-  hidden: { opacity: 0, y: 14 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { delay: 0.15 + i * 0.08, duration: 0.4, ease } }),
-};
-
 export default function PlatformLogin() {
   const navigate = useNavigate();
-  const reduce = useReducedMotion();
   const existing = getPlatform();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
@@ -61,115 +55,125 @@ export default function PlatformLogin() {
   };
 
   return (
-    <div className="platform-shell relative min-h-svh overflow-hidden">
-      <PlatformBackdrop />
-      <div className="relative z-1 flex min-h-svh items-center justify-center px-5 py-16">
-        <motion.div
-          className="pc-login-card pc-login-glow"
-          initial={reduce ? false : { opacity: 0, y: 28, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.55, ease }}
-        >
-          <div className="pc-lock-strip">
-            <span className="inline-flex items-center gap-2">
-              <Pulse on tone="warn" />
-              Restricted
-            </span>
-            <span>Superuser access</span>
-          </div>
-          <motion.div
-            className="mb-6 flex items-center gap-3"
-            initial={reduce ? false : { opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, duration: 0.4, ease }}
-          >
-            <span className="pc-mark pc-mark-glow" aria-hidden="true">
-              <Pulse on />
-            </span>
-            <div className="leading-tight">
-              <strong className="block text-[0.78rem] font-bold tracking-[0.16em] text-[var(--pc-text)] uppercase">
-                Control plane
-              </strong>
-              <p className="m-0 text-[0.7rem] text-[var(--pc-muted)]">Enable and disable campus services</p>
+    <div className="relative min-h-svh overflow-hidden bg-bg">
+      <div className="hero-aurora" aria-hidden="true" />
+      <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
+      <div className="hero-dots" aria-hidden="true" />
+      <div className="orb top-16 left-[6%] h-72 w-72 bg-cardinal/25" />
+      <div className="orb right-[8%] bottom-[10%] h-80 w-80 bg-cardinal-light/30" />
+
+      <div className="relative z-1 grid min-h-svh lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="relative hidden overflow-hidden lg:block">
+          <img
+            src="/images/campus/photos/campus-main-building.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f2f8f8] via-[#f2f8f8]/90 to-[#f2f8f8]/65" />
+          <div className="relative flex h-full flex-col justify-between p-12 xl:p-16">
+            <div className="flex items-center gap-3">
+              <CampusDeskMark size={48} />
+              <div className="leading-tight">
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">Platform console</p>
+              </div>
             </div>
-          </motion.div>
-          <h1 className="mb-2 pc-title-gradient">Authenticate</h1>
-          <p className="pc-hint mb-7">
-            This console is for platform operators only. Organisation admins sign in at their own portal.
-          </p>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {[
-              {
-                key: 'email',
-                label: 'Operator email',
-                type: 'email' as const,
-                placeholder: 'platform@explore.app',
-                autoComplete: 'username',
-              },
-            ].map((field, i) => (
-              <motion.label
-                key={field.key}
-                className={labelClass}
-                custom={i}
-                variants={fieldVariants}
-                initial="hidden"
-                animate="show"
-              >
-                {field.label}
+            <div>
+              <span className="eyebrow">Super admin</span>
+              <h1 className="max-w-xl text-[clamp(2.4rem,5vw,4.4rem)]">
+                One control plane.
+                <br />
+                <span className="text-cardinal">Every campus.</span>
+              </h1>
+              <p className="max-w-md text-lg text-text-muted">
+                Provision institutes, enable modules, manage billing, and monitor platform health.
+              </p>
+            </div>
+            <p className="m-0 text-sm text-text-muted">Restricted to platform operators only</p>
+          </div>
+        </section>
+
+        <section className="flex items-center justify-center px-5 py-16 sm:px-10">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
+          >
+            <div className="mb-8 flex items-center gap-3 lg:hidden">
+              <CampusDeskMark size={48} />
+              <div className="leading-tight">
+                <strong className="font-serif text-sm font-bold tracking-tight text-ink">Campus Desk</strong>
+                <p className="m-0 text-[0.7rem] font-medium text-text-muted">Platform console</p>
+              </div>
+            </div>
+
+            <span className="eyebrow">Platform admin</span>
+            <h2 className="text-[1.9rem] md:text-[2.2rem]">Sign in</h2>
+            <p className="mb-7 text-text-muted">
+              Organisation admins use their own portal — this login is for Campus Desk operators only.
+            </p>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <label className={labelClass}>
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-cardinal" />
+                  Operator email
+                </span>
                 <input
-                  type={field.type}
-                  name={field.key}
+                  type="email"
+                  name="email"
                   required
                   value={form.email}
                   onChange={handleChange}
-                  placeholder={field.placeholder}
+                  placeholder="platform@explore.app"
                   className="field"
-                  autoComplete={field.autoComplete}
+                  autoComplete="username"
                 />
-              </motion.label>
-            ))}
-            <motion.label className={labelClass} custom={1} variants={fieldVariants} initial="hidden" animate="show">
-              Access key
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  required
-                  minLength={6}
-                  value={form.password}
-                  onChange={handleChange}
-                  className="field w-full pr-20"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold text-[var(--pc-accent)]"
-                  onClick={() => setShowPassword((v) => !v)}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
+              </label>
+              <label className={labelClass}>
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-crimson" />
+                  Password
+                </span>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    required
+                    minLength={6}
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="At least 6 characters"
+                    className="field w-full pr-20"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold text-cardinal"
+                    onClick={() => setShowPassword((v) => !v)}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </label>
+
+              {error ? (
+                <p className="m-0 rounded-2xl bg-crimson-pale px-3 py-2.5 text-sm font-bold text-crimson-dark">{error}</p>
+              ) : null}
+
+              <Magnetic>
+                <button type="submit" className="btn btn-primary mt-1 w-full" disabled={loading}>
+                  {loading ? 'Signing in…' : 'Enter platform console'}
                 </button>
-              </div>
-            </motion.label>
-            {error ? (
-              <motion.p className="pc-banner mb-0" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-                {error}
-              </motion.p>
-            ) : null}
-            <motion.button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={loading}
-              custom={2}
-              variants={fieldVariants}
-              initial="hidden"
-              animate="show"
-              whileHover={reduce ? undefined : { scale: 1.01 }}
-              whileTap={reduce ? undefined : { scale: 0.98 }}
-            >
-              {loading ? 'Checking credentials…' : 'Enter control plane'}
-            </motion.button>
-          </form>
-        </motion.div>
+              </Magnetic>
+            </form>
+
+            <p className="mt-6 mb-0 text-center text-sm text-text-muted">
+              This screen is not linked from the public site.
+            </p>
+          </motion.div>
+        </section>
       </div>
     </div>
   );

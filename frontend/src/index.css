@@ -926,6 +926,23 @@ html[data-template='editorial'] .filter-btn {
   color: rgba(255, 255, 255, 0.62);
 }
 
+.staff-rail-cta {
+  display: block;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.staff-rail-cta:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 .staff-rail-signout {
   display: flex;
   width: 100%;
@@ -1861,34 +1878,33 @@ html[data-template='editorial'] .filter-btn {
   }
 }
 
-/* Super-admin control plane — scoped so the public college site stays untouched. */
+/* Super-admin — light theme aligned with org admin / faculty consoles */
 html:has(.platform-shell),
 #root:has(.platform-shell) {
-  background: #081014;
+  background: var(--color-bg-alt);
 }
 
 .platform-shell {
-  --pc-bg: #081014;
-  --pc-rail: #0c1418;
-  --pc-surface: #10181c;
-  --pc-surface-2: #152026;
-  --pc-input: #0a1216;
-  --pc-line: rgba(94, 234, 212, 0.12);
-  --pc-text: #f2f7f5;
-  --pc-muted: #7d8f8a;
-  --pc-accent: #2dd4bf;
-  --pc-accent-2: #5eead4;
-  --pc-amber: #fbbf24;
-  --pc-live: #34d399;
-  --pc-warn: #fb7185;
-  --pc-warn-soft: rgba(251, 113, 133, 0.14);
-  --pc-live-soft: rgba(52, 211, 153, 0.14);
+  --pc-bg: var(--color-bg-alt);
+  --pc-rail: var(--staff-rail, #0f5c5c);
+  --pc-surface: var(--color-paper);
+  --pc-surface-2: var(--color-bg);
+  --pc-input: var(--color-paper);
+  --pc-line: var(--color-border);
+  --pc-text: var(--color-ink);
+  --pc-muted: var(--color-text-muted);
+  --pc-accent: var(--color-cardinal);
+  --pc-accent-2: var(--color-crimson);
+  --pc-amber: #d97706;
+  --pc-live: var(--color-cardinal);
+  --pc-warn: #c2410c;
+  --pc-warn-soft: rgba(194, 65, 12, 0.1);
+  --pc-live-soft: var(--color-cardinal-pale);
   --pc-display: var(--font-display);
   min-height: 100svh;
-  color: var(--pc-muted);
-  background-color: var(--pc-bg);
-  background-image:
-    radial-gradient(720px 320px at 90% -10%, rgba(45, 212, 191, 0.08), transparent 55%);
+  color: var(--color-text);
+  background-color: var(--color-bg-alt);
+  background-image: none;
 }
 
 .platform-shell ::selection {
@@ -2007,9 +2023,9 @@ html:has(.platform-shell),
 }
 
 .platform-shell .btn-primary {
-  background: linear-gradient(135deg, #2dd4bf, #0d9488) !important;
-  box-shadow: 0 10px 28px rgba(13, 148, 136, 0.28) !important;
-  color: #042f2e !important;
+  background: linear-gradient(135deg, var(--color-cardinal), var(--color-crimson)) !important;
+  box-shadow: 0 10px 28px rgba(15, 92, 92, 0.22) !important;
+  color: #fff !important;
 }
 
 .platform-shell .btn-primary:hover {
@@ -3225,7 +3241,7 @@ html:has(.platform-shell),
 }
 
 .platform-shell .pc-title-gradient {
-  background: linear-gradient(115deg, #f2f7f5 10%, #5eead4 48%, #fbbf24 100%);
+  background: linear-gradient(115deg, #0a3d3d 10%, #0f5c5c 48%, #127575 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
@@ -3673,7 +3689,7 @@ html:has(.platform-shell),
   border-radius: 1rem;
   background: var(--pc-surface);
   padding: 1rem 1rem 0.95rem;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 8px 24px rgba(15, 92, 92, 0.08);
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
