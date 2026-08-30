@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { AnimatedNumber, ease } from './motion';
 
@@ -125,31 +127,54 @@ export function Drawer({
 }) {
   const reduce = useReducedMotion();
 
-  return (
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
-        <motion.div
-          className="pc-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
-        >
-          <button type="button" className="flex-1" aria-label="Close" onClick={onClose} />
-          <motion.aside
-            initial={reduce ? false : { x: '100%' }}
-            animate={{ x: 0 }}
-            exit={reduce ? undefined : { x: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 36 }}
-            className={`pc-drawer ${widthClass}`}
+        <div className="platform-shell pc-drawer-host">
+          <motion.div
+            className="pc-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
           >
-            {kicker ? <p className="pc-kicker">{kicker}</p> : null}
-            {title ? <h3 className="pc-drawer-title">{title}</h3> : null}
-            {children}
-          </motion.aside>
-        </motion.div>
+            <button type="button" className="pc-overlay-dismiss" aria-label="Close" onClick={onClose} />
+            <motion.aside
+              initial={reduce ? false : { x: '100%' }}
+              animate={{ x: 0 }}
+              exit={reduce ? undefined : { x: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+              className={`pc-drawer ${widthClass}`}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? 'pc-drawer-title' : undefined}
+            >
+              <div className="pc-drawer-head">
+                {kicker ? <p className="pc-kicker">{kicker}</p> : null}
+                {title ? (
+                  <h3 id="pc-drawer-title" className="pc-drawer-title">
+                    {title}
+                  </h3>
+                ) : null}
+              </div>
+              <div className="pc-drawer-body">{children}</div>
+            </motion.aside>
+          </motion.div>
+        </div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

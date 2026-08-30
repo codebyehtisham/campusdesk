@@ -10,6 +10,11 @@ const buildFilter = (req: Request): Prisma.AuditLogWhereInput => {
   if (req.query.role) {
     filter.actor = { path: ['role'], equals: String(req.query.role) };
   }
+  if (req.query.status === 'failed') {
+    filter.statusCode = { gte: 400 };
+  } else if (req.query.status === 'success') {
+    filter.statusCode = { lt: 400 };
+  }
   if (req.query.q) {
     const q = String(req.query.q);
     filter.OR = [

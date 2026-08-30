@@ -40,6 +40,7 @@ export default function PlatformAudit() {
   const [q, setQ] = useState('');
   const [method, setMethod] = useState('');
   const [role, setRole] = useState('');
+  const [status, setStatus] = useState('');
   const [organization, setOrganization] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,6 +66,7 @@ export default function PlatformAudit() {
           q: q || undefined,
           method: method || undefined,
           role: role || undefined,
+          status: status || undefined,
           organization: organization || undefined,
         },
       });
@@ -88,7 +90,7 @@ export default function PlatformAudit() {
   useEffect(() => {
     setPage(1);
     load(1);
-  }, [method, role, organization]);
+  }, [method, role, organization, status]);
 
   const search = (e) => {
     e.preventDefault();
@@ -113,7 +115,7 @@ export default function PlatformAudit() {
         hint="Every request across all tenants: method, URL, headers, body, response, IP, and location. Passwords and tokens are stored as [redacted]."
       />
 
-      <form onSubmit={search} className="mb-5 flex flex-col gap-3 lg:flex-row">
+      <form onSubmit={search} className="mb-4 flex flex-col gap-3 lg:flex-row">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -154,6 +156,23 @@ export default function PlatformAudit() {
         </button>
       </form>
 
+      <div className="mb-5 flex flex-wrap gap-2">
+        {[
+          { id: '', label: 'All requests' },
+          { id: 'failed', label: 'Failed APIs' },
+          { id: 'success', label: 'Successful' },
+        ].map((tab) => (
+          <button
+            key={tab.id || 'all'}
+            type="button"
+            className={`pc-chip ${status === tab.id ? 'is-on' : ''}`}
+            onClick={() => setStatus(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <Banner>{error}</Banner>
 
       <p className="mb-3 font-mono text-[0.72rem] tracking-wide text-[var(--pc-muted)] uppercase">
@@ -164,8 +183,12 @@ export default function PlatformAudit() {
         <div className="pc-panel p-10 text-center">Loading traffic…</div>
       ) : data.items.length === 0 ? (
         <div className="pc-panel p-10 text-center">
-          <h3>No requests yet</h3>
-          <p className="m-0">Browse the site or use a portal, then refresh this list.</p>
+          <h3>{status === 'failed' ? 'No failed requests' : status === 'success' ? 'No successful requests' : 'No requests yet'}</h3>
+          <p className="m-0">
+            {status === 'failed'
+              ? 'No API calls returned 4xx or 5xx for this filter. Try widening the search or refresh.'
+              : 'Browse the site or use a portal, then refresh this list.'}
+          </p>
         </div>
       ) : (
         <div className="pc-table-wrap">
