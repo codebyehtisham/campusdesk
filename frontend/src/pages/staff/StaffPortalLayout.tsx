@@ -10,7 +10,7 @@ export default function StaffPortalLayout({ base, portalLabel, homePath, nav }) 
   const home = homePath || `${base}/home`;
 
   return (
-    <div className="staff-shell faculty-shell min-h-svh bg-bg-alt">
+    <div className="staff-shell staff-portal-simple min-h-svh bg-bg-alt">
       <div className="relative z-1 flex min-h-svh w-full">
         <aside className="staff-rail hidden w-72 flex-col p-5 text-white md:flex">
           <Link to={home} className="staff-rail-brand">

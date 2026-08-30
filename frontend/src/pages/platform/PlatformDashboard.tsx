@@ -13,6 +13,7 @@ import {
 } from '../../components/nav/ConsoleIcons';
 import { AnimatedNumber, LiveClock, PingBar, StaggerCard, StaggerGrid } from './motion';
 import { Banner, Pulse } from './ui';
+import PortalSignInGrid from './PortalSignInGrid';
 import { BarChart } from './BarChart';
 import { formatMoney } from './money';
 
@@ -59,8 +60,8 @@ function pingTone(ms, up) {
 }
 
 const ACTIONS = [
-  { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Spin up an education institute', icon: IconBuildings, tone: 'primary' },
-  { to: `${SUPER_BASE}/organizations`, label: 'Manage tenants', hint: 'Lock, theme, admins, modules', icon: IconBuildings },
+  { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Education institute with role portals', icon: IconBuildings, tone: 'primary' },
+  { to: `${SUPER_BASE}/organizations`, label: 'Manage tenants', hint: 'Trials, modules, staff seats, themes', icon: IconBuildings },
   { to: `${SUPER_BASE}/modules`, label: 'Catalog', hint: 'Departments & sellable modules', icon: IconSwitches },
   { to: `${SUPER_BASE}/billing`, label: 'Billing', hint: 'MRR, invoices, past due', icon: IconCard },
   { to: `${SUPER_BASE}/audit`, label: 'Traffic log', hint: 'API requests & error traces', icon: IconPulse },
@@ -140,6 +141,7 @@ export default function PlatformDashboard() {
       warn: (counts.trialExpired ?? 0) > 0,
       delta: (counts.trialExpired ?? 0) > 0 ? 'Expired' : 'Trial',
     },
+    { label: 'Staff accounts', value: counts.faculty, n: counts.faculty, hint: 'All role portals', icon: IconSwitches, delta: 'Staff' },
     { label: 'Students', value: counts.applicants, n: counts.applicants, hint: 'Applicants', icon: IconSwitches, delta: 'Pipeline' },
     {
       label: 'Errors 24h',
@@ -165,7 +167,7 @@ export default function PlatformDashboard() {
         <div className="pc-dash-banner-copy">
           <p className="pc-dash-banner-kicker">Welcome back, operator</p>
           <h1>Platform command center</h1>
-          <p>Provision tenants, manage entitlements, and watch billing — live stack telemetry at a glance.</p>
+          <p>Provision education institutes, assign modules, and monitor billing — with dedicated portals for faculty, admissions, HR, finance, exams, and library.</p>
           <div className="pc-dash-banner-actions">
             <Link to={`${SUPER_BASE}/organizations`} className="pc-dash-banner-btn platform-btn-shine">
               Provision tenant
@@ -322,6 +324,22 @@ export default function PlatformDashboard() {
           </motion.section>
         </aside>
       </div>
+
+      <motion.section
+        className="pc-glass-card platform-panel-glow mb-6"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18, duration: 0.45, ease }}
+      >
+        <div className="pc-section-head">
+          <div>
+            <p className="pc-kicker m-0">Education fleet</p>
+            <h2 className="m-0">Campus sign-in URLs</h2>
+          </div>
+        </div>
+        <p className="pc-hint mb-4">Each role uses a dedicated portal. Share these paths when onboarding institute staff.</p>
+        <PortalSignInGrid compact />
+      </motion.section>
 
       {trials.expiringSoon?.length > 0 && (
         <motion.section

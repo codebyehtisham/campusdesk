@@ -53,7 +53,7 @@ export default function PlatformSidebar({ email, name, onNavigate, onSignOut }: 
         <CampusDeskMark size={48} className="ring-2 ring-white/20 platform-mark-float" />
         <span>
           <strong>Campus Desk</strong>
-          <small>Platform console</small>
+          <small>Education control plane</small>
         </span>
       </Link>
 

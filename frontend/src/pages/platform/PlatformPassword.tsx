@@ -4,9 +4,8 @@ import api from '../../api/client';
 import { getPlatform, signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE } from '../../admin/paths';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import { INSTITUTE_PORTALS } from '../../data/portals';
 import { Banner, PageHead, Toast } from './ui';
-
-const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
 
 export default function PlatformPassword() {
   const navigate = useNavigate();
@@ -66,7 +65,7 @@ export default function PlatformPassword() {
         <ChangePasswordForm
           accountName={account?.name || 'Superuser'}
           accountEmail={account?.email}
-          note="Organisation admins change their passwords in /org-admin. Faculty use /faculty-portal."
+          note={`Organisation admins use ${INSTITUTE_PORTALS[0].path}. Staff use their role portal (faculty, admissions, HR, finance, exams, or library). Students apply at /apply.`}
           onSubmit={async ({ currentPassword, newPassword }) => {
             const res = await api.put(
               '/platform/password',

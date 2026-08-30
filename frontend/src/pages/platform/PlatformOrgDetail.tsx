@@ -10,6 +10,8 @@ import { DEFAULT_THEME, normalizeTheme } from '../../theme/catalog';
 import { deptEnabled } from './catalog';
 import { BarChart } from './BarChart';
 import { formatDate, formatMoney } from './money';
+import { portalSignInSummary } from '../../data/portals';
+import PortalSignInGrid from './PortalSignInGrid';
 import { Banner, Drawer, GateSwitch, PageHead, Pulse, Stat, Toast } from './ui';
 
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -302,7 +304,7 @@ export default function PlatformOrgDetail() {
       <PageHead
         kicker="Tenant"
         title={org.name}
-        hint={`Org admin ${ORG_ADMIN_BASE} · faculty /faculty-portal · students /admissions. Enable a department, then pick which modules this campus pays for.`}
+        hint={`${portalSignInSummary()}. Enable a department, then pick which modules this campus pays for.`}
         actions={
           <span className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--pc-line)] px-3 py-2 text-sm font-semibold text-[var(--pc-text)]">
             <Pulse on={org.status === 'active' && !org.servicesLocked} tone={org.status === 'active' && !org.servicesLocked ? 'live' : 'warn'} />
@@ -325,15 +327,23 @@ export default function PlatformOrgDetail() {
       )}
 
       <section className="pc-panel mb-6 p-5 md:p-6">
+        <h2 className="mt-0">Campus sign-in URLs</h2>
+        <p className="pc-hint mb-4">
+          Share the correct portal link with each role. Org admins assign staff accounts and roles under Users in the org admin console.
+        </p>
+        <PortalSignInGrid compact />
+      </section>
+
+      <section className="pc-panel mb-6 p-5 md:p-6">
         <h2 className="mt-0">Service lock</h2>
         <p className="pc-hint mb-4">
-          Suspend organisation admin, faculty, and student portals. They can still sign in, then see that services are paused.
+          Suspend all campus portals — org admin, faculty, admissions, HR, finance, exams, library, and student access. Users can still sign in, then see that services are paused.
         </p>
         <div className="grid gap-3">
           <div className="flex items-center justify-between rounded-[12px] border border-[var(--pc-line)] px-4 py-3">
             <div>
               <p className="m-0 text-sm font-semibold text-[var(--pc-text)]">Suspend services now</p>
-              <p className="m-0 text-xs text-[var(--pc-muted)]">Locks the campus immediately, including faculty and students.</p>
+              <p className="m-0 text-xs text-[var(--pc-muted)]">Locks the campus immediately, including all staff and student portals.</p>
             </div>
             <GateSwitch
               on={form.status === 'suspended'}
