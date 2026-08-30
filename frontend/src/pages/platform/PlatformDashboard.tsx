@@ -59,7 +59,7 @@ function pingTone(ms, up) {
 }
 
 const ACTIONS = [
-  { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Spin up a campus or hospital org', icon: IconBuildings, tone: 'primary' },
+  { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Spin up an education institute', icon: IconBuildings, tone: 'primary' },
   { to: `${SUPER_BASE}/organizations`, label: 'Manage tenants', hint: 'Lock, theme, admins, modules', icon: IconBuildings },
   { to: `${SUPER_BASE}/modules`, label: 'Catalog', hint: 'Departments & sellable modules', icon: IconSwitches },
   { to: `${SUPER_BASE}/billing`, label: 'Billing', hint: 'MRR, invoices, past due', icon: IconCard },

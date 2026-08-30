@@ -12,23 +12,40 @@ export const MODULE_NAV = {
     { to: 'timetable', label: 'Timetable' },
   ],
   careers: [{ to: 'careers', label: 'HR' }],
+  'hr-payroll': [{ to: 'careers', label: 'HR & payroll' }],
   'student-attendance': [
     { to: 'attendance/students', label: 'Student attendance' },
     { to: 'attendance/insights', label: 'Attendance insights' },
   ],
   'staff-attendance': [{ to: 'attendance/staff', label: 'Staff attendance' }],
+  timetable: [{ to: 'timetable', label: 'Timetable' }],
+  fees: [{ to: 'dashboard', label: 'Fees & finance' }],
+  examinations: [{ to: 'dashboard', label: 'Examinations' }],
+  library: [{ to: 'dashboard', label: 'Library' }],
+  'compliance-vault': [{ to: 'dashboard', label: 'Compliance vault' }],
+  inventory: [{ to: 'dashboard', label: 'Inventory' }],
 };
 
-export const orgAdminNav = (modules = [], kind = 'education') => {
+const MODULE_ORDER = [
+  'admissions',
+  'faculty',
+  'timetable',
+  'examinations',
+  'fees',
+  'careers',
+  'hr-payroll',
+  'student-attendance',
+  'staff-attendance',
+  'library',
+  'compliance-vault',
+  'inventory',
+];
+
+export const orgAdminNav = (modules = []) => {
   const items = [{ to: `${ADMIN_BASE}/dashboard`, label: 'Dashboard' }];
-  for (const slug of ['admissions', 'faculty', 'careers', 'student-attendance', 'staff-attendance']) {
+  for (const slug of MODULE_ORDER) {
     if (!modules.includes(slug)) continue;
     for (const item of MODULE_NAV[slug] || []) {
-      if (kind === 'hospital' && (item.to === 'classes' || item.to === 'timetable')) continue;
-      if (kind === 'hospital' && item.to === 'attendance/students') {
-        items.push({ to: `${ADMIN_BASE}/${item.to}`, label: 'Patient register', slug });
-        continue;
-      }
       items.push({ to: `${ADMIN_BASE}/${item.to}`, label: item.label, slug });
     }
   }
@@ -38,8 +55,8 @@ export const orgAdminNav = (modules = [], kind = 'education') => {
   return items;
 };
 
-export const orgAdminNavGroups = (modules = [], kind = 'education') => {
-  const flat = orgAdminNav(modules, kind);
+export const orgAdminNavGroups = (modules = []) => {
+  const flat = orgAdminNav(modules);
   const bySuffix = (suffix: string) => flat.filter((item) => item.to.endsWith(`/${suffix}`) || item.to.endsWith(suffix));
   const byLabels = (labels: string[]) => flat.filter((item) => labels.includes(item.label));
 
@@ -47,7 +64,20 @@ export const orgAdminNavGroups = (modules = [], kind = 'education') => {
     { title: 'Overview', items: bySuffix('dashboard') },
     {
       title: 'Operations',
-      items: byLabels(['Admissions', 'Admission portal', 'HR', 'Student attendance', 'Attendance insights', 'Staff attendance', 'Patient register']),
+      items: byLabels([
+        'Admissions',
+        'Admission portal',
+        'HR',
+        'HR & payroll',
+        'Student attendance',
+        'Attendance insights',
+        'Staff attendance',
+        'Fees & finance',
+        'Examinations',
+        'Library',
+        'Compliance vault',
+        'Inventory',
+      ]),
     },
     { title: 'Teaching', items: byLabels(['Users', 'Access', 'Classes', 'Timetable']) },
     { title: 'Campus', items: [...bySuffix('units'), ...bySuffix('brand')] },

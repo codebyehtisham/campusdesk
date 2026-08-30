@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { getStaff, signOutStaff } from '../../auth/staffSession';
-import { FACULTY_BASE } from '../../admin/paths';
-import { roleLabel } from '../../data/roles';
+import { portalPathForRole, roleLabel } from '../../data/roles';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
 
 export default function FacultyPassword() {
   const navigate = useNavigate();
   const staff = getStaff();
+  const portalBase = portalPathForRole(staff?.role);
 
   return (
     <div>
@@ -30,7 +30,7 @@ export default function FacultyPassword() {
         }}
         onAuthError={() => {
           signOutStaff();
-          navigate(FACULTY_BASE, { replace: true });
+          navigate(portalBase, { replace: true });
         }}
       />
     </div>

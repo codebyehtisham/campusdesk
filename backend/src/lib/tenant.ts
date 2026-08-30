@@ -29,6 +29,36 @@ export const DEFAULT_DEPARTMENTS = [
     description: 'Daily attendance for students, faculty, and campus staff.',
     sortOrder: 4,
   },
+  {
+    slug: 'academic-operations',
+    name: 'Academic operations',
+    description: 'Timetable, examinations, and academic calendar.',
+    sortOrder: 5,
+  },
+  {
+    slug: 'finance-fees',
+    name: 'Finance',
+    description: 'Fee plans, installments, receipts, and defaulter tracking.',
+    sortOrder: 6,
+  },
+  {
+    slug: 'library-services',
+    name: 'Library',
+    description: 'Catalog, issue/return, fines, and digital resources.',
+    sortOrder: 7,
+  },
+  {
+    slug: 'compliance-records',
+    name: 'Compliance',
+    description: 'Accreditation documents, licenses, and audit trails.',
+    sortOrder: 8,
+  },
+  {
+    slug: 'campus-assets',
+    name: 'Assets',
+    description: 'Lab equipment, IT assets, and maintenance tickets.',
+    sortOrder: 9,
+  },
 ];
 
 export const DEFAULT_MODULES = [
@@ -101,6 +131,55 @@ export const DEFAULT_MODULES = [
     description: 'Attendance for faculty, accountants, clerks, and other campus staff.',
     sortOrder: 2,
     departmentSlug: 'campus-attendance',
+  },
+  {
+    slug: 'timetable',
+    name: 'Timetable',
+    description: 'Class schedules, room allocation, substitutions, and academic calendar.',
+    sortOrder: 1,
+    departmentSlug: 'academic-operations',
+  },
+  {
+    slug: 'examinations',
+    name: 'Examinations',
+    description: 'Exam schedules, mark entry, grade rules, transcripts, and result cards.',
+    sortOrder: 2,
+    departmentSlug: 'academic-operations',
+  },
+  {
+    slug: 'fees',
+    name: 'Fees & finance',
+    description: 'Fee plans, installments, online payments, receipts, scholarships, and refunds.',
+    sortOrder: 1,
+    departmentSlug: 'finance-fees',
+  },
+  {
+    slug: 'hr-payroll',
+    name: 'HR & payroll',
+    description: 'Staff records, leave, contracts, and basic payroll export.',
+    sortOrder: 2,
+    departmentSlug: 'human-resources',
+  },
+  {
+    slug: 'library',
+    name: 'Library',
+    description: 'Catalog, issue/return, fines, and digital resources.',
+    sortOrder: 1,
+    departmentSlug: 'library-services',
+  },
+  {
+    slug: 'compliance-vault',
+    name: 'Document vault',
+    description: 'Licenses, accreditation files, and compliance expiry reminders.',
+    sortOrder: 1,
+    departmentSlug: 'compliance-records',
+  },
+  {
+    slug: 'inventory',
+    name: 'Inventory & assets',
+    description: 'Lab equipment, IT assets, maintenance tickets, and depreciation.',
+    sortOrder: 1,
+    departmentSlug: 'campus-assets',
   },
 ];
 

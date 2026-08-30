@@ -7,13 +7,12 @@ import { signOutAdmin, getAdmin } from '../../auth/adminSession';
 import { ADMIN_BASE } from '../../admin/paths';
 import { CheckRow, PasswordField, StrengthMeter } from '../../components/ChangePasswordForm';
 
-const emptyForm = { name: '', email: '', password: '', confirmPassword: '', role: 'reader' };
+const emptyForm = { name: '', email: '', password: '', confirmPassword: '', role: 'registrar' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const roleOptions = rolesForKind(getAdmin()?.organization?.kind);
-  const isHospital = getAdmin()?.organization?.kind === 'hospital';
+  const roleOptions = rolesForKind();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -88,7 +87,7 @@ export default function AdminUsers() {
           { name: form.name, email: form.email, password: form.password, role: form.role },
           { authScope: 'admin' }
         );
-        setNotice('User created. They can sign in at /faculty-portal.');
+        setNotice(`User created. They sign in at ${roleOptions.find((r) => r.key === form.role)?.portalPath || '/faculty-portal'}.`);
       }
       closePanel();
       await load();
@@ -119,11 +118,10 @@ export default function AdminUsers() {
       <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <span className="eyebrow">Users</span>
-          <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">{isHospital ? 'Staff roles' : 'Faculty roles'}</h1>
+          <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Staff roles</h1>
           <p className="m-0 max-w-xl text-text-muted">
-            {isHospital
-              ? 'Create staff and HR accounts. They sign in at /faculty-portal. Use Access to block an account or reset a password.'
-              : 'Create Reader, Officer, or Faculty member accounts. They sign in at /faculty-portal. Use Access to block an account or reset a password.'}
+            Create accounts for faculty, admissions, HR, finance, exams, and library staff. Each role signs in at its
+            own portal. Use Access to block an account or reset a password.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -144,11 +142,9 @@ export default function AdminUsers() {
         <div className="glass rounded-[1.6rem] p-10 text-center text-text-muted">Loading users…</div>
       ) : users.length === 0 ? (
         <div className="glass rounded-[1.6rem] p-10 text-center">
-          <h3>No {isHospital ? 'staff' : 'faculty'} users yet</h3>
+          <h3>No staff users yet</h3>
           <p className="mb-6 text-text-muted">
-            {isHospital
-              ? 'Add a staff user or HR officer so they can sign in at /faculty-portal.'
-              : 'Add a Reader, Officer, or Faculty member so they can open the faculty portal.'}
+            Assign a role and portal sign-in link for each person — faculty, admissions, HR, finance, exams, or library.
           </p>
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             Add the first user
@@ -161,7 +157,7 @@ export default function AdminUsers() {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="tag tag-allied w-fit">{roleLabel(user.role, getAdmin()?.organization?.kind)}</span>
+                    <span className="tag tag-allied w-fit">{roleLabel(user.role)}</span>
                     {user.blocked && <span className="tag tag-nursing">Blocked</span>}
                   </div>
                   <h3 className="mt-3 mb-1">{user.name}</h3>
@@ -283,6 +279,15 @@ export default function AdminUsers() {
                   </select>
                   <span className="font-medium text-text-muted">
                     {roleOptions.find((role) => role.key === form.role)?.hint}
+                    {roleOptions.find((role) => role.key === form.role)?.portalPath ? (
+                      <>
+                        {' '}
+                        · Sign in at{' '}
+                        <code className="font-mono text-xs">
+                          {roleOptions.find((role) => role.key === form.role)?.portalPath}
+                        </code>
+                      </>
+                    ) : null}
                   </span>
                 </label>
                 <div className="mt-2 flex gap-2">

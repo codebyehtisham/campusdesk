@@ -586,13 +586,8 @@ export default function PlatformOrgDetail() {
           </label>
           <label className={labelClass}>
             Organisation type
-            <select className="field" value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value }))}>
-              <option value="education">Education institute</option>
-              <option value="hospital">Hospital</option>
-            </select>
-            <span className="font-medium text-[var(--pc-muted)]">
-              Changing type updates labels and default roles. It does not rebuild departments already created.
-            </span>
+            <input className="field" value="Education institute" readOnly disabled />
+            <span className="font-medium text-[var(--pc-muted)]">Campus Desk is education-only.</span>
           </label>
         </div>
         <div className="flex items-center justify-between rounded-[12px] border border-[var(--pc-line)] px-4 py-3">

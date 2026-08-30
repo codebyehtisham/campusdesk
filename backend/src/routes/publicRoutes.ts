@@ -39,8 +39,50 @@ import {
   requireActiveOrg,
   requireOrgLinked,
   requireModule,
-  adminOnly,
+  careersManager,
+  hrManagerOnly,
+  accountantOnly,
+  examControllerOnly,
+  librarianOnly,
+  financeAccess,
+  examsAccess,
+  libraryAccess,
 } from '../middleware/auth.js';
+import {
+  listAttendance,
+  createAttendancePerson,
+  updateAttendancePerson,
+  deleteAttendancePerson,
+  saveAttendanceDay,
+} from '../controllers/attendanceController.js';
+import { getSchemeDesk } from '../controllers/unitsController.js';
+import {
+  getFinanceOverview,
+  listFeePlans,
+  createFeePlan,
+  updateFeePlan,
+  listStudentFees,
+  createStudentFee,
+  recordFeePayment,
+  listFinanceStudents,
+} from '../controllers/financeController.js';
+import {
+  listExams,
+  createExam,
+  updateExam,
+  getExamMarks,
+  saveExamMarks,
+  listExamClasses,
+} from '../controllers/examController.js';
+import {
+  listLibraryItems,
+  createLibraryItem,
+  updateLibraryItem,
+  listLibraryLoans,
+  issueLibraryLoan,
+  returnLibraryLoan,
+  listLibraryMembers,
+} from '../controllers/libraryController.js';
 
 export const authRoutes = Router();
 authRoutes.post('/register', registerApplicant);
@@ -61,7 +103,7 @@ const teaching = [protect, requireActiveOrg, staffOnly, teacherOnly, requireModu
 
 staffRoutes.post('/login', loginStaff);
 staffRoutes.get('/me', protect, requireOrgLinked, staffOnly, getMe);
-staffRoutes.put('/password', protect, requireActiveOrg, staffOnly, requireModule('faculty'), changePassword);
+staffRoutes.put('/password', protect, requireActiveOrg, staffOnly, changePassword);
 staffRoutes.get('/teaching', ...teaching, getTeaching);
 staffRoutes.post('/classes/:id/content', ...teaching, createContent);
 staffRoutes.put('/content/:id', ...teaching, updateContent);
@@ -71,6 +113,41 @@ staffRoutes.get('/sessions/:id', ...teaching, getSession);
 staffRoutes.put('/sessions/:id/qr', ...teaching, refreshQr);
 staffRoutes.put('/sessions/:id/marks', ...teaching, markSession);
 staffRoutes.put('/sessions/:id/close', ...teaching, closeSession);
+
+const hrStaff = [protect, requireActiveOrg, staffOnly, hrManagerOnly];
+staffRoutes.get('/hr/scheme', ...hrStaff, getSchemeDesk);
+staffRoutes.get('/hr/attendance', ...hrStaff, requireModule('staff-attendance'), listAttendance);
+staffRoutes.put('/hr/attendance', ...hrStaff, requireModule('staff-attendance'), saveAttendanceDay);
+staffRoutes.post('/hr/attendance/people', ...hrStaff, requireModule('staff-attendance'), createAttendancePerson);
+staffRoutes.put('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), updateAttendancePerson);
+staffRoutes.delete('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), deleteAttendancePerson);
+
+const financeStaff = [protect, requireActiveOrg, staffOnly, accountantOnly, requireModule('fees')];
+staffRoutes.get('/finance/overview', ...financeStaff, getFinanceOverview);
+staffRoutes.get('/finance/plans', ...financeStaff, listFeePlans);
+staffRoutes.post('/finance/plans', ...financeStaff, createFeePlan);
+staffRoutes.put('/finance/plans/:id', ...financeStaff, updateFeePlan);
+staffRoutes.get('/finance/students', ...financeStaff, listFinanceStudents);
+staffRoutes.get('/finance/fees', ...financeStaff, listStudentFees);
+staffRoutes.post('/finance/fees', ...financeStaff, createStudentFee);
+staffRoutes.post('/finance/payments', ...financeStaff, recordFeePayment);
+
+const examsStaff = [protect, requireActiveOrg, staffOnly, examControllerOnly, requireModule('examinations')];
+staffRoutes.get('/exams/classes', ...examsStaff, listExamClasses);
+staffRoutes.get('/exams', ...examsStaff, listExams);
+staffRoutes.post('/exams', ...examsStaff, createExam);
+staffRoutes.put('/exams/:id', ...examsStaff, updateExam);
+staffRoutes.get('/exams/:id/marks', ...examsStaff, getExamMarks);
+staffRoutes.put('/exams/:id/marks', ...examsStaff, saveExamMarks);
+
+const libraryStaff = [protect, requireActiveOrg, staffOnly, librarianOnly, requireModule('library')];
+staffRoutes.get('/library/items', ...libraryStaff, listLibraryItems);
+staffRoutes.post('/library/items', ...libraryStaff, createLibraryItem);
+staffRoutes.put('/library/items/:id', ...libraryStaff, updateLibraryItem);
+staffRoutes.get('/library/loans', ...libraryStaff, listLibraryLoans);
+staffRoutes.post('/library/loans', ...libraryStaff, issueLibraryLoan);
+staffRoutes.put('/library/loans/:id/return', ...libraryStaff, returnLibraryLoan);
+staffRoutes.get('/library/members', ...libraryStaff, listLibraryMembers);
 
 export const applicationRoutes = Router();
 applicationRoutes.get('/me', protect, requireActiveOrg, applicantOnly, requireModule('admissions'), getMine);
@@ -119,9 +196,9 @@ admissionFormRoutes.get('/', getPublicAdmissionForm);
 
 export const careerRoutes = Router();
 careerRoutes.get('/', getOpenings);
-careerRoutes.post('/', protect, requireActiveOrg, adminOnly, requireModule('careers'), createOpening);
-careerRoutes.put('/:id', protect, requireActiveOrg, adminOnly, requireModule('careers'), updateOpening);
-careerRoutes.delete('/:id', protect, requireActiveOrg, adminOnly, requireModule('careers'), deleteOpening);
+careerRoutes.post('/', protect, requireActiveOrg, careersManager, requireModule('careers'), createOpening);
+careerRoutes.put('/:id', protect, requireActiveOrg, careersManager, requireModule('careers'), updateOpening);
+careerRoutes.delete('/:id', protect, requireActiveOrg, careersManager, requireModule('careers'), deleteOpening);
 
 export const settingsRoutes = Router();
 settingsRoutes.get('/', getPublicSettings);

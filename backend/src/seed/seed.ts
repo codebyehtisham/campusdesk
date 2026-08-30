@@ -222,7 +222,7 @@ const run = async () => {
           },
         });
         console.log(`Faculty member created: ${teacherEmail} (sign in at /faculty-portal)`);
-      } else if (teacher.role === 'teacher' || teacher.role === 'reader' || teacher.role === 'officer') {
+      } else if (['teacher', 'registrar', 'admissions_officer'].includes(teacher.role)) {
         teacher = await prisma.user.update({
           where: { id: teacher.id },
           data: { role: 'teacher', password: teacherPassword, organizationId: explore.id, name: teacher.name || 'Nazia Shaukat' },
@@ -230,7 +230,7 @@ const run = async () => {
         console.log(`Faculty member updated: ${teacherEmail} (sign in at /faculty-portal)`);
       }
 
-      const officerEmail = 'officer@explorecollege.org';
+      const officerEmail = 'admissions@explorecollege.org';
       const existingOfficer = await prisma.user.findUnique({ where: { email: officerEmail } });
       if (!existingOfficer) {
         await prisma.user.create({
@@ -238,17 +238,17 @@ const run = async () => {
             name: 'Admissions Officer',
             email: officerEmail,
             password: teacherPassword,
-            role: 'officer',
+            role: 'admissions_officer',
             organizationId: explore.id,
           },
         });
-        console.log(`Admissions officer created: ${officerEmail} (sign in at /faculty-portal)`);
+        console.log(`Admissions officer created: ${officerEmail} (sign in at /admissions-portal)`);
       } else {
         await prisma.user.update({
           where: { id: existingOfficer.id },
-          data: { role: 'officer', password: teacherPassword, organizationId: explore.id },
+          data: { role: 'admissions_officer', password: teacherPassword, organizationId: explore.id },
         });
-        console.log(`Admissions officer updated: ${officerEmail} (sign in at /faculty-portal)`);
+        console.log(`Admissions officer updated: ${officerEmail} (sign in at /admissions-portal)`);
       }
 
       const programmes = await prisma.course.findMany({ where: { organizationId: explore.id } });

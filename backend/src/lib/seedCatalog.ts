@@ -3,6 +3,7 @@ import { CACHE_KEYS, cacheDel } from '../config/redis.js';
 import { DEFAULT_PLANS } from './billing.js';
 import { ensureDefaultFeatureFlags } from './featureFlags.js';
 import { ensurePlatformConfig } from './trial.js';
+import { migrateLegacyRoles } from './roles.js';
 import { DEFAULT_DEPARTMENTS, DEFAULT_MODULES } from './tenant.js';
 
 /** Platform-wide departments, modules, and billing plans (not tenant data). */
@@ -40,6 +41,7 @@ export async function ensurePlatformCatalog() {
 
   await ensureDefaultFeatureFlags();
   await ensurePlatformConfig();
+  await migrateLegacyRoles();
 
   await cacheDel(CACHE_KEYS.modules, CACHE_KEYS.catalog, CACHE_KEYS.platformDashboard);
 }

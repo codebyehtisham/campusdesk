@@ -1,0 +1,125 @@
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import Magnetic from '../../components/Magnetic';
+import { getStaff, signInStaff } from '../../auth/staffSession';
+import { isLockedOrg } from '../../auth/serviceLock';
+import { PORTAL_META, portalPathForRole, staffHome } from '../../data/roles';
+import api from '../../api/client';
+import BrandMark from '../../components/BrandMark';
+import usePublicBrand from '../../brand/usePublicBrand';
+
+const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
+
+export default function StaffLoginPage({ portal }) {
+  const meta = PORTAL_META[portal];
+  const navigate = useNavigate();
+  const existing = getStaff();
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const brand = usePublicBrand();
+
+  if (existing) {
+    const expected = portalPathForRole(existing.role);
+    if (!expected.startsWith(meta.base)) {
+      return <Navigate to={expected} replace />;
+    }
+    if (isLockedOrg(existing.organization)) return <Navigate to={`${meta.base}/suspended`} replace />;
+    return <Navigate to={staffHome(existing.role, existing.modules)} replace />;
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/staff/login', {
+        email: form.email.trim(),
+        password: form.password.trim(),
+        portal,
+      });
+      signInStaff({
+        id: res.data.user.id,
+        name: res.data.user.name,
+        email: res.data.user.email,
+        role: res.data.user.role,
+        token: res.data.token,
+        organization: res.data.organization,
+        modules: res.data.organization?.modules || [],
+        portal,
+      });
+      const modules = res.data.organization?.modules || [];
+      navigate(
+        isLockedOrg(res.data.organization) ? `${meta.base}/suspended` : staffHome(res.data.user.role, modules),
+        { replace: true }
+      );
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not sign in. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative min-h-svh overflow-hidden bg-bg">
+      <div className="hero-aurora" aria-hidden="true" />
+      <div className="hero-aurora hero-aurora-b" aria-hidden="true" />
+      <div className="flex min-h-svh items-center justify-center px-5 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass glow-border w-full max-w-md rounded-[1.8rem] p-8 md:p-10"
+        >
+          <div className="mb-8 flex items-center gap-3">
+            <BrandMark org={brand} size={48} />
+            <div className="leading-tight">
+              <strong className="font-serif text-sm font-bold tracking-tight text-ink">{meta.title}</strong>
+              <p className="m-0 text-[0.7rem] font-medium text-text-muted">{meta.subtitle}</p>
+            </div>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <label className={labelClass}>
+              Work email
+              <input
+                required
+                type="email"
+                className="field"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                autoComplete="username"
+              />
+            </label>
+            <label className={labelClass}>
+              Password
+              <div className="relative">
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  className="field w-full pr-20"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold text-cardinal"
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </label>
+            {error ? <p className="m-0 text-sm font-semibold text-crimson">{error}</p> : null}
+            <Magnetic>
+              <button type="submit" className="btn btn-primary w-full py-3.5" disabled={loading}>
+                {loading ? 'Signing in…' : 'Sign in'}
+              </button>
+            </Magnetic>
+          </form>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

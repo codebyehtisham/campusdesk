@@ -9,11 +9,12 @@ import { hasModule, sellableModules } from '../lib/tenant.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 import type { AuthPayload } from '../types/express.js';
 import { getSiteSettings } from '../controllers/settingsController.js';
+import { ASSIGNABLE_STAFF_ROLES, normalizeStaffRole } from './staffAuth.js';
 
-export const STAFF_ROLES = ['admin', 'reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
-export const FACULTY_ROLES = ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
-export const ADMISSIONS_ROLES = ['admin', 'reader', 'officer', 'viewer', 'reviewer'] as const;
-export const DECISION_ROLES = ['officer', 'reviewer'] as const;
+export { ASSIGNABLE_STAFF_ROLES as FACULTY_ROLES };
+export const STAFF_ROLES = ['admin', ...ASSIGNABLE_STAFF_ROLES] as const;
+export const ADMISSIONS_ROLES = ['admin', 'registrar', 'admissions_officer'] as const;
+export const DECISION_ROLES = ['admissions_officer'] as const;
 
 export const toSafeJSON = (user: User) => ({
   id: user.id,
@@ -190,14 +191,14 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const staffOnly = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user || !STAFF_ROLES.includes(req.user.role as (typeof STAFF_ROLES)[number])) {
-    return res.status(403).json({ message: 'Faculty access only' });
+  if (!req.user || !ASSIGNABLE_STAFF_ROLES.includes(req.user.role as (typeof ASSIGNABLE_STAFF_ROLES)[number])) {
+    return res.status(403).json({ message: 'Staff access only' });
   }
   return next();
 };
 
 export const teacherOnly = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'teacher') {
+  if (!req.user || req.user.role !== 'teacher') {
     return res.status(403).json({ message: 'Faculty member access only' });
   }
   return next();
@@ -222,6 +223,49 @@ export const applicantOnly = (req: Request, res: Response, next: NextFunction) =
     return res.status(403).json({ message: 'Applicant access only' });
   }
   return next();
+};
+
+const staffRoleIs = (req: Request, role: string) =>
+  Boolean(req.user && normalizeStaffRole(req.user.role) === role);
+
+export const careersManager = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role === 'admin' || staffRoleIs(req, 'hr_manager')) return next();
+  return res.status(403).json({ message: 'Admin or HR manager access only' });
+};
+
+export const hrManagerOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (staffRoleIs(req, 'hr_manager')) return next();
+  return res.status(403).json({ message: 'HR manager access only' });
+};
+
+export const accountantOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (staffRoleIs(req, 'accountant')) return next();
+  return res.status(403).json({ message: 'Accountant access only' });
+};
+
+export const examControllerOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (staffRoleIs(req, 'exam_controller')) return next();
+  return res.status(403).json({ message: 'Exam controller access only' });
+};
+
+export const librarianOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (staffRoleIs(req, 'librarian')) return next();
+  return res.status(403).json({ message: 'Librarian access only' });
+};
+
+export const financeAccess = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role === 'admin' || staffRoleIs(req, 'accountant')) return next();
+  return res.status(403).json({ message: 'Admin or accountant access only' });
+};
+
+export const examsAccess = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role === 'admin' || staffRoleIs(req, 'exam_controller')) return next();
+  return res.status(403).json({ message: 'Admin or exam controller access only' });
+};
+
+export const libraryAccess = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role === 'admin' || staffRoleIs(req, 'librarian')) return next();
+  return res.status(403).json({ message: 'Admin or librarian access only' });
 };
 
 export const requireModule = (slug: string) => (req: Request, res: Response, next: NextFunction) => {

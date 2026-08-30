@@ -11,11 +11,17 @@ enum Role {
   superadmin
   applicant
   admin
+  teacher
+  registrar
+  admissions_officer
+  hr_manager
+  accountant
+  exam_controller
+  librarian
   reader
   officer
   viewer
   reviewer
-  teacher
 }
 
 enum OrgKind {
@@ -90,6 +96,13 @@ model Organization {
   courseContents     CourseContent[]
   attendanceSessions AttendanceSession[]
   orgUnits           OrgUnit[]
+  feePlans           FeePlan[]
+  studentFees        StudentFee[]
+  feePayments        FeePayment[]
+  exams              Exam[]
+  examMarks          ExamMark[]
+  libraryItems       LibraryItem[]
+  libraryLoans       LibraryLoan[]
 
   @@index([status])
   @@index([isPublic])
@@ -396,6 +409,9 @@ model AttendancePerson {
   records        AttendanceRecord[]
   enrollments    ClassEnrollment[]
   sessionMarks   SessionAttendance[]
+  studentFees    StudentFee[]
+  examMarks      ExamMark[]
+  libraryLoans   LibraryLoan[]
   unitId         String?
   unit           OrgUnit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
 
@@ -489,6 +505,7 @@ model ClassSection {
   slots          TimetableSlot[]
   contents       CourseContent[]
   sessions       AttendanceSession[]
+  exams          Exam[]
 
   @@index([organizationId])
   @@index([teacherId])
@@ -612,4 +629,127 @@ model Contact {
   updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
+}
+
+model FeePlan {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  amountCents    Int
+  currency       String   @default("PKR")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  studentFees    StudentFee[]
+
+  @@index([organizationId])
+}
+
+model StudentFee {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  planId         String?
+  plan           FeePlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  label          String   @default("")
+  amountDueCents Int
+  amountPaidCents Int     @default(0)
+  status         String   @default("open")
+  dueAt          DateTime?
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  payments       FeePayment[]
+
+  @@index([organizationId])
+  @@index([personId])
+  @@index([status])
+}
+
+model FeePayment {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  studentFeeId   String
+  studentFee     StudentFee @relation(fields: [studentFeeId], references: [id], onDelete: Cascade)
+  amountCents    Int
+  method         String   @default("cash")
+  paidAt         DateTime @default(now())
+  notes          String   @default("")
+  recordedById   String?
+
+  @@index([organizationId])
+  @@index([studentFeeId])
+}
+
+model Exam {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  classId        String?
+  class          ClassSection? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  examDate       DateTime?
+  maxMarks       Int      @default(100)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  marks          ExamMark[]
+
+  @@index([organizationId])
+}
+
+model ExamMark {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  examId         String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  marksObtained  Int?
+  grade          String   @default("")
+  notes          String   @default("")
+
+  @@unique([examId, personId])
+  @@index([organizationId])
+}
+
+model LibraryItem {
+  id              String   @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title           String
+  author          String   @default("")
+  isbn            String   @default("")
+  copiesTotal     Int      @default(1)
+  copiesAvailable Int      @default(1)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  loans           LibraryLoan[]
+
+  @@index([organizationId])
+}
+
+model LibraryLoan {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  issuedAt       DateTime @default(now())
+  dueAt          DateTime?
+  returnedAt     DateTime?
+  fineCents      Int      @default(0)
+  notes          String   @default("")
+
+  @@index([organizationId])
+  @@index([itemId])
+  @@index([personId])
 }

@@ -140,7 +140,7 @@ export default function PlatformAudit() {
         </select>
         <select value={role} onChange={(e) => setRole(e.target.value)} className="field lg:w-44">
           <option value="">All roles</option>
-          {['superadmin', 'admin', 'teacher', 'officer', 'reviewer', 'reader', 'viewer', 'applicant', 'anonymous'].map(
+          {['superadmin', 'admin', 'teacher', 'registrar', 'admissions_officer', 'hr_manager', 'accountant', 'exam_controller', 'librarian', 'applicant', 'anonymous'].map(
             (item) => (
               <option key={item} value={item}>
                 {item}

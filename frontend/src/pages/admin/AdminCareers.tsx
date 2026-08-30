@@ -3,15 +3,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CAREER_TYPES } from '../../data/careers';
 import api from '../../api/client';
 import { signOutAdmin } from '../../auth/adminSession';
-import { ADMIN_BASE } from '../../admin/paths';
+import { signOutStaff } from '../../auth/staffSession';
+import { ADMIN_BASE, HR_PORTAL_BASE } from '../../admin/paths';
 import { useNavigate } from 'react-router-dom';
 
 const emptyForm = { title: '', type: 'Full-Time', desc: '' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
-const adminReq = { authScope: 'admin' };
 
-export default function AdminCareers() {
+export default function AdminCareers({ authScope = 'admin' } = {}) {
   const navigate = useNavigate();
+  const authReq = { authScope };
   const [openings, setOpenings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,6 +23,11 @@ export default function AdminCareers() {
   const [error, setError] = useState('');
 
   const kickOut = () => {
+    if (authScope === 'staff') {
+      signOutStaff();
+      navigate(HR_PORTAL_BASE, { replace: true });
+      return;
+    }
     signOutAdmin();
     navigate(ADMIN_BASE, { replace: true });
   };
@@ -77,10 +83,10 @@ export default function AdminCareers() {
     setSaving(true);
     try {
       if (panel?.mode === 'edit') {
-        await api.put(`/careers/${panel.id}`, form, adminReq);
+        await api.put(`/careers/${panel.id}`, form, authReq);
         setNotice('Opening updated. The public careers page now shows this change.');
       } else {
-        await api.post('/careers', form, adminReq);
+        await api.post('/careers', form, authReq);
         setNotice('Opening published on the public careers page.');
       }
       closePanel();
@@ -100,7 +106,7 @@ export default function AdminCareers() {
     if (!pendingDelete) return;
     setSaving(true);
     try {
-      await api.delete(`/careers/${pendingDelete.id}`, adminReq);
+      await api.delete(`/careers/${pendingDelete.id}`, authReq);
       setNotice(`Removed “${pendingDelete.title}” from the careers page.`);
       setPendingDelete(null);
       await loadOpenings();

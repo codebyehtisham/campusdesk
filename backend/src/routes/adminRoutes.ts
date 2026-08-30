@@ -34,7 +34,34 @@ import {
 import { updateBrand, saveLogo } from '../controllers/brandController.js';
 import { getAdminAdmissionForm, saveAdminAdmissionForm } from '../controllers/admissionFormController.js';
 import { getSchemeDesk, listUnits, createUnit, updateUnit, deleteUnit } from '../controllers/unitsController.js';
-import { protect, adminOnly, requireActiveOrg, requireOrgLinked, requireModule } from '../middleware/auth.js';
+import {
+  getFinanceOverview,
+  listFeePlans,
+  createFeePlan,
+  updateFeePlan,
+  listStudentFees,
+  createStudentFee,
+  recordFeePayment,
+  listFinanceStudents,
+} from '../controllers/financeController.js';
+import {
+  listExams,
+  createExam,
+  updateExam,
+  getExamMarks,
+  saveExamMarks,
+  listExamClasses,
+} from '../controllers/examController.js';
+import {
+  listLibraryItems,
+  createLibraryItem,
+  updateLibraryItem,
+  listLibraryLoans,
+  issueLibraryLoan,
+  returnLibraryLoan,
+  listLibraryMembers,
+} from '../controllers/libraryController.js';
+import { protect, adminOnly, requireActiveOrg, requireOrgLinked, requireModule, financeAccess, examsAccess, libraryAccess } from '../middleware/auth.js';
 
 const router = Router();
 const orgAdmin = [protect, requireActiveOrg, adminOnly];
@@ -80,6 +107,33 @@ router.put('/classes/:id/enrollments', ...orgAdmin, requireModule('faculty'), se
 router.post('/timetable', ...orgAdmin, requireModule('faculty'), createSlot);
 router.put('/timetable/:id', ...orgAdmin, requireModule('faculty'), updateSlot);
 router.delete('/timetable/:id', ...orgAdmin, requireModule('faculty'), deleteSlot);
+
+const financeAdmin = [...orgAdmin, financeAccess, requireModule('fees')];
+router.get('/finance/overview', ...financeAdmin, getFinanceOverview);
+router.get('/finance/plans', ...financeAdmin, listFeePlans);
+router.post('/finance/plans', ...financeAdmin, createFeePlan);
+router.put('/finance/plans/:id', ...financeAdmin, updateFeePlan);
+router.get('/finance/students', ...financeAdmin, listFinanceStudents);
+router.get('/finance/fees', ...financeAdmin, listStudentFees);
+router.post('/finance/fees', ...financeAdmin, createStudentFee);
+router.post('/finance/payments', ...financeAdmin, recordFeePayment);
+
+const examsAdmin = [...orgAdmin, examsAccess, requireModule('examinations')];
+router.get('/exams/classes', ...examsAdmin, listExamClasses);
+router.get('/exams', ...examsAdmin, listExams);
+router.post('/exams', ...examsAdmin, createExam);
+router.put('/exams/:id', ...examsAdmin, updateExam);
+router.get('/exams/:id/marks', ...examsAdmin, getExamMarks);
+router.put('/exams/:id/marks', ...examsAdmin, saveExamMarks);
+
+const libraryAdmin = [...orgAdmin, libraryAccess, requireModule('library')];
+router.get('/library/items', ...libraryAdmin, listLibraryItems);
+router.post('/library/items', ...libraryAdmin, createLibraryItem);
+router.put('/library/items/:id', ...libraryAdmin, updateLibraryItem);
+router.get('/library/loans', ...libraryAdmin, listLibraryLoans);
+router.post('/library/loans', ...libraryAdmin, issueLibraryLoan);
+router.put('/library/loans/:id/return', ...libraryAdmin, returnLibraryLoan);
+router.get('/library/members', ...libraryAdmin, listLibraryMembers);
 
 export default router;
 

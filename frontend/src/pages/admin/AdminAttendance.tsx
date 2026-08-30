@@ -3,17 +3,20 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { signOutAdmin } from '../../auth/adminSession';
-import { ADMIN_BASE } from '../../admin/paths';
+import { signOutStaff } from '../../auth/staffSession';
+import { ADMIN_BASE, HR_PORTAL_BASE } from '../../admin/paths';
 import { ATTENDANCE_STATUSES, STAFF_TITLES, STUDENT_PROGRAMMES, todayStamp } from '../../data/attendance';
 import AdminAttendanceSessions from '../../components/AdminAttendanceSessions';
 
 const emptyForm = { name: '', title: '', email: '', unitId: '' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
-const adminReq = { authScope: 'admin' };
 
-export default function AdminAttendance({ kind }) {
+export default function AdminAttendance({ kind, authScope = 'admin', apiBase = '/admin' }) {
   const navigate = useNavigate();
   const isStaff = kind === 'staff';
+  const authReq = { authScope };
+  const attendancePath = `${apiBase}/attendance`;
+  const schemePath = apiBase === '/admin' ? '/admin/scheme' : `${apiBase}/scheme`;
   const [scheme, setScheme] = useState({
     kind: 'education',
     staffTitles: STAFF_TITLES,
@@ -35,6 +38,11 @@ export default function AdminAttendance({ kind }) {
   const [error, setError] = useState('');
 
   const kickOut = () => {
+    if (authScope === 'staff') {
+      signOutStaff();
+      navigate(HR_PORTAL_BASE, { replace: true });
+      return;
+    }
     signOutAdmin();
     navigate(ADMIN_BASE, { replace: true });
   };
@@ -42,8 +50,8 @@ export default function AdminAttendance({ kind }) {
   const load = async (nextDate = date) => {
     try {
       const [res, schemeRes] = await Promise.all([
-        api.get('/admin/attendance', { authScope: 'admin', params: { kind, date: nextDate } }),
-        api.get('/admin/scheme', adminReq),
+        api.get(attendancePath, { authScope, params: { kind, date: nextDate } }),
+        api.get(schemePath, authReq),
       ]);
       setPeople(Array.isArray(res.data?.people) ? res.data.people : []);
       setSummary({
@@ -88,13 +96,13 @@ export default function AdminAttendance({ kind }) {
     setSaving(true);
     try {
       await api.put(
-        '/admin/attendance',
+        attendancePath,
         {
           kind,
           date,
           marks: people.filter((row) => row.active).map((row) => ({ personId: row.id, status: row.status || 'present' })),
         },
-        adminReq
+        authReq
       );
       setNotice('Attendance saved for this date.');
       await load(date);
@@ -114,7 +122,7 @@ export default function AdminAttendance({ kind }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/admin/attendance/people', { ...form, kind }, adminReq);
+      await api.post(`${attendancePath}/people`, { ...form, kind }, authReq);
       setNotice(isStaff ? 'Staff member added to the register.' : `${peopleLabel.replace(/s$/, '')} added to the register.`);
       setPanel(null);
       setForm(emptyForm);
@@ -130,7 +138,7 @@ export default function AdminAttendance({ kind }) {
     if (!pendingDelete) return;
     setSaving(true);
     try {
-      await api.delete(`/admin/attendance/people/${pendingDelete.id}`, adminReq);
+      await api.delete(`${attendancePath}/people/${pendingDelete.id}`, authReq);
       setNotice(`Removed ${pendingDelete.name}.`);
       setPendingDelete(null);
       await load(date);
@@ -292,7 +300,7 @@ export default function AdminAttendance({ kind }) {
                   <input required className="field" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                 </label>
                 <label className={labelClass}>
-                  {isStaff ? 'Role' : scheme.kind === 'hospital' ? 'Category' : 'Programme'}
+                  {isStaff ? 'Role' : 'Programme'}
                   <select className="field" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}>
                     {titles.map((item) => (
                       <option key={item} value={item}>

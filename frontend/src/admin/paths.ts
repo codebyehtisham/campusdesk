@@ -1,4 +1,9 @@
 export const SUPER_BASE = '/x7k2m9q4p8n3';
 export const ORG_ADMIN_BASE = '/org-admin';
 export const FACULTY_BASE = '/faculty-portal';
+export const ADMISSIONS_PORTAL_BASE = '/admissions-portal';
+export const HR_PORTAL_BASE = '/hr-portal';
+export const FINANCE_PORTAL_BASE = '/finance-portal';
+export const EXAMS_PORTAL_BASE = '/exams-portal';
+export const LIBRARY_PORTAL_BASE = '/library-portal';
 export const ADMIN_BASE = ORG_ADMIN_BASE;

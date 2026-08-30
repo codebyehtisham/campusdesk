@@ -139,7 +139,6 @@ export default function FacultyLayout() {
     navigate(FACULTY_BASE, { replace: true });
   };
 
-  const hasAdmissions = Boolean(staff?.modules?.includes('admissions')) && !isTeacher(staff?.role);
   const teaching = isTeacher(staff?.role);
   const home = staffHome(staff?.role, staff?.modules);
   const orgLabel = org?.title || org?.name || 'Faculty';
@@ -152,7 +151,6 @@ export default function FacultyLayout() {
           { to: `${FACULTY_BASE}/attendance`, label: 'Attendance', icon: IconAttendance },
         ]
       : []),
-    ...(hasAdmissions ? [{ to: `${FACULTY_BASE}/admissions`, label: 'Admissions', icon: IconAdmissions }] : []),
     { to: `${FACULTY_BASE}/password`, label: 'Password', icon: IconKey },
   ];
 
@@ -162,13 +160,13 @@ export default function FacultyLayout() {
         <BrandMark org={org} size={48} className="ring-2 ring-white/20" />
         <span>
           <strong>{orgLabel}</strong>
-          <small>{org?.kind === 'hospital' ? 'Staff portal' : 'Faculty portal'}</small>
+          <small>Faculty portal</small>
         </span>
       </Link>
 
       <p className="faculty-rail-live mb-5">
         <span className="faculty-pulse" aria-hidden="true" />
-        {roleLabel(staff?.role, org?.kind)} access
+        {roleLabel(staff?.role)} access
       </p>
 
       <div className="staff-nav-scroll">
@@ -189,7 +187,7 @@ export default function FacultyLayout() {
           </span>
           <div className="staff-rail-user-meta">
             <strong>{staff?.name || staff?.email || 'Staff'}</strong>
-            <small>{roleLabel(staff?.role, org?.kind)}</small>
+            <small>{roleLabel(staff?.role)}</small>
           </div>
         </div>
         <button type="button" className="staff-rail-signout" onClick={handleSignOut}>

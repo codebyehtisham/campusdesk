@@ -107,9 +107,7 @@ export default function AdminUnits() {
           <span className="eyebrow">{scheme.label}</span>
           <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Departments</h1>
           <p className="m-0 max-w-xl text-text-muted">
-            {scheme.kind === 'hospital'
-              ? 'Clinical and support units for this hospital — HR, radiology, laboratory, and the rest of the floor.'
-              : 'Campus units for administration, faculty, and student services.'}
+            Campus units for administration, faculty, admissions, accounts, library, and examinations.
           </p>
         </div>
         <button type="button" className="btn btn-primary shrink-0" onClick={openCreate}>

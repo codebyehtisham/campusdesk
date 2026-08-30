@@ -26,7 +26,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const [admin, setAdmin] = useState(() => getAdmin());
   const [open, setOpen] = useState(false);
-  const navGroups = orgAdminNavGroups(admin?.modules || [], admin?.organization?.kind || 'education');
+  const navGroups = orgAdminNavGroups(admin?.modules || []);
   const org = admin?.organization;
   const orgLabel = org?.title || org?.name || 'Organisation';
 

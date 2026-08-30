@@ -21,6 +21,7 @@ import { hashPassword } from '../middleware/auth.js';
 import { getScheme, parseOrgKind, publicSchemes, seedOrgUnits } from '../lib/schemes.js';
 import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 import { logPlatformEvent } from '../lib/platformEvents.js';
+import { ASSIGNABLE_STAFF_ROLES } from '../lib/roles.js';
 import {
   getTrialConfig,
   trialEndsAtFromDays,
@@ -153,7 +154,7 @@ export const platformDashboard = async (req: Request, res: Response) => {
         prisma.organization.count(),
         prisma.module.count({ where: { active: true } }),
         prisma.user.count({ where: { role: 'admin' } }),
-        prisma.user.count({ where: { role: { in: ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] } } }),
+        prisma.user.count({ where: { role: { in: [...ASSIGNABLE_STAFF_ROLES] } } }),
         prisma.user.count({ where: { role: 'applicant' } }),
         prisma.auditLog.count({ where: { createdAt: { gte: sinceHour } } }),
         prisma.auditLog.count({ where: { createdAt: { gte: sinceDay } } }),
@@ -394,10 +395,7 @@ export const createOrganization = async (req: Request, res: Response) => {
     if (!name || !slug) {
       return res.status(400).json({ message: 'Organisation name is required.' });
     }
-    const rawKind = String(req.body.kind || '').trim();
-    if (rawKind !== 'education' && rawKind !== 'hospital') {
-      return res.status(400).json({ message: 'Choose whether this organisation is an education institute or a hospital.' });
-    }
+    const rawKind = String(req.body.kind || 'education').trim() || 'education';
     const kind = parseOrgKind(rawKind);
     const scheme = getScheme(kind);
     const requested = {
@@ -513,7 +511,7 @@ export const getOrganization = async (req: Request, res: Response) => {
     if (!org) return res.status(404).json({ message: 'Organisation not found' });
     const [admins, faculty, applicants, openings, applications] = await Promise.all([
       prisma.user.findMany({ where: { role: 'admin', organizationId: org.id }, orderBy: { createdAt: 'desc' } }),
-      prisma.user.count({ where: { organizationId: org.id, role: { in: ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] } } }),
+      prisma.user.count({ where: { organizationId: org.id, role: { in: [...ASSIGNABLE_STAFF_ROLES] } } }),
       prisma.user.count({ where: { organizationId: org.id, role: 'applicant' } }),
       prisma.career.count({ where: { organizationId: org.id } }),
       prisma.application.count({ where: { organizationId: org.id } }),

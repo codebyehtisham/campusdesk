@@ -8,7 +8,7 @@ export const DEFAULT_TRIAL_CONFIG = {
   trialMaxStudents: 1,
 } as const;
 
-const FACULTY_ROLES = ['reader', 'officer', 'viewer', 'reviewer', 'teacher'] as const;
+const FACULTY_ROLES = ['teacher', 'registrar', 'admissions_officer', 'hr_manager', 'accountant', 'exam_controller', 'librarian'] as const;
 
 export type TrialConfig = {
   trialDays: number;

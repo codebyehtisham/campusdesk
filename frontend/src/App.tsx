@@ -1,5 +1,14 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
-import { ADMIN_BASE, FACULTY_BASE, SUPER_BASE } from './admin/paths';
+import {
+  ADMISSIONS_PORTAL_BASE,
+  ADMIN_BASE,
+  EXAMS_PORTAL_BASE,
+  FACULTY_BASE,
+  FINANCE_PORTAL_BASE,
+  HR_PORTAL_BASE,
+  LIBRARY_PORTAL_BASE,
+  SUPER_BASE,
+} from './admin/paths';
 import { orgHasModule } from './auth/adminSession';
 import { getStaff } from './auth/staffSession';
 import { staffHome } from './data/roles';
@@ -22,14 +31,23 @@ import AdminTimetable from './pages/admin/AdminTimetable';
 import AdminBrand from './pages/admin/AdminBrand';
 import AdminUnits from './pages/admin/AdminUnits';
 import AdminSettings from './pages/admin/AdminSettings';
-import FacultyLogin from './pages/faculty/FacultyLogin';
-import FacultyLayout, { RequireStaff } from './pages/faculty/FacultyLayout';
+import FacultyLayout from './pages/faculty/FacultyLayout';
 import FacultyAdmissions from './pages/faculty/FacultyAdmissions';
 import ApplicationReview from './pages/admissions/ApplicationReview';
 import FacultyTimetable from './pages/faculty/FacultyTimetable';
 import FacultyCourses from './pages/faculty/FacultyCourses';
 import FacultyAttendance from './pages/faculty/FacultyAttendance';
 import FacultyPassword from './pages/faculty/FacultyPassword';
+import StaffLoginPage from './pages/staff/StaffLoginPage';
+import { StaffPortalGate } from './pages/staff/StaffPortalGate';
+import AdmissionsPortalLayout from './pages/admissions/AdmissionsPortalLayout';
+import HrPortalLayout from './pages/hr/HrPortalLayout';
+import FinancePortalLayout from './pages/finance/FinancePortalLayout';
+import FinanceHome from './pages/finance/FinanceHome';
+import ExamsPortalLayout from './pages/exams/ExamsPortalLayout';
+import ExamsHome from './pages/exams/ExamsHome';
+import LibraryPortalLayout from './pages/library/LibraryPortalLayout';
+import LibraryHome from './pages/library/LibraryHome';
 import PlatformLogin from './pages/platform/PlatformLogin';
 import PlatformLayout, { RequirePlatform } from './pages/platform/PlatformLayout';
 import PlatformDashboard from './pages/platform/PlatformDashboard';
@@ -53,6 +71,11 @@ function RequireModule({ slug, children }) {
 }
 
 function FacultyHomeRedirect() {
+  const staff = getStaff();
+  return <Navigate to={staffHome(staff?.role, staff?.modules)} replace />;
+}
+
+function HrHomeRedirect() {
   const staff = getStaff();
   return <Navigate to={staffHome(staff?.role, staff?.modules)} replace />;
 }
@@ -106,18 +129,86 @@ function App() {
         </Route>
       </Route>
       <Route path={FACULTY_BASE}>
-        <Route index element={<FacultyLogin />} />
-        <Route element={<RequireStaff />}>
+        <Route index element={<StaffLoginPage portal="faculty" />} />
+        <Route element={<StaffPortalGate portal="faculty" />}>
           <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
           <Route element={<RequireActiveStaff />}>
-            <Route path="admissions/review/:id" element={<ApplicationReview portal="staff" />} />
             <Route element={<FacultyLayout />}>
-              <Route path="admissions" element={<FacultyAdmissions />} />
               <Route path="timetable" element={<FacultyTimetable />} />
               <Route path="courses" element={<FacultyCourses />} />
               <Route path="attendance" element={<FacultyAttendance />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<FacultyHomeRedirect />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
+      <Route path={ADMISSIONS_PORTAL_BASE}>
+        <Route index element={<StaffLoginPage portal="admissions" />} />
+        <Route element={<StaffPortalGate portal="admissions" />}>
+          <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
+          <Route element={<RequireActiveStaff />}>
+            <Route path="admissions/review/:id" element={<ApplicationReview portal="staff" />} />
+            <Route element={<AdmissionsPortalLayout />}>
+              <Route path="admissions" element={<FacultyAdmissions />} />
+              <Route path="password" element={<FacultyPassword />} />
+              <Route path="*" element={<Navigate to={`${ADMISSIONS_PORTAL_BASE}/admissions`} replace />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
+      <Route path={HR_PORTAL_BASE}>
+        <Route index element={<StaffLoginPage portal="hr" />} />
+        <Route element={<StaffPortalGate portal="hr" />}>
+          <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
+          <Route element={<RequireActiveStaff />}>
+            <Route element={<HrPortalLayout />}>
+              <Route path="careers" element={<AdminCareers authScope="staff" />} />
+              <Route
+                path="attendance"
+                element={<AdminAttendance kind="staff" authScope="staff" apiBase="/staff/hr" />}
+              />
+              <Route path="password" element={<FacultyPassword />} />
+              <Route path="*" element={<HrHomeRedirect />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
+      <Route path={FINANCE_PORTAL_BASE}>
+        <Route index element={<StaffLoginPage portal="finance" />} />
+        <Route element={<StaffPortalGate portal="finance" />}>
+          <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
+          <Route element={<RequireActiveStaff />}>
+            <Route element={<FinancePortalLayout />}>
+              <Route path="home" element={<FinanceHome />} />
+              <Route path="password" element={<FacultyPassword />} />
+              <Route path="*" element={<Navigate to={`${FINANCE_PORTAL_BASE}/home`} replace />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
+      <Route path={EXAMS_PORTAL_BASE}>
+        <Route index element={<StaffLoginPage portal="exams" />} />
+        <Route element={<StaffPortalGate portal="exams" />}>
+          <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
+          <Route element={<RequireActiveStaff />}>
+            <Route element={<ExamsPortalLayout />}>
+              <Route path="home" element={<ExamsHome />} />
+              <Route path="password" element={<FacultyPassword />} />
+              <Route path="*" element={<Navigate to={`${EXAMS_PORTAL_BASE}/home`} replace />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
+      <Route path={LIBRARY_PORTAL_BASE}>
+        <Route index element={<StaffLoginPage portal="library" />} />
+        <Route element={<StaffPortalGate portal="library" />}>
+          <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
+          <Route element={<RequireActiveStaff />}>
+            <Route element={<LibraryPortalLayout />}>
+              <Route path="home" element={<LibraryHome />} />
+              <Route path="password" element={<FacultyPassword />} />
+              <Route path="*" element={<Navigate to={`${LIBRARY_PORTAL_BASE}/home`} replace />} />
             </Route>
           </Route>
         </Route>

@@ -66,6 +66,12 @@ export default function PlatformOrganizations() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (schemes.length === 1 && !form.kind) {
+      applyScheme(schemes[0].slug);
+    }
+  }, [schemes]);
+
   const liveDepartments = departments.filter((item) => item.active);
   const selectedScheme = schemes.find((item) => item.slug === form.kind);
   const visibleOrgs = orgs.filter((org) => {
@@ -112,7 +118,7 @@ export default function PlatformOrganizations() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.kind) {
-      setNotice('Choose what this organisation is: education institute or hospital.');
+      setNotice('Loading institute defaults…');
       return;
     }
     setSaving(true);
@@ -135,7 +141,7 @@ export default function PlatformOrganizations() {
       <PageHead
         kicker="Tenants"
         title="Organisations"
-        hint="Choose what the organisation is, then provision modules. Education campuses get faculty and students; hospitals get HR and clinical departments."
+        hint="Provision education institutes with admissions, faculty, finance, exams, library, and compliance modules."
         actions={
           <button type="button" className="btn btn-primary shrink-0" onClick={() => setOpen(true)}>
             Provision tenant
@@ -184,7 +190,7 @@ export default function PlatformOrganizations() {
                     <h3 className="mb-1">{org.name}</h3>
                     <p className="m-0 font-mono text-[0.68rem] text-[var(--pc-muted)]">
                       {org.slug}
-                      {org.kind ? ` · ${org.kind === 'hospital' ? 'hospital' : 'education institute'}` : ''}
+                      {org.kind ? ' · education institute' : ''}
                       {org.isTrial ? ' · trial' : ''}
                       {org.isPublic ? ' · public site' : ''} · {templateById(org.theme?.template).name}
                     </p>
@@ -222,28 +228,15 @@ export default function PlatformOrganizations() {
 
       <Drawer open={open} onClose={() => setOpen(false)} kicker="New tenant" title="Provision organisation">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <p className="pc-kicker mb-0">What is this organisation?</p>
-          <div className="grid gap-2">
-            {schemes.map((item) => {
-              const on = form.kind === item.slug;
-              return (
-                <button
-                  key={item.slug}
-                  type="button"
-                  className={`pc-pick text-left ${on ? 'is-on' : ''}`}
-                  onClick={() => applyScheme(item.slug)}
-                >
-                  <p className="m-0 text-sm font-semibold text-[var(--pc-text)]">{item.label}</p>
-                  <p className="m-0 mt-1 text-xs text-[var(--pc-muted)]">{item.hint}</p>
-                  {on && (
-                    <p className="m-0 mt-2 text-xs text-[var(--pc-muted)]">
-                      Defaults: {(item.units || []).map((unit) => unit.name).join(', ')}
-                    </p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <p className="pc-kicker mb-0">Education institute</p>
+          <p className="m-0 text-sm text-[var(--pc-muted)]">
+            Campus Desk is configured for colleges and schools. Defaults load automatically — adjust modules below.
+          </p>
+          {selectedScheme ? (
+            <p className="m-0 mt-2 text-xs text-[var(--pc-muted)]">
+              Units: {(selectedScheme.units || []).map((unit) => unit.name).join(', ')}
+            </p>
+          ) : null}
           <label className={labelClass}>
             Name
             <input required className="field" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />

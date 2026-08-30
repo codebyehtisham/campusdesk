@@ -2,22 +2,18 @@ import type { Role, User } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { isUniqueError, orgId } from '../lib/tenant.js';
+import { ASSIGNABLE_STAFF_ROLES, normalizeStaffRole } from '../lib/roles.js';
 import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import { hashPassword } from '../middleware/auth.js';
 import { getScheme } from '../lib/schemes.js';
 
-const FACULTY_ROLES: Role[] = ['reader', 'officer', 'teacher'];
-const EDITABLE_ROLES: Role[] = ['reader', 'officer', 'viewer', 'reviewer', 'teacher'];
-const allowedRoles = (req: Request): Role[] => {
-  const roles = getScheme(req.organization?.kind).portalRoles as Role[];
-  return roles.length ? roles : FACULTY_ROLES;
-};
+const EDITABLE_ROLES: Role[] = [...ASSIGNABLE_STAFF_ROLES];
 
 const toUser = (doc: User) => ({
   id: doc.id,
   name: doc.name,
   email: doc.email,
-  role: doc.role === 'viewer' ? 'reader' : doc.role === 'reviewer' ? 'officer' : doc.role,
+  role: normalizeStaffRole(doc.role),
   blocked: Boolean(doc.blocked),
   createdAt: doc.createdAt,
 });
@@ -41,14 +37,14 @@ export const createUser = async (req: Request, res: Response) => {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '').trim();
-    const role = req.body.role as Role;
+    const role = normalizeStaffRole(String(req.body.role || '')) as Role;
 
     if (!name || !email || password.length < 6) {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
     }
-    if (!allowedRoles(req).includes(role)) {
+    if (!getScheme().portalRoles.includes(role)) {
       return res.status(400).json({
-        message: 'Choose a role that belongs to this organisation type. Admin accounts cannot be created here.',
+        message: 'Choose a staff role for this education institute. Admin accounts cannot be created here.',
       });
     }
 
@@ -86,9 +82,9 @@ export const updateUser = async (req: Request, res: Response) => {
     const user = await findFaculty(req);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (req.body.role && !allowedRoles(req).includes(req.body.role)) {
+    if (req.body.role && !getScheme().portalRoles.includes(normalizeStaffRole(String(req.body.role)))) {
       return res.status(400).json({
-        message: 'Choose a role that belongs to this organisation type. Admin accounts cannot be created here.',
+        message: 'Choose a staff role for this education institute. Admin accounts cannot be created here.',
       });
     }
     if (req.body.password) {
@@ -103,7 +99,7 @@ export const updateUser = async (req: Request, res: Response) => {
       data: {
         name: req.body.name != null ? String(req.body.name).trim() : undefined,
         email: req.body.email != null ? String(req.body.email).trim().toLowerCase() : undefined,
-        role: req.body.role || undefined,
+        role: req.body.role ? (normalizeStaffRole(String(req.body.role)) as Role) : undefined,
         password: req.body.password ? await hashPassword(String(req.body.password).trim()) : undefined,
       },
     });

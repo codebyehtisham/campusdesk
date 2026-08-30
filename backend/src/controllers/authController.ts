@@ -14,6 +14,8 @@ import {
   toSafeJSON,
 } from '../middleware/auth.js';
 import { hasModule, isUniqueError, resolveOrganizationByInstitute } from '../lib/tenant.js';
+import { normalizeStaffRole, portalForRole } from '../lib/roles.js';
+import { parsePortalSlug, portalLoginAllowed } from '../middleware/staffAuth.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 
 const USE_MOBILE_APP_MESSAGE =
@@ -304,15 +306,16 @@ export const loginStaff = async (req: Request, res: Response) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '').trim();
+    const portal = parsePortalSlug(req.body.portal) || 'faculty';
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (
       !user ||
-      !STAFF_ROLES.includes(user.role as (typeof STAFF_ROLES)[number]) ||
+      !FACULTY_ROLES.includes(user.role as (typeof FACULTY_ROLES)[number]) ||
       user.role === 'superadmin' ||
       !(await matchPassword(password, user.password))
     ) {
-      return res.status(401).json({ message: 'Faculty email or password is incorrect.' });
+      return res.status(401).json({ message: 'Email or password is incorrect.' });
     }
     if (user.blocked) {
       return res.status(403).json({ message: 'This account is blocked. Contact administration.' });
@@ -320,18 +323,17 @@ export const loginStaff = async (req: Request, res: Response) => {
     if (user.role === 'admin') {
       return res.status(403).json({ message: 'Organisation admins sign in at /org-admin.' });
     }
-    if (!FACULTY_ROLES.includes(user.role as (typeof FACULTY_ROLES)[number])) {
-      return res.status(401).json({ message: 'Faculty email or password is incorrect.' });
-    }
 
     const org = await loadOrganization(user);
     if (!requireLinkedOrg(org, res)) return;
-    const lock = await resolveServiceLock(org);
-    if (!lock.locked && !hasModule(org, 'faculty')) {
-      return res.status(403).json({ message: 'Faculty portal is not included in this organisation’s subscription.' });
-    }
+    const gate = portalLoginAllowed(normalizeStaffRole(user.role), portal, org);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
-    return res.json(await authPayloadForOrg(user, org));
+    return res.json({
+      ...(await authPayloadForOrg(user, org)),
+      portal,
+      portalPath: portalForRole(user.role),
+    });
   } catch (err) {
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
   }
