@@ -17,7 +17,8 @@ import { BarChart } from './BarChart';
 import { formatMoney } from './money';
 
 const empty = {
-  counts: { organizations: 0, modules: 0, orgAdmins: 0, faculty: 0, applicants: 0 },
+  counts: { organizations: 0, modules: 0, orgAdmins: 0, faculty: 0, applicants: 0, trialOrgs: 0, trialExpired: 0 },
+  trials: { active: 0, expired: 0, expiringSoon: [] },
   recent: [],
   services: [],
   uptime: { seconds: 0, startedAt: null },
@@ -106,6 +107,7 @@ export default function PlatformDashboard() {
   const memory = data.memory || empty.memory;
   const versions = data.versions || empty.versions;
   const billing = data.billing || empty.billing;
+  const trials = data.trials || empty.trials;
   const services = data.services?.length
     ? data.services
     : [
@@ -129,6 +131,15 @@ export default function PlatformDashboard() {
       delta: billing.outstandingCents > 0 ? 'Due' : 'Clear',
     },
     { label: 'Tenants', value: counts.organizations, n: counts.organizations, hint: 'Live orgs', icon: IconBuildings, delta: 'Fleet' },
+    {
+      label: 'Trial institutes',
+      value: counts.trialOrgs ?? 0,
+      n: counts.trialOrgs ?? 0,
+      hint: trials.expired ? `${trials.expired} expired` : 'Active trials',
+      icon: IconBuildings,
+      warn: (counts.trialExpired ?? 0) > 0,
+      delta: (counts.trialExpired ?? 0) > 0 ? 'Expired' : 'Trial',
+    },
     { label: 'Students', value: counts.applicants, n: counts.applicants, hint: 'Applicants', icon: IconSwitches, delta: 'Pipeline' },
     {
       label: 'Errors 24h',
@@ -312,6 +323,49 @@ export default function PlatformDashboard() {
         </aside>
       </div>
 
+      {trials.expiringSoon?.length > 0 && (
+        <motion.section
+          className="pc-glass-card pc-recent platform-panel-glow mb-6"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.45, ease }}
+        >
+          <div className="pc-section-head">
+            <div>
+              <p className="pc-kicker m-0">Trials</p>
+              <h2 className="m-0">Expiring within 3 days</h2>
+            </div>
+            <Link to={`${SUPER_BASE}/organizations`} className="pc-text-link" state={{ filter: 'trial' }}>
+              Trial tenants →
+            </Link>
+          </div>
+          <div className="pc-tenant-strip">
+            {trials.expiringSoon.map((org, i) => (
+              <motion.div
+                key={org.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.32, ease }}
+                whileHover={{ y: -3 }}
+              >
+                <Link to={`${SUPER_BASE}/organizations/${org.id}`} className="pc-tenant-tile platform-tenant-tile">
+                  <span className="pc-tenant-mark">{String(org.name || '?').slice(0, 2).toUpperCase()}</span>
+                  <span className="pc-tenant-copy">
+                    <strong>{org.name}</strong>
+                    <small>
+                      {org.trialEndsAt
+                        ? `Ends ${new Date(org.trialEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                        : org.slug}
+                    </small>
+                  </span>
+                  <span className="pc-tenant-status is-warn">trial</span>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+      )}
+
       {data.recent?.length > 0 && (
         <motion.section
           className="pc-glass-card pc-recent platform-panel-glow"
@@ -343,8 +397,8 @@ export default function PlatformDashboard() {
                     <strong>{org.name}</strong>
                     <small>{org.slug}</small>
                   </span>
-                  <span className={`pc-tenant-status ${org.status === 'active' ? 'is-live' : 'is-warn'}`}>
-                    {org.status}
+                  <span className={`pc-tenant-status ${org.isTrial ? 'is-warn' : org.status === 'active' ? 'is-live' : 'is-warn'}`}>
+                    {org.isTrial ? 'trial' : org.status}
                   </span>
                 </Link>
               </motion.div>

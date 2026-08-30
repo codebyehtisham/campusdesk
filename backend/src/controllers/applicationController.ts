@@ -5,6 +5,7 @@ import { prisma } from '../config/db.js';
 import { readStoredObject, storageKeyFromFileUrl } from '../lib/storage.js';
 import { parseDataUrlUpload, storeApplicationFile } from '../lib/applicationFiles.js';
 import { orgId } from '../lib/tenant.js';
+import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import {
   asAnswerMap,
   formatCnic,
@@ -386,6 +387,13 @@ const provisionAcceptedStudent = async (organizationId: string, user: User) => {
       data: { name, active: true, title: existing.title || 'Student' },
     });
   }
+  const org = await prisma.organization.findUnique({ where: { id: organizationId } });
+  try {
+    await assertTrialAllows(org, 'student');
+  } catch (err) {
+    if (err instanceof TrialLimitError) throw err;
+    throw err;
+  }
   return prisma.attendancePerson.create({
     data: {
       organizationId,
@@ -427,7 +435,14 @@ export const decide = async (req: Request, res: Response) => {
     });
 
     if (decision === 'accepted' && updated.user) {
-      await provisionAcceptedStudent(updated.organizationId, updated.user);
+      try {
+        await provisionAcceptedStudent(updated.organizationId, updated.user);
+      } catch (err) {
+        if (err instanceof TrialLimitError) {
+          return res.status(403).json({ message: err.message });
+        }
+        throw err;
+      }
       await invalidateApplicantSessions(updated.user.id);
     } else if (decision === 'rejected' && updated.user?.email) {
       const person = await prisma.attendancePerson.findFirst({

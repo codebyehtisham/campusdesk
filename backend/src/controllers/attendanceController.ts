@@ -2,6 +2,7 @@ import type { AttendanceKind, AttendancePerson, AttendanceStatus } from '@prisma
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { hasModule, orgId } from '../lib/tenant.js';
+import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 
 const STATUSES: AttendanceStatus[] = ['present', 'absent', 'late', 'leave'];
 
@@ -93,6 +94,15 @@ export const createAttendancePerson = async (req: Request, res: Response) => {
     if (unitId) {
       const unit = await prisma.orgUnit.findFirst({ where: { id: unitId, organizationId } });
       if (!unit) return res.status(400).json({ message: 'Choose a department that belongs to this organisation.' });
+    }
+
+    if (kind === 'student') {
+      try {
+        await assertTrialAllows(req.organization, 'student');
+      } catch (err) {
+        if (err instanceof TrialLimitError) return res.status(403).json({ message: err.message });
+        throw err;
+      }
     }
 
     const person = await prisma.attendancePerson.create({

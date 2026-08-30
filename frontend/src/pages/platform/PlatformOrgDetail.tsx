@@ -5,7 +5,7 @@ import { signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE, ORG_ADMIN_BASE } from '../../admin/paths';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
 import ThemeStudio from './ThemeStudio';
-import { TenantFeatureFlagsPanel, TenantLifecyclePanel, TenantUsagePanel } from './TenantOpsPanels';
+import { TenantFeatureFlagsPanel, TenantLifecyclePanel, TenantTrialPanel, TenantUsagePanel } from './TenantOpsPanels';
 import { DEFAULT_THEME, normalizeTheme } from '../../theme/catalog';
 import { deptEnabled } from './catalog';
 import { BarChart } from './BarChart';
@@ -373,6 +373,7 @@ export default function PlatformOrgDetail() {
       </section>
 
       <TenantLifecyclePanel orgId={id} status={org.status} slug={org.slug} name={org.name} onChanged={load} />
+      <TenantTrialPanel orgId={id} trial={org.trial} onChanged={load} />
       <TenantUsagePanel orgId={id} />
       <TenantFeatureFlagsPanel orgId={id} />
 

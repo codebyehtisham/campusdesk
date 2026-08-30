@@ -2,6 +2,7 @@ import type { Role, User } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { isUniqueError, orgId } from '../lib/tenant.js';
+import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import { hashPassword } from '../middleware/auth.js';
 import { getScheme } from '../lib/schemes.js';
 
@@ -49,6 +50,13 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(400).json({
         message: 'Choose a role that belongs to this organisation type. Admin accounts cannot be created here.',
       });
+    }
+
+    try {
+      await assertTrialAllows(req.organization, 'faculty');
+    } catch (err) {
+      if (err instanceof TrialLimitError) return res.status(403).json({ message: err.message });
+      throw err;
     }
 
     const user = await prisma.user.create({

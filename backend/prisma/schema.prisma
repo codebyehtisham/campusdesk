@@ -61,6 +61,11 @@ model Organization {
   notes     String     @default("")
   theme     Json
   archivedAt DateTime?
+  isTrial           Boolean   @default(false)
+  trialEndsAt       DateTime?
+  trialMaxAdmins    Int?
+  trialMaxFaculty   Int?
+  trialMaxStudents  Int?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
@@ -89,6 +94,16 @@ model Organization {
   @@index([status])
   @@index([isPublic])
   @@index([kind])
+  @@index([isTrial])
+}
+
+model PlatformConfig {
+  id                  String   @id @default("default")
+  trialDays           Int      @default(14)
+  trialMaxAdmins      Int      @default(1)
+  trialMaxFaculty     Int      @default(2)
+  trialMaxStudents    Int      @default(1)
+  updatedAt           DateTime @updatedAt
 }
 
 model Department {

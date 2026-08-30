@@ -21,6 +21,13 @@ import { hashPassword } from '../middleware/auth.js';
 import { getScheme, parseOrgKind, publicSchemes, seedOrgUnits } from '../lib/schemes.js';
 import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 import { logPlatformEvent } from '../lib/platformEvents.js';
+import {
+  getTrialConfig,
+  trialEndsAtFromDays,
+  trialStatusForOrg,
+  assertTrialAllows,
+  TrialLimitError,
+} from '../lib/trial.js';
 
 const backendVersion = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../package.json'), 'utf8')
@@ -69,6 +76,11 @@ const toOrg = (doc: Organization, adminCount = 0) => ({
   theme: sanitizeTheme(doc.theme),
   adminCount,
   archivedAt: doc.archivedAt,
+  isTrial: Boolean(doc.isTrial),
+  trialEndsAt: doc.trialEndsAt,
+  trialMaxAdmins: doc.trialMaxAdmins,
+  trialMaxFaculty: doc.trialMaxFaculty,
+  trialMaxStudents: doc.trialMaxStudents,
   createdAt: doc.createdAt,
 });
 
@@ -134,7 +146,9 @@ export const platformDashboard = async (req: Request, res: Response) => {
 
     const sinceHour = new Date(Date.now() - 60 * 60 * 1000);
     const sinceDay = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [organizations, modules, orgAdmins, faculty, applicants, requestsHour, requestsDay, errorsDay, recent, billing] =
+    const now = new Date();
+    const trialSoon = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    const [organizations, modules, orgAdmins, faculty, applicants, requestsHour, requestsDay, errorsDay, recent, billing, trialOrgs, trialExpiring, trialExpired] =
       await Promise.all([
         prisma.organization.count(),
         prisma.module.count({ where: { active: true } }),
@@ -146,12 +160,26 @@ export const platformDashboard = async (req: Request, res: Response) => {
         prisma.auditLog.count({ where: { createdAt: { gte: sinceDay }, statusCode: { gte: 400 } } }),
         prisma.organization.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }),
         billingOverview(),
+        prisma.organization.count({ where: { isTrial: true } }),
+        prisma.organization.findMany({
+          where: { isTrial: true, trialEndsAt: { gte: now, lte: trialSoon } },
+          orderBy: { trialEndsAt: 'asc' },
+          take: 5,
+        }),
+        prisma.organization.count({
+          where: { isTrial: true, trialEndsAt: { lt: now } },
+        }),
       ]);
 
     const mem = process.memoryUsage();
     const payload = {
-      counts: { organizations, modules, orgAdmins, faculty, applicants },
+      counts: { organizations, modules, orgAdmins, faculty, applicants, trialOrgs, trialExpired },
       recent: recent.map((org) => toOrg(org)),
+      trials: {
+        active: trialOrgs,
+        expired: trialExpired,
+        expiringSoon: trialExpiring.map((org) => toOrg(org)),
+      },
       services: liveServices,
       uptime: {
         seconds: Math.floor(process.uptime()),
@@ -343,12 +371,15 @@ export const listOrganizations = async (_req: Request, res: Response) => {
     });
     const countMap = Object.fromEntries(counts.map((row) => [String(row.organizationId), row._count._all]));
     const overdue = await overdueOrgIds(orgs.map((org) => org.id));
+    const now = Date.now();
     res.json(
       orgs.map((org) => ({
         ...toOrg(org, countMap[org.id] || 0),
         overdue: overdue.has(org.id),
         servicesLocked:
-          org.status !== 'active' || (org.suspendOnOverdue && overdue.has(org.id)),
+          org.status !== 'active' ||
+          (org.suspendOnOverdue && overdue.has(org.id)) ||
+          Boolean(org.isTrial && org.trialEndsAt && org.trialEndsAt.getTime() < now),
       }))
     );
   } catch (err) {
@@ -379,6 +410,10 @@ export const createOrganization = async (req: Request, res: Response) => {
       await prisma.organization.updateMany({ data: { isPublic: false } });
     }
 
+    const isTrial = Boolean(req.body.isTrial);
+    const trialConfig = isTrial ? await getTrialConfig() : null;
+    const trialDays = isTrial ? Number(req.body.trialDays) || trialConfig!.trialDays : null;
+
     const org = await prisma.organization.create({
       data: {
         name,
@@ -393,13 +428,18 @@ export const createOrganization = async (req: Request, res: Response) => {
         suspendOnOverdue: Boolean(req.body.suspendOnOverdue),
         notes: String(req.body.notes || '').trim(),
         theme: themeJson(req.body.theme),
+        isTrial,
+        trialEndsAt: isTrial ? trialEndsAtFromDays(trialDays!) : null,
+        trialMaxAdmins: isTrial && req.body.trialMaxAdmins != null ? Number(req.body.trialMaxAdmins) : null,
+        trialMaxFaculty: isTrial && req.body.trialMaxFaculty != null ? Number(req.body.trialMaxFaculty) : null,
+        trialMaxStudents: isTrial && req.body.trialMaxStudents != null ? Number(req.body.trialMaxStudents) : null,
       },
     });
     await seedOrgUnits(org.id, kind);
     if (kind === 'education') {
       await ensureOrgProgrammes(org.id);
     }
-    await logPlatformEvent('tenant.provisioned', req.user, org.id, { slug: org.slug, kind });
+    await logPlatformEvent('tenant.provisioned', req.user, org.id, { slug: org.slug, kind, isTrial });
     await bustOrgCache();
     res.status(201).json(toOrg(org, 0));
   } catch (err) {
@@ -444,6 +484,18 @@ export const updateOrganization = async (req: Request, res: Response) => {
         isPublic: typeof req.body.isPublic === 'boolean' ? req.body.isPublic : undefined,
         suspendOnOverdue: typeof req.body.suspendOnOverdue === 'boolean' ? req.body.suspendOnOverdue : undefined,
         theme: req.body.theme ? themeJson(req.body.theme) : undefined,
+        isTrial: typeof req.body.isTrial === 'boolean' ? req.body.isTrial : undefined,
+        trialEndsAt:
+          req.body.trialEndsAt != null
+            ? new Date(req.body.trialEndsAt)
+            : req.body.isTrial === true && !org.trialEndsAt
+              ? trialEndsAtFromDays((await getTrialConfig()).trialDays)
+              : req.body.isTrial === false
+                ? null
+                : undefined,
+        trialMaxAdmins: req.body.trialMaxAdmins != null ? Number(req.body.trialMaxAdmins) : undefined,
+        trialMaxFaculty: req.body.trialMaxFaculty != null ? Number(req.body.trialMaxFaculty) : undefined,
+        trialMaxStudents: req.body.trialMaxStudents != null ? Number(req.body.trialMaxStudents) : undefined,
       },
     });
     const adminCount = await prisma.user.count({ where: { role: 'admin', organizationId: org.id } });
@@ -467,11 +519,13 @@ export const getOrganization = async (req: Request, res: Response) => {
       prisma.application.count({ where: { organizationId: org.id } }),
     ]);
     const lock = await resolveServiceLock(org);
+    const trial = await trialStatusForOrg(org);
     res.json({
       ...toOrg(org, admins.length),
       overdue: lock.overdue,
       servicesLocked: lock.locked,
       lockReason: lock.reason,
+      trial,
       stats: { faculty, applicants, openings, applications },
       admins: admins.map(toAdmin),
     });
@@ -489,6 +543,12 @@ export const createOrgAdmin = async (req: Request, res: Response) => {
     const password = String(req.body.password || '').trim();
     if (!name || !email || password.length < 6) {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
+    }
+    try {
+      await assertTrialAllows(org, 'admin');
+    } catch (err) {
+      if (err instanceof TrialLimitError) return res.status(403).json({ message: err.message });
+      throw err;
     }
     const admin = await prisma.user.create({
       data: {

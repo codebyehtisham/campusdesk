@@ -987,6 +987,26 @@ html[data-template='editorial'] .filter-btn {
   box-shadow: none;
 }
 
+/* Faculty rail uses animated pill behind the link */
+.faculty-shell .staff-nav a.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Admin + platform rails: solid active pill (no motion layer) */
+.staff-shell:not(.faculty-shell) .staff-nav a.is-active,
+.platform-shell .staff-nav a.is-active {
+  background: var(--staff-rail-active-bg);
+  color: var(--staff-rail-active-text);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.staff-shell:not(.faculty-shell) .staff-nav a.is-active .staff-nav-icon,
+.platform-shell .staff-nav a.is-active .staff-nav-icon {
+  background: rgba(15, 92, 92, 0.12);
+  color: var(--staff-rail-active-text);
+}
+
 /* Faculty portal shell */
 .faculty-shell .faculty-backdrop {
   background:

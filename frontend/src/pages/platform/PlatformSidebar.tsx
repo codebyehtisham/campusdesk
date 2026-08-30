@@ -70,7 +70,7 @@ export default function PlatformSidebar({ email, name, onNavigate, onSignOut }: 
                     to={item.to}
                     end={Boolean(item.end)}
                     onClick={onNavigate}
-                    className={({ isActive }) => `platform-nav-item ${isActive ? 'is-active' : ''}`}
+                    className={({ isActive }) => (isActive ? 'is-active' : '')}
                   >
                     <span className="staff-nav-icon">
                       <Icon className="h-4 w-4" />

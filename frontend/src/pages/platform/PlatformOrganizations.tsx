@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE } from '../../admin/paths';
@@ -7,11 +7,24 @@ import { templateById } from '../../theme/catalog';
 import { deptEnabled, deptNamesForOrg } from './catalog';
 import { Banner, Drawer, GateSwitch, PageHead, Pulse, Toast } from './ui';
 
-const emptyForm = { kind: '', name: '', slug: '', email: '', phone: '', status: 'active', isPublic: false, departments: [], modules: [] };
+const emptyForm = {
+  kind: '',
+  name: '',
+  slug: '',
+  email: '',
+  phone: '',
+  status: 'active',
+  isPublic: false,
+  isTrial: false,
+  departments: [],
+  modules: [],
+};
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
 
 export default function PlatformOrganizations() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialFilter = location.state?.filter === 'trial' ? 'trial' : 'active';
   const [orgs, setOrgs] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [schemes, setSchemes] = useState([]);
@@ -21,7 +34,8 @@ export default function PlatformOrganizations() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [filter, setFilter] = useState('active');
+  const [filter, setFilter] = useState(initialFilter);
+  const [trialDefaults, setTrialDefaults] = useState({ trialDays: 14, trialMaxAdmins: 1, trialMaxFaculty: 2, trialMaxStudents: 1 });
 
   const kickOut = () => {
     signOutPlatform();
@@ -30,13 +44,15 @@ export default function PlatformOrganizations() {
 
   const load = async () => {
     try {
-      const [orgRes, catRes] = await Promise.all([
+      const [orgRes, catRes, trialRes] = await Promise.all([
         api.get('/platform/organizations', { authScope: 'platform' }),
         api.get('/platform/catalog', { authScope: 'platform' }),
+        api.get('/platform/trial-settings', { authScope: 'platform' }),
       ]);
       setOrgs(Array.isArray(orgRes.data) ? orgRes.data : []);
       setDepartments(Array.isArray(catRes.data?.departments) ? catRes.data.departments : []);
       setSchemes(Array.isArray(catRes.data?.schemes) ? catRes.data.schemes : []);
+      if (trialRes.data) setTrialDefaults(trialRes.data);
       setError('');
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) return kickOut();
@@ -53,10 +69,11 @@ export default function PlatformOrganizations() {
   const liveDepartments = departments.filter((item) => item.active);
   const selectedScheme = schemes.find((item) => item.slug === form.kind);
   const visibleOrgs = orgs.filter((org) => {
+    if (filter === 'trial') return org.isTrial;
     if (filter === 'all') return true;
     if (filter === 'archived') return org.status === 'archived';
     if (filter === 'suspended') return org.status === 'suspended';
-    return org.status === 'active';
+    return org.status === 'active' && !org.isTrial;
   });
 
   const applyScheme = (kind) => {
@@ -129,6 +146,7 @@ export default function PlatformOrganizations() {
       <div className="mb-4 flex flex-wrap gap-2">
         {[
           { id: 'active', label: 'Active' },
+          { id: 'trial', label: 'Trial' },
           { id: 'suspended', label: 'Suspended' },
           { id: 'archived', label: 'Archived' },
           { id: 'all', label: 'All' },
@@ -167,12 +185,16 @@ export default function PlatformOrganizations() {
                     <p className="m-0 font-mono text-[0.68rem] text-[var(--pc-muted)]">
                       {org.slug}
                       {org.kind ? ` · ${org.kind === 'hospital' ? 'hospital' : 'education institute'}` : ''}
+                      {org.isTrial ? ' · trial' : ''}
                       {org.isPublic ? ' · public site' : ''} · {templateById(org.theme?.template).name}
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--pc-text)]">
-                    <Pulse on={org.status === 'active' && !org.servicesLocked} tone={org.status === 'active' && !org.servicesLocked ? 'live' : 'warn'} />
-                    {org.servicesLocked ? 'locked' : org.status}
+                    <Pulse
+                      on={org.status === 'active' && !org.servicesLocked}
+                      tone={org.isTrial ? 'warn' : org.status === 'active' && !org.servicesLocked ? 'live' : 'warn'}
+                    />
+                    {org.isTrial ? 'trial' : org.servicesLocked ? 'locked' : org.status}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -271,6 +293,17 @@ export default function PlatformOrganizations() {
             {liveDepartments.length === 0 && (
               <p className="m-0 text-sm">No published departments. Add them under Catalog first.</p>
             )}
+          </div>
+          <div className="flex items-center justify-between rounded-[12px] border border-[var(--pc-line)] px-4 py-3">
+            <div>
+              <p className="m-0 text-sm font-semibold text-[var(--pc-text)]">14-day trial institute</p>
+              <p className="m-0 text-xs text-[var(--pc-muted)]">
+                Limits: {trialDefaults.trialMaxAdmins} admin, {trialDefaults.trialMaxFaculty} faculty,{' '}
+                {trialDefaults.trialMaxStudents} student{trialDefaults.trialMaxStudents === 1 ? '' : 's'} ·{' '}
+                {trialDefaults.trialDays} days
+              </p>
+            </div>
+            <GateSwitch on={form.isTrial} onChange={(isTrial) => setForm((f) => ({ ...f, isTrial }))} liveLabel="Trial" offLabel="Full" />
           </div>
           <div className="flex items-center justify-between rounded-[12px] border border-[var(--pc-line)] px-4 py-3">
             <div>

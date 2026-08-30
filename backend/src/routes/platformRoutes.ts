@@ -34,6 +34,7 @@ import {
   listOrgFeatureFlags,
   setOrgFeatureOverride,
 } from '../controllers/featureFlagController.js';
+import { getTrialSettings, updateTrialSettings, convertTrialOrganization } from '../controllers/trialController.js';
 import {
   listPlans,
   getBillingOverview,
@@ -52,6 +53,8 @@ router.post('/login', loginPlatform);
 router.get('/me', ...gate, getMe);
 router.put('/password', ...gate, changePassword);
 router.get('/dashboard', ...gate, platformDashboard);
+router.get('/trial-settings', ...gate, getTrialSettings);
+router.put('/trial-settings', ...gate, updateTrialSettings);
 router.get('/catalog', ...gate, listCatalog);
 router.get('/departments', ...gate, listDepartments);
 router.post('/departments', ...gate, createDepartment);
@@ -70,6 +73,7 @@ router.post('/organizations/:id/suspend', ...gate, suspendOrganization);
 router.post('/organizations/:id/activate', ...gate, activateOrganization);
 router.post('/organizations/:id/archive', ...gate, archiveOrganization);
 router.post('/organizations/:id/clone', ...gate, cloneOrganization);
+router.post('/organizations/:id/convert-trial', ...gate, convertTrialOrganization);
 router.get('/organizations/:id/events', ...gate, listOrganizationEvents);
 router.get('/organizations/:id/usage', ...gate, getOrganizationUsage);
 router.get('/organizations/:id/feature-flags', ...gate, listOrgFeatureFlags);

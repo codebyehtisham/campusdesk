@@ -286,3 +286,87 @@ export function TenantFeatureFlagsPanel({ orgId }: { orgId: string }) {
     </section>
   );
 }
+
+type TrialProps = {
+  orgId: string;
+  trial: {
+    isTrial?: boolean;
+    trialEndsAt?: string | null;
+    expired?: boolean;
+    daysLeft?: number | null;
+    limits?: { maxAdmins: number; maxFaculty: number; maxStudents: number; trialDays: number } | null;
+    usage?: { admins: number; faculty: number; students: number } | null;
+  } | null;
+  onChanged: () => void;
+};
+
+export function TenantTrialPanel({ orgId, trial, onChanged }: TrialProps) {
+  const [busy, setBusy] = useState('');
+  const [notice, setNotice] = useState('');
+
+  if (!trial?.isTrial) return null;
+
+  const limits = trial.limits;
+  const usage = trial.usage;
+
+  const convert = async () => {
+    setBusy('convert');
+    try {
+      await api.post(`/platform/organizations/${orgId}/convert-trial`, {}, { authScope: 'platform' });
+      setNotice('Trial converted to full tenant.');
+      onChanged();
+    } catch (err: any) {
+      setNotice(err.response?.data?.message || 'Could not convert trial.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const endsLabel = trial.trialEndsAt
+    ? new Date(trial.trialEndsAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
+    : '—';
+
+  return (
+    <section className="pc-panel mb-6">
+      <Toast>{notice}</Toast>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="pc-kicker m-0">Trial institute</p>
+          <h2 className="m-0 mt-1">Usage limits</h2>
+          <p className="pc-hint m-0 mt-2">
+            {trial.expired
+              ? 'Trial ended — services are locked until you convert or extend.'
+              : `Ends ${endsLabel}${trial.daysLeft != null ? ` · ${trial.daysLeft} day${trial.daysLeft === 1 ? '' : 's'} left` : ''}`}
+          </p>
+        </div>
+        <button type="button" className="btn btn-primary" disabled={busy === 'convert'} onClick={convert}>
+          {busy === 'convert' ? 'Converting…' : 'Convert to full tenant'}
+        </button>
+      </div>
+      {limits && usage ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            { label: 'Org admins', used: usage.admins, max: limits.maxAdmins },
+            { label: 'Faculty', used: usage.faculty, max: limits.maxFaculty },
+            { label: 'Students', used: usage.students, max: limits.maxStudents },
+          ].map((row) => (
+            <div key={row.label} className="rounded-[12px] border border-[var(--pc-line)] px-4 py-3">
+              <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--pc-muted)]">{row.label}</p>
+              <p className="m-0 mt-1 text-lg font-semibold text-[var(--pc-text)]">
+                {row.used} / {row.max}
+              </p>
+              <div className="pc-progress mt-2">
+                <div className="pc-progress-track">
+                  <div
+                    className="pc-progress-fill"
+                    style={{ width: `${Math.min(100, Math.round((row.used / Math.max(row.max, 1)) * 100))}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}

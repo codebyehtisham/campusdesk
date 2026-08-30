@@ -1,5 +1,6 @@
 import type { Organization } from '@prisma/client';
 import { prisma } from '../config/db.js';
+import { isTrialExpired } from './trial.js';
 
 export const SUSPENDED_MESSAGE = 'Your services are suspended. Please contact the service provider.';
 
@@ -32,6 +33,9 @@ export const resolveServiceLock = async (org: Organization | null | undefined) =
   }
   if (org.status !== 'active') {
     return { locked: true, reason: 'suspended', overdue };
+  }
+  if (org.isTrial && isTrialExpired(org)) {
+    return { locked: true, reason: 'trial_expired', overdue };
   }
   if (org.suspendOnOverdue && overdue) {
     return { locked: true, reason: 'overdue', overdue };
