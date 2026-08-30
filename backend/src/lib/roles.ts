@@ -1,5 +1,6 @@
 import type { Organization, Role } from '@prisma/client';
 import { prisma } from '../config/db.js';
+import { sellableModules } from './tenant.js';
 
 export const PORTAL_SLUGS = ['faculty', 'admissions', 'hr', 'finance', 'exams', 'library'] as const;
 export type PortalSlug = (typeof PORTAL_SLUGS)[number];
@@ -9,7 +10,8 @@ export type StaffRoleDef = {
   portal: PortalSlug;
   label: string;
   hint: string;
-  requiredModule?: string;
+  /** Role is assignable when the org has at least one of these modules. */
+  requiredModules: string[];
   canViewAdmissions?: boolean;
   canDecideAdmissions?: boolean;
   isTeacher?: boolean;
@@ -29,7 +31,7 @@ export const STAFF_ROLE_DEFS: StaffRoleDef[] = [
     portal: 'faculty',
     label: 'Faculty member',
     hint: 'Teaches classes, runs timetable sessions, and marks student attendance.',
-    requiredModule: 'faculty',
+    requiredModules: ['faculty'],
     isTeacher: true,
   },
   {
@@ -37,7 +39,7 @@ export const STAFF_ROLE_DEFS: StaffRoleDef[] = [
     portal: 'admissions',
     label: 'Registrar',
     hint: 'Reviews student applications. Cannot accept or reject.',
-    requiredModule: 'admissions',
+    requiredModules: ['admissions'],
     canViewAdmissions: true,
   },
   {
@@ -45,7 +47,7 @@ export const STAFF_ROLE_DEFS: StaffRoleDef[] = [
     portal: 'admissions',
     label: 'Admissions officer',
     hint: 'Reviews applications and makes accept/reject decisions.',
-    requiredModule: 'admissions',
+    requiredModules: ['admissions'],
     canViewAdmissions: true,
     canDecideAdmissions: true,
   },
@@ -54,28 +56,28 @@ export const STAFF_ROLE_DEFS: StaffRoleDef[] = [
     portal: 'hr',
     label: 'HR manager',
     hint: 'Manages job openings, staff records, and staff attendance.',
-    requiredModule: 'careers',
+    requiredModules: ['careers', 'staff-attendance'],
   },
   {
     role: 'accountant',
     portal: 'finance',
     label: 'Accountant',
     hint: 'Fee plans, receipts, and finance operations.',
-    requiredModule: 'fees',
+    requiredModules: ['fees'],
   },
   {
     role: 'exam_controller',
     portal: 'exams',
     label: 'Exam controller',
     hint: 'Exam schedules, mark entry, and result cards.',
-    requiredModule: 'examinations',
+    requiredModules: ['examinations'],
   },
   {
     role: 'librarian',
     portal: 'library',
     label: 'Librarian',
     hint: 'Library catalog, issue/return, and member cards.',
-    requiredModule: 'library',
+    requiredModules: ['library'],
   },
 ];
 
@@ -116,10 +118,23 @@ export const canDecideAdmissionsRole = (role: string) => {
 
 export const isTeacherRole = (role: string) => Boolean(staffRoleDef(role)?.isTeacher);
 
-export const moduleForPortal = (portal: PortalSlug) => {
-  const roles = rolesForPortal(portal);
-  return roles[0]?.requiredModule;
+export const moduleForPortal = (portal: PortalSlug) => rolesForPortal(portal)[0]?.requiredModules[0];
+
+export const roleModulesEnabled = (org: Pick<Organization, 'modules'> | { modules?: unknown } | null | undefined, role: string) => {
+  const def = staffRoleDef(role);
+  if (!def) return false;
+  const modules = sellableModules(org?.modules);
+  if (!def.requiredModules.length) return true;
+  return def.requiredModules.some((slug) => modules.includes(slug));
 };
+
+export const assignableRolesForOrg = (org: Pick<Organization, 'modules'> | { modules?: unknown } | null | undefined) =>
+  STAFF_ROLE_DEFS.filter((def) => roleModulesEnabled(org, def.role)).map((def) => def.role);
+
+export const isRoleAssignable = (
+  org: Pick<Organization, 'modules'> | { modules?: unknown } | null | undefined,
+  role: string
+) => roleModulesEnabled(org, normalizeStaffRole(role));
 
 export const migrateLegacyRoles = async () => {
   await prisma.user.updateMany({ where: { role: 'viewer' }, data: { role: 'registrar' } });

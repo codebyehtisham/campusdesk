@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
@@ -7,20 +7,26 @@ import { signOutAdmin, getAdmin } from '../../auth/adminSession';
 import { ADMIN_BASE } from '../../admin/paths';
 import { CheckRow, PasswordField, StrengthMeter } from '../../components/ChangePasswordForm';
 
-const emptyForm = { name: '', email: '', password: '', confirmPassword: '', role: 'registrar' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const roleOptions = rolesForKind();
+  const orgModules = getAdmin()?.modules || [];
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [panel, setPanel] = useState(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', role: '' });
   const [pendingDelete, setPendingDelete] = useState(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+
+  const roleOptions = useMemo(
+    () => rolesForKind('education', orgModules, { includeRoles: panel?.mode === 'edit' ? [form.role] : [] }),
+    [orgModules, panel?.mode, form.role]
+  );
+
+  const defaultRole = roleOptions[0]?.key || '';
 
   const kickOut = () => {
     signOutAdmin();
@@ -48,7 +54,7 @@ export default function AdminUsers() {
   }, []);
 
   const openCreate = () => {
-    setForm(emptyForm);
+    setForm({ name: '', email: '', password: '', confirmPassword: '', role: defaultRole });
     setPanel({ mode: 'create' });
   };
 
@@ -59,7 +65,7 @@ export default function AdminUsers() {
 
   const closePanel = () => {
     setPanel(null);
-    setForm(emptyForm);
+    setForm({ name: '', email: '', password: '', confirmPassword: '', role: defaultRole });
   };
 
   const handleChange = (e) => {
@@ -68,6 +74,10 @@ export default function AdminUsers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.role) {
+      setNotice('No staff roles are available. Enable a module for this organisation first.');
+      return;
+    }
     if (panel?.mode === 'create' && form.password !== form.confirmPassword) {
       setNotice('New password and confirmation do not match.');
       return;
@@ -128,11 +138,18 @@ export default function AdminUsers() {
           <Link to={`${ADMIN_BASE}/access`} className="btn btn-outline">
             Access
           </Link>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
+          <button type="button" className="btn btn-primary" onClick={openCreate} disabled={!defaultRole}>
             New user
           </button>
         </div>
       </div>
+
+      {!defaultRole && (
+        <p className="mb-5 rounded-2xl bg-bg-alt px-4 py-3 text-sm font-semibold text-text-muted">
+          Enable at least one staff module (faculty, admissions, careers, fees, examinations, library, etc.) before
+          creating users. Roles only appear when their module is active on your subscription.
+        </p>
+      )}
 
       {error && (
         <p className="mb-5 rounded-2xl bg-crimson-pale px-4 py-3 text-sm font-bold text-crimson-dark">{error}</p>
@@ -146,7 +163,7 @@ export default function AdminUsers() {
           <p className="mb-6 text-text-muted">
             Assign a role and portal sign-in link for each person — faculty, admissions, HR, finance, exams, or library.
           </p>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
+          <button type="button" className="btn btn-primary" onClick={openCreate} disabled={!defaultRole}>
             Add the first user
           </button>
         </div>
@@ -270,25 +287,29 @@ export default function AdminUsers() {
                 )}
                 <label className={labelClass}>
                   Role
-                  <select name="role" value={form.role} onChange={handleChange} className="field">
+                  <select name="role" value={form.role} onChange={handleChange} className="field" disabled={!roleOptions.length}>
                     {roleOptions.map((role) => (
                       <option key={role.key} value={role.key}>
                         {role.label}
                       </option>
                     ))}
                   </select>
-                  <span className="font-medium text-text-muted">
-                    {roleOptions.find((role) => role.key === form.role)?.hint}
-                    {roleOptions.find((role) => role.key === form.role)?.portalPath ? (
-                      <>
-                        {' '}
-                        · Sign in at{' '}
-                        <code className="font-mono text-xs">
-                          {roleOptions.find((role) => role.key === form.role)?.portalPath}
-                        </code>
-                      </>
-                    ) : null}
-                  </span>
+                  {roleOptions.length ? (
+                    <span className="font-medium text-text-muted">
+                      {roleOptions.find((role) => role.key === form.role)?.hint}
+                      {roleOptions.find((role) => role.key === form.role)?.portalPath ? (
+                        <>
+                          {' '}
+                          · Sign in at{' '}
+                          <code className="font-mono text-xs">
+                            {roleOptions.find((role) => role.key === form.role)?.portalPath}
+                          </code>
+                        </>
+                      ) : null}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-text-muted">No roles available for your enabled modules.</span>
+                  )}
                 </label>
                 <div className="mt-2 flex gap-2">
                   <button
@@ -296,6 +317,7 @@ export default function AdminUsers() {
                     className="btn btn-primary flex-1"
                     disabled={
                       saving ||
+                      !form.role ||
                       (panel.mode === 'create' &&
                         (form.password.length < 6 || form.password !== form.confirmPassword))
                     }

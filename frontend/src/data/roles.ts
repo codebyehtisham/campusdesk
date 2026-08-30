@@ -15,6 +15,7 @@ export const STAFF_ROLES = [
     portal: 'faculty',
     portalPath: FACULTY_BASE,
     portalLabel: 'Faculty portal',
+    requiredModules: ['faculty'],
   },
   {
     key: 'registrar',
@@ -23,6 +24,7 @@ export const STAFF_ROLES = [
     portal: 'admissions',
     portalPath: ADMISSIONS_PORTAL_BASE,
     portalLabel: 'Admissions portal',
+    requiredModules: ['admissions'],
   },
   {
     key: 'admissions_officer',
@@ -31,6 +33,7 @@ export const STAFF_ROLES = [
     portal: 'admissions',
     portalPath: ADMISSIONS_PORTAL_BASE,
     portalLabel: 'Admissions portal',
+    requiredModules: ['admissions'],
   },
   {
     key: 'hr_manager',
@@ -39,6 +42,7 @@ export const STAFF_ROLES = [
     portal: 'hr',
     portalPath: HR_PORTAL_BASE,
     portalLabel: 'HR portal',
+    requiredModules: ['careers', 'staff-attendance'],
   },
   {
     key: 'accountant',
@@ -47,6 +51,7 @@ export const STAFF_ROLES = [
     portal: 'finance',
     portalPath: FINANCE_PORTAL_BASE,
     portalLabel: 'Finance portal',
+    requiredModules: ['fees'],
   },
   {
     key: 'exam_controller',
@@ -55,6 +60,7 @@ export const STAFF_ROLES = [
     portal: 'exams',
     portalPath: EXAMS_PORTAL_BASE,
     portalLabel: 'Exams portal',
+    requiredModules: ['examinations'],
   },
   {
     key: 'librarian',
@@ -63,6 +69,7 @@ export const STAFF_ROLES = [
     portal: 'library',
     portalPath: LIBRARY_PORTAL_BASE,
     portalLabel: 'Library portal',
+    requiredModules: ['library'],
   },
 ];
 
@@ -87,7 +94,18 @@ export const canDecideAdmissions = (role) => normalizeRole(role) === 'admissions
 
 export const isReadOnlyAdmissions = (role) => normalizeRole(role) === 'registrar';
 
-export const rolesForKind = (_kind) => STAFF_ROLES;
+export const roleModulesEnabled = (modules = [], roleKey) => {
+  const def = roleDef(roleKey);
+  if (!def?.requiredModules?.length) return true;
+  return def.requiredModules.some((slug) => modules.includes(slug));
+};
+
+export const rolesForKind = (_kind, modules = [], { includeRoles = [] } = {}) => {
+  const extras = new Set((includeRoles || []).map(normalizeRole));
+  return STAFF_ROLES.filter(
+    (role) => roleModulesEnabled(modules, role.key) || extras.has(normalizeRole(role.key))
+  );
+};
 
 export const staffHome = (role, modules = []) => {
   const key = normalizeRole(role);

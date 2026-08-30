@@ -5,13 +5,13 @@ import {
   isTeacherRole,
   normalizeStaffRole,
   PORTAL_SLUGS,
+  roleModulesEnabled,
   type PortalSlug,
   portalForRole,
   staffRoleDef,
   STAFF_ROLE_DEFS,
   PORTAL_PATHS,
 } from '../lib/roles.js';
-import { sellableModules } from '../lib/tenant.js';
 import type { Organization } from '@prisma/client';
 
 export {
@@ -37,8 +37,7 @@ export const portalLoginAllowed = (role: string, portal: PortalSlug, org: Organi
   if (!def || def.portal !== portal) {
     return { ok: false, message: 'This account uses a different staff portal. Check the sign-in link from your administrator.' };
   }
-  const modules = sellableModules(org?.modules);
-  if (def.requiredModule && !modules.includes(def.requiredModule)) {
+  if (!roleModulesEnabled(org, role)) {
     return { ok: false, message: 'This portal is not included in your organisation subscription.' };
   }
   return { ok: true, message: null };
@@ -51,5 +50,6 @@ export const publicRoleCatalog = () =>
     hint: item.hint,
     portal: item.portal,
     portalPath: PORTAL_PATHS[item.portal],
-    requiredModule: item.requiredModule || null,
+    requiredModule: item.requiredModules[0] || null,
+    requiredModules: item.requiredModules,
   }));

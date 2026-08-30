@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { orgId, toSlug } from '../lib/tenant.js';
 import { getScheme } from '../lib/schemes.js';
+import { assignableRolesForOrg } from '../lib/roles.js';
 
 const toUnit = (row: { id: string; name: string; slug: string; description: string; sortOrder: number; active: boolean }) => ({
   id: row.id,
@@ -30,7 +31,7 @@ export const getSchemeDesk = async (req: Request, res: Response) => {
       staffTitles: scheme.staffTitles,
       rosterTitles: scheme.rosterTitles,
       rosterLabels: scheme.rosterLabels,
-      portalRoles: scheme.portalRoles,
+      portalRoles: assignableRolesForOrg(req.organization),
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load organisation scheme', error: (err as Error).message });

@@ -2,12 +2,15 @@ import type { Role, User } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { isUniqueError, orgId } from '../lib/tenant.js';
-import { ASSIGNABLE_STAFF_ROLES, normalizeStaffRole } from '../lib/roles.js';
+import { ASSIGNABLE_STAFF_ROLES, isRoleAssignable, normalizeStaffRole } from '../lib/roles.js';
 import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import { hashPassword } from '../middleware/auth.js';
-import { getScheme } from '../lib/schemes.js';
 
 const EDITABLE_ROLES: Role[] = [...ASSIGNABLE_STAFF_ROLES];
+
+const roleDenied = () => ({
+  message: 'This role is not available for your organisation. Enable the matching module first.',
+});
 
 const toUser = (doc: User) => ({
   id: doc.id,
@@ -42,10 +45,8 @@ export const createUser = async (req: Request, res: Response) => {
     if (!name || !email || password.length < 6) {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
     }
-    if (!getScheme().portalRoles.includes(role)) {
-      return res.status(400).json({
-        message: 'Choose a staff role for this education institute. Admin accounts cannot be created here.',
-      });
+    if (!isRoleAssignable(req.organization, role)) {
+      return res.status(400).json(roleDenied());
     }
 
     try {
@@ -82,10 +83,8 @@ export const updateUser = async (req: Request, res: Response) => {
     const user = await findFaculty(req);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (req.body.role && !getScheme().portalRoles.includes(normalizeStaffRole(String(req.body.role)))) {
-      return res.status(400).json({
-        message: 'Choose a staff role for this education institute. Admin accounts cannot be created here.',
-      });
+    if (req.body.role && !isRoleAssignable(req.organization, String(req.body.role))) {
+      return res.status(400).json(roleDenied());
     }
     if (req.body.password) {
       const password = String(req.body.password).trim();
