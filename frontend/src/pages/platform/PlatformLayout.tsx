@@ -79,6 +79,7 @@ export default function PlatformLayout() {
               <span className="platform-live-clock hidden font-mono text-xs font-semibold text-text-muted lg:inline">
                 <LiveClock />
               </span>
+              <NotificationBell authScope="platform" />
               <span className="platform-badge hidden rounded-full border border-cardinal/25 bg-cardinal-pale px-3 py-1 text-xs font-bold text-cardinal sm:inline">
                 Super admin
               </span>

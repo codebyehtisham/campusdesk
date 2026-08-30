@@ -45,6 +45,13 @@ import {
   generateOrgInvoice,
 } from '../controllers/billingController.js';
 import { protect, platformOnly } from '../middleware/auth.js';
+import {
+  listNotifications,
+  unreadNotificationCount,
+  getNotification,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../controllers/notificationController.js';
 
 const router = Router();
 const gate = [protect, platformOnly];
@@ -91,5 +98,10 @@ router.post('/organizations/:id/invoices/generate', ...gate, generateOrgInvoice)
 router.put('/organizations/:id/invoices/:invoiceId', ...gate, updateOrgInvoice);
 router.get('/audit', ...gate, listPlatformAudit);
 router.get('/audit/:id', ...gate, getPlatformAudit);
+router.get('/notifications', ...gate, listNotifications);
+router.get('/notifications/unread-count', ...gate, unreadNotificationCount);
+router.get('/notifications/:id', ...gate, getNotification);
+router.put('/notifications/:id/read', ...gate, markNotificationRead);
+router.put('/notifications/read-all', ...gate, markAllNotificationsRead);
 
 export default router;

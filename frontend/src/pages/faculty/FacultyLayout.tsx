@@ -7,6 +7,7 @@ import { isLockedOrg, isSuspendedError } from '../../auth/serviceLock';
 import { roleLabel, isTeacher, staffHome } from '../../data/roles';
 import api from '../../api/client';
 import BrandMark from '../../components/BrandMark';
+import NotificationBell from '../../components/NotificationBell';
 
 export function RequireStaff() {
   const staff = getStaff();
@@ -151,6 +152,7 @@ export default function FacultyLayout() {
           { to: `${FACULTY_BASE}/attendance`, label: 'Attendance', icon: IconAttendance },
         ]
       : []),
+    { to: `${FACULTY_BASE}/leave`, label: 'Leave', icon: IconAdmissions },
     { to: `${FACULTY_BASE}/password`, label: 'Password', icon: IconKey },
   ];
 
@@ -234,6 +236,7 @@ export default function FacultyLayout() {
             </button>
             <p className="m-0 hidden truncate text-sm font-semibold text-ink md:block">{orgLabel}</p>
             <div className="flex items-center gap-3">
+              <NotificationBell authScope="staff" />
               <span className="hidden text-sm text-text-muted lg:block">
                 {staff?.name || staff?.email} · {roleLabel(staff?.role, org?.kind)}
               </span>

@@ -48,6 +48,9 @@ import ExamsPortalLayout from './pages/exams/ExamsPortalLayout';
 import ExamsHome from './pages/exams/ExamsHome';
 import LibraryPortalLayout from './pages/library/LibraryPortalLayout';
 import LibraryHome from './pages/library/LibraryHome';
+import StaffLeavePage from './pages/staff/StaffLeavePage';
+import HrLeaves from './pages/hr/HrLeaves';
+import HrAttendanceCalendar from './pages/hr/HrAttendanceCalendar';
 import PlatformLogin from './pages/platform/PlatformLogin';
 import PlatformLayout, { RequirePlatform } from './pages/platform/PlatformLayout';
 import PlatformDashboard from './pages/platform/PlatformDashboard';
@@ -137,6 +140,7 @@ function App() {
               <Route path="timetable" element={<FacultyTimetable />} />
               <Route path="courses" element={<FacultyCourses />} />
               <Route path="attendance" element={<FacultyAttendance />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={FACULTY_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<FacultyHomeRedirect />} />
             </Route>
@@ -151,6 +155,7 @@ function App() {
             <Route path="admissions/review/:id" element={<ApplicationReview portal="staff" />} />
             <Route element={<AdmissionsPortalLayout />}>
               <Route path="admissions" element={<FacultyAdmissions />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={ADMISSIONS_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<Navigate to={`${ADMISSIONS_PORTAL_BASE}/admissions`} replace />} />
             </Route>
@@ -168,6 +173,9 @@ function App() {
                 path="attendance"
                 element={<AdminAttendance kind="staff" authScope="staff" apiBase="/staff/hr" />}
               />
+              <Route path="leaves" element={<HrLeaves />} />
+              <Route path="calendar" element={<HrAttendanceCalendar />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={HR_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<HrHomeRedirect />} />
             </Route>
@@ -181,6 +189,7 @@ function App() {
           <Route element={<RequireActiveStaff />}>
             <Route element={<FinancePortalLayout />}>
               <Route path="home" element={<FinanceHome />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={FINANCE_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<Navigate to={`${FINANCE_PORTAL_BASE}/home`} replace />} />
             </Route>
@@ -194,6 +203,7 @@ function App() {
           <Route element={<RequireActiveStaff />}>
             <Route element={<ExamsPortalLayout />}>
               <Route path="home" element={<ExamsHome />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={EXAMS_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<Navigate to={`${EXAMS_PORTAL_BASE}/home`} replace />} />
             </Route>
@@ -207,6 +217,7 @@ function App() {
           <Route element={<RequireActiveStaff />}>
             <Route element={<LibraryPortalLayout />}>
               <Route path="home" element={<LibraryHome />} />
+              <Route path="leave" element={<StaffLeavePage portalBase={LIBRARY_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
               <Route path="*" element={<Navigate to={`${LIBRARY_PORTAL_BASE}/home`} replace />} />
             </Route>

@@ -16,6 +16,7 @@ import {
 import { hasModule, isUniqueError, resolveOrganizationByInstitute } from '../lib/tenant.js';
 import { normalizeStaffRole, portalForRole } from '../lib/roles.js';
 import { parsePortalSlug, portalLoginAllowed } from '../middleware/staffAuth.js';
+import { createNotification } from '../lib/notifications.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
 
 const USE_MOBILE_APP_MESSAGE =
@@ -357,6 +358,14 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Current password is incorrect.' });
     }
     await prisma.user.update({ where: { id: user.id }, data: { password: await hashPassword(newPassword) } });
+    await createNotification({
+      userId: user.id,
+      organizationId: user.organizationId,
+      type: 'password_changed',
+      title: 'Password updated',
+      body: 'Your password was changed successfully. If you did not make this change, contact your administrator right away.',
+      data: { selfService: true },
+    });
     return res.json({ message: 'Password updated.' });
   } catch (err) {
     return res.status(400).json({ message: 'Could not update password.', error: (err as Error).message });

@@ -83,6 +83,20 @@ import {
   returnLibraryLoan,
   listLibraryMembers,
 } from '../controllers/libraryController.js';
+import {
+  listMyLeaves,
+  submitLeave,
+  listHrLeaves,
+  decideLeave,
+  hrAttendanceCalendar,
+} from '../controllers/leaveController.js';
+import {
+  listNotifications,
+  unreadNotificationCount,
+  getNotification,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../controllers/notificationController.js';
 
 export const authRoutes = Router();
 authRoutes.post('/register', registerApplicant);
@@ -104,6 +118,18 @@ const teaching = [protect, requireActiveOrg, staffOnly, teacherOnly, requireModu
 staffRoutes.post('/login', loginStaff);
 staffRoutes.get('/me', protect, requireOrgLinked, staffOnly, getMe);
 staffRoutes.put('/password', protect, requireActiveOrg, staffOnly, changePassword);
+
+const staffNotify = [protect, requireOrgLinked, staffOnly];
+staffRoutes.get('/notifications', ...staffNotify, listNotifications);
+staffRoutes.get('/notifications/unread-count', ...staffNotify, unreadNotificationCount);
+staffRoutes.get('/notifications/:id', ...staffNotify, getNotification);
+staffRoutes.put('/notifications/:id/read', ...staffNotify, markNotificationRead);
+staffRoutes.put('/notifications/read-all', ...staffNotify, markAllNotificationsRead);
+
+const staffLeave = [protect, requireActiveOrg, staffOnly];
+staffRoutes.get('/leaves', ...staffLeave, listMyLeaves);
+staffRoutes.post('/leaves', ...staffLeave, submitLeave);
+
 staffRoutes.get('/teaching', ...teaching, getTeaching);
 staffRoutes.post('/classes/:id/content', ...teaching, createContent);
 staffRoutes.put('/content/:id', ...teaching, updateContent);
@@ -121,6 +147,9 @@ staffRoutes.put('/hr/attendance', ...hrStaff, requireModule('staff-attendance'),
 staffRoutes.post('/hr/attendance/people', ...hrStaff, requireModule('staff-attendance'), createAttendancePerson);
 staffRoutes.put('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), updateAttendancePerson);
 staffRoutes.delete('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), deleteAttendancePerson);
+staffRoutes.get('/hr/leaves', ...hrStaff, listHrLeaves);
+staffRoutes.put('/hr/leaves/:id/decision', ...hrStaff, decideLeave);
+staffRoutes.get('/hr/attendance/calendar', ...hrStaff, requireModule('staff-attendance'), hrAttendanceCalendar);
 
 const financeStaff = [protect, requireActiveOrg, staffOnly, accountantOnly, requireModule('fees')];
 staffRoutes.get('/finance/overview', ...financeStaff, getFinanceOverview);

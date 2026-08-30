@@ -2,7 +2,8 @@ import type { Role, User } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { isUniqueError, orgId } from '../lib/tenant.js';
-import { ASSIGNABLE_STAFF_ROLES, isRoleAssignable, normalizeStaffRole } from '../lib/roles.js';
+import { ASSIGNABLE_STAFF_ROLES, isRoleAssignable, normalizeStaffRole, portalForRole, PORTAL_PATHS } from '../lib/roles.js';
+import { createNotification } from '../lib/notifications.js';
 import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import { hashPassword } from '../middleware/auth.js';
 
@@ -66,6 +67,17 @@ export const createUser = async (req: Request, res: Response) => {
         organizationId: orgId(req),
       },
     });
+
+    const portal = portalForRole(role);
+    await createNotification({
+      userId: user.id,
+      organizationId: orgId(req),
+      type: 'account_created',
+      title: 'Your staff account is ready',
+      body: `An administrator created your account. Sign in at ${portal ? PORTAL_PATHS[portal] : '/faculty-portal'} with ${email}.`,
+      data: { role, portal },
+    });
+
     res.status(201).json(toUser(user));
   } catch (err) {
     if (isUniqueError(err)) {
@@ -136,6 +148,14 @@ export const setUserPassword = async (req: Request, res: Response) => {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: { password: await hashPassword(newPassword) },
+    });
+    await createNotification({
+      userId: user.id,
+      organizationId: user.organizationId,
+      type: 'password_changed',
+      title: 'Password updated',
+      body: 'Your password was changed by an administrator. If this was not you, contact your campus admin immediately.',
+      data: { byAdmin: true },
     });
     res.json({ message: 'Password updated.', user: toUser(updated) });
   } catch (err) {

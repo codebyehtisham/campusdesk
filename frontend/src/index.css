@@ -971,6 +971,13 @@ html[data-template='editorial'] .filter-btn {
 .staff-nav a {
   position: relative;
   overflow: hidden;
+  z-index: 0;
+}
+
+.staff-nav a > span,
+.staff-nav a > .staff-nav-link-label {
+  position: relative;
+  z-index: 2;
 }
 
 .staff-nav-active-bg {
@@ -979,42 +986,48 @@ html[data-template='editorial'] .filter-btn {
   border-radius: 12px;
   background: var(--staff-rail-active-bg);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
-  z-index: 0;
+  z-index: 1;
 }
 
-.staff-nav a.is-active {
+/* Only faculty animated nav resets the pill background */
+.faculty-shell:not(.staff-portal-simple) .staff-nav a.is-active {
   background: transparent;
   box-shadow: none;
+  color: rgba(255, 255, 255, 0.95);
 }
 
-/* Faculty rail uses animated pill behind the link */
-.faculty-shell .staff-nav a.is-active {
-  background: transparent;
-  box-shadow: none;
+.staff-portal-simple .staff-nav a,
+.staff-shell.staff-portal-simple .staff-nav a {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* HR, finance, admissions, and other simple staff portals */
+.staff-portal-simple .staff-nav a:hover,
+.staff-shell.staff-portal-simple .staff-nav a:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
 .staff-portal-simple .staff-nav a.is-active,
-.staff-shell:not(.faculty-shell) .staff-nav a.is-active,
-.platform-shell .staff-nav a.is-active {
-  background: var(--staff-rail-active-bg);
-  color: var(--staff-rail-active-text);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+.staff-shell.staff-portal-simple .staff-nav a.is-active {
+  background: #ffffff !important;
+  color: #0a4848 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
   font-weight: 700;
 }
 
 .staff-portal-simple .staff-nav a.is-active .staff-nav-icon,
-.staff-shell:not(.faculty-shell) .staff-nav a.is-active .staff-nav-icon,
-.platform-shell .staff-nav a.is-active .staff-nav-icon {
+.staff-shell.staff-portal-simple .staff-nav a.is-active .staff-nav-icon {
   background: rgba(15, 92, 92, 0.12);
-  color: var(--staff-rail-active-text);
+  color: #0a4848 !important;
 }
 
 /* Admin + platform rails: solid active pill (no motion layer) */
-.staff-shell:not(.faculty-shell):not(.staff-portal-simple) .staff-nav a.is-active {
-  background: var(--staff-rail-active-bg);
-  color: var(--staff-rail-active-text);
+.staff-shell:not(.faculty-shell):not(.staff-portal-simple) .staff-nav a.is-active,
+.platform-shell .staff-nav a.is-active {
+  background: var(--staff-rail-active-bg) !important;
+  color: var(--staff-rail-active-text) !important;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  font-weight: 700;
 }
 
 .staff-shell:not(.faculty-shell):not(.staff-portal-simple) .staff-nav a.is-active .staff-nav-icon,
@@ -5181,6 +5194,201 @@ html:has(.platform-shell),
   font-weight: 600;
   color: var(--pc-accent);
   word-break: break-all;
+}
+
+.notify-bell {
+  position: relative;
+}
+
+.notify-bell-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--ink);
+}
+
+.notify-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--cardinal);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.notify-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: min(360px, 92vw);
+  max-height: 420px;
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(13, 42, 128, 0.14);
+}
+
+.notify-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.notify-link {
+  border: 0;
+  background: transparent;
+  color: var(--cardinal);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notify-list {
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+}
+
+.notify-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0.7rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notify-item strong {
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.notify-item span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.notify-item small {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.notify-item.is-unread {
+  background: var(--cardinal-pale);
+}
+
+.notify-empty,
+.notify-detail {
+  padding: 1rem;
+}
+
+.notify-detail-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.notify-detail-body {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.notify-detail-time {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.hr-cal-table {
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.hr-cal-table th,
+.hr-cal-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0.35rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.hr-cal-table th:first-child,
+.hr-cal-table td:first-child {
+  text-align: left;
+  min-width: 160px;
+}
+
+.hr-cal-cell {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.hr-cal-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  color: #fff;
+}
+
+.hr-cal-legend.is-present,
+.hr-cal-cell.is-present {
+  background: #10b981;
+}
+
+.hr-cal-legend.is-absent,
+.hr-cal-cell.is-absent {
+  background: #ef4444;
+}
+
+.hr-cal-legend.is-late,
+.hr-cal-cell.is-late {
+  background: #f59e0b;
+}
+
+.hr-cal-legend.is-leave,
+.hr-cal-cell.is-leave {
+  background: #6366f1;
+}
+
+.hr-cal-legend.is-unmarked,
+.hr-cal-cell.is-unmarked {
+  background: #e5e7eb;
+}
+
+.hr-cal-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  color: #fff;
 }
 
 @keyframes platform-node-pulse {
