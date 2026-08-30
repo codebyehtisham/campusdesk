@@ -117,6 +117,7 @@ model Organization {
   libraryItems       LibraryItem[]
   libraryLoans       LibraryLoan[]
   leaveRequests      LeaveRequest[]
+  leaveQuotas        LeaveQuota[]
   notifications      Notification[]
 
   @@index([status])
@@ -273,6 +274,7 @@ model User {
   attendanceSessions AttendanceSession[]
   leaveRequests      LeaveRequest[]
   leaveReviews       LeaveRequest[] @relation("LeaveReviewer")
+  leaveQuota         LeaveQuota?
   notifications      Notification[]
 
   @@index([organizationId])
@@ -793,6 +795,23 @@ model LeaveRequest {
   @@index([organizationId, status])
   @@index([userId])
   @@index([startDate, endDate])
+}
+
+model LeaveQuota {
+  id                 String       @id @default(uuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId             String       @unique
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annualAllowance    Int          @default(15)
+  sickAllowance      Int          @default(7)
+  casualAllowance    Int          @default(7)
+  maternityAllowance Int          @default(90)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
 }
 
 model Notification {

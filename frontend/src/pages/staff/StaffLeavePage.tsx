@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { signOutStaff } from '../../auth/staffSession';
+import LeaveBalanceCards from '../leave/LeaveBalanceCards';
+import { LEAVE_TYPE_LABELS, leaveStatusClass } from '../leave/leaveShared';
 
 const staffReq = { authScope: 'staff' };
 const labelClass = 'flex flex-col gap-1.5 text-sm font-semibold text-ink';
@@ -16,6 +18,7 @@ const TYPES = [
 export default function StaffLeavePage({ portalBase }) {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -29,7 +32,15 @@ export default function StaffLeavePage({ portalBase }) {
   const load = async () => {
     try {
       const res = await api.get('/staff/leaves', staffReq);
-      setItems(Array.isArray(res.data) ? res.data : []);
+      const payload = res.data;
+      if (Array.isArray(payload)) {
+        setItems(payload);
+        const balanceRes = await api.get('/staff/leaves/balance', staffReq);
+        setBalance(balanceRes.data);
+      } else {
+        setItems(Array.isArray(payload?.items) ? payload.items : []);
+        setBalance(payload?.balance || null);
+      }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) kickOut();
     } finally {
@@ -40,6 +51,23 @@ export default function StaffLeavePage({ portalBase }) {
   useEffect(() => {
     load();
   }, []);
+
+  const selectedBalance = balance?.types?.[form.type];
+  const selectedLabel = LEAVE_TYPE_LABELS[form.type] || 'Leave';
+
+  const requestedDays = useMemo(() => {
+    if (!form.startDate || !form.endDate) return 0;
+    const start = new Date(`${form.startDate}T00:00:00.000Z`);
+    const end = new Date(`${form.endDate}T00:00:00.000Z`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+    const cursor = new Date(start);
+    let days = 0;
+    while (cursor <= end) {
+      days += 1;
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return days;
+  }, [form.startDate, form.endDate]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -64,6 +92,15 @@ export default function StaffLeavePage({ portalBase }) {
         <p className="m-0 max-w-2xl text-text-muted">Submit sick, casual, maternity, or annual leave. HR will approve or reject your request.</p>
       </div>
 
+      <div className="mb-8">
+        <h2 className="text-xl">Your balance {balance?.year ? `(${balance.year})` : ''}</h2>
+        {loading ? (
+          <div className="glass rounded-[1.4rem] p-8 text-center text-text-muted">Loading balances…</div>
+        ) : (
+          <LeaveBalanceCards balance={balance} />
+        )}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
         <form onSubmit={submit} className="glass rounded-[1.4rem] p-6">
           <h2 className="mt-0 text-xl">New request</h2>
@@ -78,6 +115,13 @@ export default function StaffLeavePage({ portalBase }) {
                 ))}
               </select>
             </label>
+            {selectedBalance ? (
+              <p className="m-0 rounded-2xl bg-bg-alt px-4 py-3 text-sm text-text-muted">
+                {selectedLabel}: <strong className="text-ink">{selectedBalance.remaining}</strong> remaining
+                {selectedBalance.pending ? ` · ${selectedBalance.pending} pending` : ''}
+                {requestedDays > 0 ? ` · requesting ${requestedDays} day${requestedDays === 1 ? '' : 's'}` : ''}
+              </p>
+            ) : null}
             <label className={labelClass}>
               Start date
               <input className="field" type="date" required value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
@@ -115,7 +159,7 @@ export default function StaffLeavePage({ portalBase }) {
                       {item.reason ? <p className="m-0 mt-2 text-sm">{item.reason}</p> : null}
                       {item.reviewNotes ? <p className="m-0 mt-2 text-sm text-text-muted">HR: {item.reviewNotes}</p> : null}
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${item.status === 'approved' ? 'bg-cardinal-pale text-cardinal' : item.status === 'rejected' ? 'bg-crimson-pale text-crimson' : 'bg-bg-alt text-ink'}`}>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${leaveStatusClass(item.status)}`}>
                       {item.status}
                     </span>
                   </div>

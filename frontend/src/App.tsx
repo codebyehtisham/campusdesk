@@ -47,9 +47,13 @@ import FinanceHome from './pages/finance/FinanceHome';
 import ExamsPortalLayout from './pages/exams/ExamsPortalLayout';
 import ExamsHome from './pages/exams/ExamsHome';
 import LibraryPortalLayout from './pages/library/LibraryPortalLayout';
-import LibraryHome from './pages/library/LibraryHome';
+import LibraryCatalog from './pages/library/LibraryCatalog';
+import LibraryIssue from './pages/library/LibraryIssue';
+import LibraryLoans from './pages/library/LibraryLoans';
 import StaffLeavePage from './pages/staff/StaffLeavePage';
 import HrLeaves from './pages/hr/HrLeaves';
+import HrLeaveReview from './pages/hr/HrLeaveReview';
+import HrLeaveQuotas from './pages/hr/HrLeaveQuotas';
 import HrAttendanceCalendar from './pages/hr/HrAttendanceCalendar';
 import PlatformLogin from './pages/platform/PlatformLogin';
 import PlatformLayout, { RequirePlatform } from './pages/platform/PlatformLayout';
@@ -173,7 +177,9 @@ function App() {
                 path="attendance"
                 element={<AdminAttendance kind="staff" authScope="staff" apiBase="/staff/hr" />}
               />
+              <Route path="leave-quotas" element={<HrLeaveQuotas />} />
               <Route path="leaves" element={<HrLeaves />} />
+              <Route path="leaves/:id" element={<HrLeaveReview />} />
               <Route path="calendar" element={<HrAttendanceCalendar />} />
               <Route path="leave" element={<StaffLeavePage portalBase={HR_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
@@ -216,10 +222,13 @@ function App() {
           <Route path="suspended" element={<ServiceSuspended portal="faculty" />} />
           <Route element={<RequireActiveStaff />}>
             <Route element={<LibraryPortalLayout />}>
-              <Route path="home" element={<LibraryHome />} />
+              <Route path="catalog" element={<LibraryCatalog />} />
+              <Route path="issue" element={<LibraryIssue />} />
+              <Route path="loans" element={<LibraryLoans />} />
+              <Route path="home" element={<Navigate to={`${LIBRARY_PORTAL_BASE}/catalog`} replace />} />
               <Route path="leave" element={<StaffLeavePage portalBase={LIBRARY_PORTAL_BASE} />} />
               <Route path="password" element={<FacultyPassword />} />
-              <Route path="*" element={<Navigate to={`${LIBRARY_PORTAL_BASE}/home`} replace />} />
+              <Route path="*" element={<Navigate to={`${LIBRARY_PORTAL_BASE}/catalog`} replace />} />
             </Route>
           </Route>
         </Route>

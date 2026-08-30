@@ -121,7 +121,7 @@ export const staffHome = (role, modules = []) => {
   }
   if (key === 'accountant') return `${FINANCE_PORTAL_BASE}/home`;
   if (key === 'exam_controller') return `${EXAMS_PORTAL_BASE}/home`;
-  if (key === 'librarian') return `${LIBRARY_PORTAL_BASE}/home`;
+  if (key === 'librarian') return `${LIBRARY_PORTAL_BASE}/catalog`;
   return `${base}/password`;
 };
 

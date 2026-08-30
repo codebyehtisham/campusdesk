@@ -86,8 +86,12 @@ import {
 import {
   listMyLeaves,
   submitLeave,
+  getMyLeaveBalance,
   listHrLeaves,
+  getHrLeave,
   decideLeave,
+  listHrLeaveQuotas,
+  upsertHrLeaveQuota,
   hrAttendanceCalendar,
 } from '../controllers/leaveController.js';
 import {
@@ -127,6 +131,7 @@ staffRoutes.put('/notifications/:id/read', ...staffNotify, markNotificationRead)
 staffRoutes.put('/notifications/read-all', ...staffNotify, markAllNotificationsRead);
 
 const staffLeave = [protect, requireActiveOrg, staffOnly];
+staffRoutes.get('/leaves/balance', ...staffLeave, getMyLeaveBalance);
 staffRoutes.get('/leaves', ...staffLeave, listMyLeaves);
 staffRoutes.post('/leaves', ...staffLeave, submitLeave);
 
@@ -148,7 +153,10 @@ staffRoutes.post('/hr/attendance/people', ...hrStaff, requireModule('staff-atten
 staffRoutes.put('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), updateAttendancePerson);
 staffRoutes.delete('/hr/attendance/people/:id', ...hrStaff, requireModule('staff-attendance'), deleteAttendancePerson);
 staffRoutes.get('/hr/leaves', ...hrStaff, listHrLeaves);
+staffRoutes.get('/hr/leaves/:id', ...hrStaff, getHrLeave);
 staffRoutes.put('/hr/leaves/:id/decision', ...hrStaff, decideLeave);
+staffRoutes.get('/hr/leave-quotas', ...hrStaff, listHrLeaveQuotas);
+staffRoutes.put('/hr/leave-quotas/:userId', ...hrStaff, upsertHrLeaveQuota);
 staffRoutes.get('/hr/attendance/calendar', ...hrStaff, requireModule('staff-attendance'), hrAttendanceCalendar);
 
 const financeStaff = [protect, requireActiveOrg, staffOnly, accountantOnly, requireModule('fees')];

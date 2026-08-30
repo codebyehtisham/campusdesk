@@ -1,11 +1,18 @@
 import type { LeaveStatus, LeaveType } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
+import {
+  allowancePayload,
+  assertLeaveDaysAvailable,
+  buildLeaveBalance,
+  DEFAULT_LEAVE_QUOTAS,
+  getLeaveBalanceForUser,
+  LEAVE_TYPES,
+  quotasForUser,
+} from '../lib/leaveBalance.js';
 import { ASSIGNABLE_STAFF_ROLES } from '../lib/roles.js';
 import { createNotification, notifyHrManagers } from '../lib/notifications.js';
 import { orgId } from '../lib/tenant.js';
-
-const LEAVE_TYPES: LeaveType[] = ['sick', 'casual', 'maternity', 'annual'];
 
 const parseLeaveType = (value: unknown): LeaveType | null => {
   const type = String(value || '').trim() as LeaveType;
@@ -57,16 +64,30 @@ const toLeave = (row: {
   reviewedBy: row.reviewedBy ? { id: row.reviewedBy.id, name: row.reviewedBy.name } : null,
 });
 
+export const getMyLeaveBalance = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
+    const balance = await getLeaveBalanceForUser(organizationId, req.user!.id);
+    res.json(balance);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load leave balance', error: (err as Error).message });
+  }
+};
+
 export const listMyLeaves = async (req: Request, res: Response) => {
   try {
     const organizationId = orgId(req);
     if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
-    const items = await prisma.leaveRequest.findMany({
-      where: { organizationId, userId: req.user!.id },
-      orderBy: { createdAt: 'desc' },
-      include: { reviewedBy: { select: { id: true, name: true } } },
-    });
-    res.json(items.map(toLeave));
+    const [items, balance] = await Promise.all([
+      prisma.leaveRequest.findMany({
+        where: { organizationId, userId: req.user!.id },
+        orderBy: { createdAt: 'desc' },
+        include: { reviewedBy: { select: { id: true, name: true } } },
+      }),
+      getLeaveBalanceForUser(organizationId, req.user!.id),
+    ]);
+    res.json({ items: items.map(toLeave), balance });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load leave requests', error: (err as Error).message });
   }
@@ -82,6 +103,9 @@ export const submitLeave = async (req: Request, res: Response) => {
     if (!type) return res.status(400).json({ message: 'Choose sick, casual, maternity, or annual leave.' });
     if (!startDate || !endDate) return res.status(400).json({ message: 'Start and end dates are required.' });
     if (endDate < startDate) return res.status(400).json({ message: 'End date cannot be before start date.' });
+
+    const availability = await assertLeaveDaysAvailable(organizationId, req.user!.id, type, startDate, endDate);
+    if (!availability.ok) return res.status(400).json({ message: availability.message });
 
     const leave = await prisma.leaveRequest.create({
       data: {
@@ -131,6 +155,52 @@ export const listHrLeaves = async (req: Request, res: Response) => {
   }
 };
 
+export const getHrLeave = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
+
+    const leave = await prisma.leaveRequest.findFirst({
+      where: { id: req.params.id, organizationId },
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+        reviewedBy: { select: { id: true, name: true } },
+      },
+    });
+    if (!leave) return res.status(404).json({ message: 'Leave request not found' });
+
+    const [history, balance, quota] = await Promise.all([
+      prisma.leaveRequest.findMany({
+        where: { organizationId, userId: leave.userId },
+        orderBy: { createdAt: 'desc' },
+        include: { reviewedBy: { select: { id: true, name: true } } },
+      }),
+      getLeaveBalanceForUser(organizationId, leave.userId),
+      prisma.leaveQuota.findUnique({ where: { userId: leave.userId } }),
+    ]);
+
+    const historyRows = history.map(toLeave);
+    const historyByType = LEAVE_TYPES.reduce(
+      (acc, type) => {
+        acc[type] = historyRows.filter((row) => row.type === type);
+        return acc;
+      },
+      {} as Record<LeaveType, ReturnType<typeof toLeave>[]>
+    );
+
+    res.json({
+      leave: toLeave(leave),
+      employee: leave.user,
+      balance,
+      quotas: quotasForUser(quota),
+      history: historyRows,
+      historyByType,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load leave request', error: (err as Error).message });
+  }
+};
+
 export const decideLeave = async (req: Request, res: Response) => {
   try {
     const organizationId = orgId(req);
@@ -146,6 +216,18 @@ export const decideLeave = async (req: Request, res: Response) => {
     });
     if (!leave) return res.status(404).json({ message: 'Leave request not found' });
     if (leave.status !== 'pending') return res.status(400).json({ message: 'This leave request was already reviewed.' });
+
+    if (decision === 'approved') {
+      const availability = await assertLeaveDaysAvailable(
+        organizationId,
+        leave.userId,
+        leave.type,
+        leave.startDate,
+        leave.endDate,
+        leave.id
+      );
+      if (!availability.ok) return res.status(400).json({ message: availability.message });
+    }
 
     const updated = await prisma.leaveRequest.update({
       where: { id: leave.id },
@@ -173,6 +255,95 @@ export const decideLeave = async (req: Request, res: Response) => {
     res.json(toLeave(updated));
   } catch (err) {
     res.status(400).json({ message: 'Failed to update leave request', error: (err as Error).message });
+  }
+};
+
+export const listHrLeaveQuotas = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
+
+    const staffUsers = await prisma.user.findMany({
+      where: {
+        organizationId,
+        role: { in: [...ASSIGNABLE_STAFF_ROLES] },
+        blocked: false,
+      },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    const userIds = staffUsers.map((user) => user.id);
+    const [quotas, leaves] = await Promise.all([
+      prisma.leaveQuota.findMany({ where: { organizationId, userId: { in: userIds } } }),
+      prisma.leaveRequest.findMany({
+        where: { organizationId, userId: { in: userIds } },
+      }),
+    ]);
+
+    const quotaByUser = new Map(quotas.map((quota) => [quota.userId, quota]));
+    const leavesByUser = new Map<string, typeof leaves>();
+    leaves.forEach((leave) => {
+      const rows = leavesByUser.get(leave.userId) || [];
+      rows.push(leave);
+      leavesByUser.set(leave.userId, rows);
+    });
+
+    const year = new Date().getUTCFullYear();
+    const employees = staffUsers.map((user) => {
+      const quota = quotaByUser.get(user.id) || null;
+      const allowances = quotasForUser(quota);
+      const balance = buildLeaveBalance(
+        allowances,
+        leavesByUser.get(user.id) || [],
+        year
+      );
+      return {
+        user,
+        quotas: allowances,
+        balance: balance.types,
+      };
+    });
+
+    res.json({ year, defaults: DEFAULT_LEAVE_QUOTAS, employees });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load leave quotas', error: (err as Error).message });
+  }
+};
+
+export const upsertHrLeaveQuota = async (req: Request, res: Response) => {
+  try {
+    const organizationId = orgId(req);
+    if (!organizationId) return res.status(403).json({ message: 'Account is not linked to an organisation.' });
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: req.params.userId,
+        organizationId,
+        role: { in: [...ASSIGNABLE_STAFF_ROLES] },
+        blocked: false,
+      },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    if (!user) return res.status(404).json({ message: 'Employee not found' });
+
+    const parsed = allowancePayload(req.body);
+    if ('error' in parsed) return res.status(400).json({ message: parsed.error });
+
+    const quota = await prisma.leaveQuota.upsert({
+      where: { userId: user.id },
+      create: { organizationId, userId: user.id, ...parsed },
+      update: parsed,
+    });
+
+    const balance = await getLeaveBalanceForUser(organizationId, user.id);
+    res.json({
+      user,
+      quotas: quotasForUser(quota),
+      balance,
+    });
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to save leave quota', error: (err as Error).message });
   }
 };
 

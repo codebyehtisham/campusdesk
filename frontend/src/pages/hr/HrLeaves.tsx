@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { signOutStaff } from '../../auth/staffSession';
 import { HR_PORTAL_BASE } from '../../admin/paths';
+import { leaveStatusClass } from '../leave/leaveShared';
 
 const staffReq = { authScope: 'staff' };
 
@@ -12,8 +12,6 @@ export default function HrLeaves() {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState('');
 
   const load = async () => {
     try {
@@ -30,28 +28,16 @@ export default function HrLeaves() {
   };
 
   useEffect(() => {
+    setLoading(true);
     load();
   }, [filter]);
-
-  const decide = async (id, decision) => {
-    setSaving(true);
-    try {
-      await api.put(`/staff/hr/leaves/${id}/decision`, { decision }, staffReq);
-      setNotice(decision === 'approved' ? 'Leave approved.' : 'Leave rejected.');
-      await load();
-    } catch (err) {
-      setNotice(err.response?.data?.message || 'Could not update leave request.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div>
       <div className="mb-8">
         <span className="eyebrow">HR</span>
         <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Leave requests</h1>
-        <p className="m-0 max-w-2xl text-text-muted">Review and approve or reject employee leave submissions.</p>
+        <p className="m-0 max-w-2xl text-text-muted">Open a request to review balances, see leave history, and approve or reject.</p>
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -79,7 +65,11 @@ export default function HrLeaves() {
       ) : (
         <div className="grid gap-3">
           {items.map((item) => (
-            <article key={item.id} className="glass rounded-[1.4rem] p-5">
+            <Link
+              key={item.id}
+              to={`${HR_PORTAL_BASE}/leaves/${item.id}`}
+              className="glass block rounded-[1.4rem] p-5 no-underline text-inherit transition hover:shadow-[0_12px_32px_rgba(26,79,214,0.08)]"
+            >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h3 className="m-0">{item.user?.name || 'Employee'}</h3>
@@ -88,31 +78,14 @@ export default function HrLeaves() {
                   </p>
                   {item.reason ? <p className="m-0 mt-2 text-sm">{item.reason}</p> : null}
                 </div>
-                {item.status === 'pending' ? (
-                  <div className="flex gap-2">
-                    <button type="button" className="btn btn-primary py-2 text-sm" disabled={saving} onClick={() => decide(item.id, 'approved')}>
-                      Approve
-                    </button>
-                    <button type="button" className="btn btn-outline py-2 text-sm" disabled={saving} onClick={() => decide(item.id, 'rejected')}>
-                      Reject
-                    </button>
-                  </div>
-                ) : (
-                  <span className="rounded-full bg-bg-alt px-3 py-1 text-xs font-bold capitalize">{item.status}</span>
-                )}
+                <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${leaveStatusClass(item.status)}`}>
+                  {item.status}
+                </span>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       )}
-
-      <AnimatePresence>
-        {notice ? (
-          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed right-5 bottom-5 z-50 m-0 rounded-2xl bg-cardinal px-4 py-3 text-sm font-bold text-white">
-            {notice}
-          </motion.p>
-        ) : null}
-      </AnimatePresence>
     </div>
   );
 }
