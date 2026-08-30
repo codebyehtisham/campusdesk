@@ -21,6 +21,7 @@ export default function PlatformOrganizations() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [filter, setFilter] = useState('active');
 
   const kickOut = () => {
     signOutPlatform();
@@ -51,6 +52,12 @@ export default function PlatformOrganizations() {
 
   const liveDepartments = departments.filter((item) => item.active);
   const selectedScheme = schemes.find((item) => item.slug === form.kind);
+  const visibleOrgs = orgs.filter((org) => {
+    if (filter === 'all') return true;
+    if (filter === 'archived') return org.status === 'archived';
+    if (filter === 'suspended') return org.status === 'suspended';
+    return org.status === 'active';
+  });
 
   const applyScheme = (kind) => {
     const scheme = schemes.find((item) => item.slug === kind);
@@ -119,19 +126,36 @@ export default function PlatformOrganizations() {
         }
       />
       <Banner>{error}</Banner>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {[
+          { id: 'active', label: 'Active' },
+          { id: 'suspended', label: 'Suspended' },
+          { id: 'archived', label: 'Archived' },
+          { id: 'all', label: 'All' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`pc-chip ${filter === tab.id ? 'is-on' : ''}`}
+            onClick={() => setFilter(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
       {loading ? (
         <div className="pc-panel p-10 text-center">Loading tenants…</div>
-      ) : orgs.length === 0 ? (
+      ) : visibleOrgs.length === 0 ? (
         <div className="pc-panel p-10 text-center">
-          <h3>No tenants yet</h3>
-          <p className="mb-6">Provision a campus, pick departments, then create their admin account.</p>
+          <h3>No tenants in this view</h3>
+          <p className="mb-6">Try another filter or provision a new campus.</p>
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             Provision the first tenant
           </button>
         </div>
       ) : (
         <div className="pc-tenant-grid">
-          {orgs.map((org) => {
+          {visibleOrgs.map((org) => {
             const names = deptNamesForOrg(org, departments);
             const fallback = departments.filter((dept) => deptEnabled(org, dept)).map((dept) => dept.name);
             const labels = names.length ? names : fallback;

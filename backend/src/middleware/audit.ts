@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db.js';
+import { recordApiCall } from '../lib/usageMetering.js';
 import type { Prisma } from '@prisma/client';
 
 const SECRET_KEYS = /^(password|currentpassword|newpassword|confirmpassword|token|authorization|cookie|set-cookie)$/i;
@@ -200,6 +201,7 @@ export const audit = (req: Request, res: Response, next: NextFunction) => {
 
     lookupLocation(ip)
       .then((location) => prisma.auditLog.create({ data: { ...payload, location: jsonValue(location) } }))
+      .then(() => recordApiCall(orgId))
       .catch((err) => console.error('[audit] failed to persist log:', (err as Error).message));
   });
 

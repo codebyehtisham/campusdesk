@@ -6,6 +6,7 @@ import {
   IconCard,
   IconDashboard,
   IconKey,
+  IconLayers,
   IconPulse,
   IconSwitches,
 } from '../../components/nav/ConsoleIcons';
@@ -23,6 +24,8 @@ const GROUPS = [
     title: 'Operations',
     items: [
       { to: `${SUPER_BASE}/billing`, label: 'Billing', icon: IconCard },
+      { to: `${SUPER_BASE}/usage`, label: 'Usage', icon: IconPulse },
+      { to: `${SUPER_BASE}/feature-flags`, label: 'Feature flags', icon: IconLayers },
       { to: `${SUPER_BASE}/audit`, label: 'Traffic', icon: IconPulse },
       { to: `${SUPER_BASE}/settings`, label: 'Access', icon: IconKey },
     ],

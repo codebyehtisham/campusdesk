@@ -26,6 +26,7 @@ enum OrgKind {
 enum OrgStatus {
   active
   suspended
+  archived
 }
 
 enum ApplicationStatus {
@@ -59,6 +60,7 @@ model Organization {
   suspendOnOverdue Boolean @default(false)
   notes     String     @default("")
   theme     Json
+  archivedAt DateTime?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
@@ -67,6 +69,9 @@ model Organization {
   careers      Career[]
   settings     Setting?
   auditLogs    AuditLog[]
+  platformEvents     PlatformEvent[]
+  usageSnapshots     TenantUsageSnapshot[]
+  featureOverrides   OrgFeatureOverride[]
   faculty      Faculty[]
   courses      Course[]
   news         News[]
@@ -304,6 +309,62 @@ model AuditLog {
   @@index([url])
   @@index([createdAt])
   @@index([organizationId])
+}
+
+model PlatformEvent {
+  id             String        @id @default(uuid())
+  action         String
+  actorId        String?
+  actorEmail     String        @default("")
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  metadata       Json          @default("{}")
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model FeatureFlag {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  name            String
+  description     String   @default("")
+  enabled         Boolean  @default(false)
+  rolloutPercent  Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  overrides       OrgFeatureOverride[]
+}
+
+model OrgFeatureOverride {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  featureFlagId  String
+  featureFlag    FeatureFlag  @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+  enabled        Boolean
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, featureFlagId])
+  @@index([organizationId])
+}
+
+model TenantUsageSnapshot {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periodDate     DateTime     @db.Date
+  apiCalls       Int          @default(0)
+  seatCount      Int          @default(0)
+  storageBytes   BigInt       @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, periodDate])
+  @@index([organizationId])
+  @@index([periodDate])
 }
 
 model AttendancePerson {

@@ -27,6 +27,9 @@ export const overdueOrgIds = async (organizationIds?: string[]) => {
 export const resolveServiceLock = async (org: Organization | null | undefined) => {
   if (!org) return { locked: false, reason: null as string | null, overdue: false };
   const overdue = (await overdueOrgIds([org.id])).has(org.id);
+  if (org.status === 'archived') {
+    return { locked: true, reason: 'archived', overdue };
+  }
   if (org.status !== 'active') {
     return { locked: true, reason: 'suspended', overdue };
   }

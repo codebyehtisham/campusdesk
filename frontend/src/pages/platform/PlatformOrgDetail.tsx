@@ -5,6 +5,7 @@ import { signOutPlatform } from '../../auth/platformSession';
 import { SUPER_BASE, ORG_ADMIN_BASE } from '../../admin/paths';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
 import ThemeStudio from './ThemeStudio';
+import { TenantFeatureFlagsPanel, TenantLifecyclePanel, TenantUsagePanel } from './TenantOpsPanels';
 import { DEFAULT_THEME, normalizeTheme } from '../../theme/catalog';
 import { deptEnabled } from './catalog';
 import { BarChart } from './BarChart';
@@ -370,6 +371,10 @@ export default function PlatformOrgDetail() {
           </div>
         </div>
       </section>
+
+      <TenantLifecyclePanel orgId={id} status={org.status} slug={org.slug} name={org.name} onChanged={load} />
+      <TenantUsagePanel orgId={id} />
+      <TenantFeatureFlagsPanel orgId={id} />
 
       <section className="mb-6">
         <h2>Departments</h2>

@@ -20,6 +20,7 @@ import { sanitizeTheme } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
 import { getScheme, parseOrgKind, publicSchemes, seedOrgUnits } from '../lib/schemes.js';
 import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
+import { logPlatformEvent } from '../lib/platformEvents.js';
 
 const backendVersion = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../package.json'), 'utf8')
@@ -67,6 +68,7 @@ const toOrg = (doc: Organization, adminCount = 0) => ({
   notes: doc.notes || '',
   theme: sanitizeTheme(doc.theme),
   adminCount,
+  archivedAt: doc.archivedAt,
   createdAt: doc.createdAt,
 });
 
@@ -345,7 +347,8 @@ export const listOrganizations = async (_req: Request, res: Response) => {
       orgs.map((org) => ({
         ...toOrg(org, countMap[org.id] || 0),
         overdue: overdue.has(org.id),
-        servicesLocked: org.status !== 'active' || (org.suspendOnOverdue && overdue.has(org.id)),
+        servicesLocked:
+          org.status !== 'active' || (org.suspendOnOverdue && overdue.has(org.id)),
       }))
     );
   } catch (err) {
@@ -396,6 +399,7 @@ export const createOrganization = async (req: Request, res: Response) => {
     if (kind === 'education') {
       await ensureOrgProgrammes(org.id);
     }
+    await logPlatformEvent('tenant.provisioned', req.user, org.id, { slug: org.slug, kind });
     await bustOrgCache();
     res.status(201).json(toOrg(org, 0));
   } catch (err) {
@@ -424,7 +428,16 @@ export const updateOrganization = async (req: Request, res: Response) => {
         slug: req.body.slug ? toSlug(req.body.slug) : undefined,
         email: req.body.email != null ? String(req.body.email).trim().toLowerCase() : undefined,
         phone: req.body.phone != null ? String(req.body.phone).trim() : undefined,
-        status: req.body.status === 'active' || req.body.status === 'suspended' ? req.body.status : undefined,
+        status:
+          req.body.status === 'active' || req.body.status === 'suspended' || req.body.status === 'archived'
+            ? req.body.status
+            : undefined,
+        archivedAt:
+          req.body.status === 'archived'
+            ? org.archivedAt || new Date()
+            : req.body.status === 'active' || req.body.status === 'suspended'
+              ? null
+              : undefined,
         notes: req.body.notes != null ? String(req.body.notes).trim() : undefined,
         kind: req.body.kind != null ? parseOrgKind(req.body.kind) : undefined,
         ...(entitlementsTouched ? { departments: pack.departments, modules: pack.modules } : {}),

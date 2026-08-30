@@ -39,6 +39,8 @@ import PlatformModules from './pages/platform/PlatformModules';
 import PlatformBilling from './pages/platform/PlatformBilling';
 import PlatformPassword from './pages/platform/PlatformPassword';
 import PlatformAudit from './pages/platform/PlatformAudit';
+import PlatformFeatureFlags from './pages/platform/PlatformFeatureFlags';
+import PlatformUsage from './pages/platform/PlatformUsage';
 import ApplyHome from './pages/ApplyHome';
 import Apply from './pages/Apply';
 import StudentLogin from './pages/StudentLogin';
@@ -67,6 +69,8 @@ function App() {
             <Route path="organizations/:id" element={<PlatformOrgDetail />} />
             <Route path="modules" element={<PlatformModules />} />
             <Route path="billing" element={<PlatformBilling />} />
+            <Route path="usage" element={<PlatformUsage />} />
+            <Route path="feature-flags" element={<PlatformFeatureFlags />} />
             <Route path="audit" element={<PlatformAudit />} />
             <Route path="settings" element={<PlatformPassword />} />
             <Route path="*" element={<Navigate to={`${SUPER_BASE}/dashboard`} replace />} />

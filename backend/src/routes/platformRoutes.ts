@@ -19,6 +19,22 @@ import {
 } from '../controllers/platformController.js';
 import { listPlatformAudit, getPlatformAudit } from '../controllers/auditController.js';
 import {
+  suspendOrganization,
+  activateOrganization,
+  archiveOrganization,
+  cloneOrganization,
+  listOrganizationEvents,
+  getOrganizationUsage,
+  listUsageFleet,
+} from '../controllers/platformLifecycleController.js';
+import {
+  getFeatureFlags,
+  createFeatureFlag,
+  updateFeatureFlag,
+  listOrgFeatureFlags,
+  setOrgFeatureOverride,
+} from '../controllers/featureFlagController.js';
+import {
   listPlans,
   getBillingOverview,
   getOrgBilling,
@@ -50,6 +66,18 @@ router.put('/organizations/:id', ...gate, updateOrganization);
 router.post('/organizations/:id/admins', ...gate, createOrgAdmin);
 router.put('/organizations/:id/admins/:adminId/block', ...gate, setOrgAdminBlocked);
 router.put('/organizations/:id/admins/:adminId/password', ...gate, setOrgAdminPassword);
+router.post('/organizations/:id/suspend', ...gate, suspendOrganization);
+router.post('/organizations/:id/activate', ...gate, activateOrganization);
+router.post('/organizations/:id/archive', ...gate, archiveOrganization);
+router.post('/organizations/:id/clone', ...gate, cloneOrganization);
+router.get('/organizations/:id/events', ...gate, listOrganizationEvents);
+router.get('/organizations/:id/usage', ...gate, getOrganizationUsage);
+router.get('/organizations/:id/feature-flags', ...gate, listOrgFeatureFlags);
+router.put('/organizations/:id/feature-flags/:key', ...gate, setOrgFeatureOverride);
+router.get('/usage', ...gate, listUsageFleet);
+router.get('/feature-flags', ...gate, getFeatureFlags);
+router.post('/feature-flags', ...gate, createFeatureFlag);
+router.put('/feature-flags/:id', ...gate, updateFeatureFlag);
 router.get('/plans', ...gate, listPlans);
 router.get('/billing', ...gate, getBillingOverview);
 router.get('/organizations/:id/billing', ...gate, getOrgBilling);
