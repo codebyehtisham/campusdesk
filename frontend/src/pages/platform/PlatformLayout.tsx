@@ -1,9 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SUPER_BASE } from '../../admin/paths';
 import { getPlatform, signOutPlatform } from '../../auth/platformSession';
-import CampusDeskMark from '../../components/CampusDeskMark';
 import PlatformSidebar from './PlatformSidebar';
+import { AnimatePresence, LiveClock, PageEnter, PxBackdrop } from './motion';
+import { Pulse } from './ui';
+
+const ROUTE_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  organizations: 'Tenants',
+  modules: 'Catalog',
+  billing: 'Billing',
+  audit: 'Traffic',
+  settings: 'Access',
+};
+
+function breadcrumb(pathname: string) {
+  const segment = pathname.replace(`${SUPER_BASE}/`, '').split('/')[0] || 'dashboard';
+  return ROUTE_LABELS[segment] || 'Console';
+}
 
 export function RequirePlatform() {
   const account = getPlatform();
@@ -15,11 +30,12 @@ export default function PlatformLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [account, setAccount] = useState(() => getPlatform());
-  const [open, setOpen] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const page = useMemo(() => breadcrumb(location.pathname), [location.pathname]);
 
   useEffect(() => {
     setAccount(getPlatform());
-    setOpen(false);
+    setDrawer(false);
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -29,56 +45,59 @@ export default function PlatformLayout() {
   };
 
   return (
-    <div className="staff-shell platform-shell min-h-svh bg-bg-alt">
-      <div className="noise" aria-hidden="true" />
-      <div className="relative z-1 flex min-h-svh w-full">
-        <aside
-          className={`staff-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
-            open ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <PlatformSidebar
-            email={account?.email}
-            name={account?.name}
-            onNavigate={() => setOpen(false)}
-            onSignOut={handleSignOut}
-          />
-        </aside>
+    <div className="platform-console platform-shell">
+      <PxBackdrop />
+      <div className="px-shell">
+        <PlatformSidebar
+          email={account?.email}
+          name={account?.name}
+          onNavigate={() => setDrawer(false)}
+          onSignOut={handleSignOut}
+        />
 
-        {open ? (
-          <button
-            type="button"
-            className="staff-mobile-scrim fixed inset-0 z-30 backdrop-blur-sm md:hidden"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          />
+        {drawer ? (
+          <div className="px-mobile-drawer">
+            <button type="button" className="flex-1" aria-label="Close menu" onClick={() => setDrawer(false)} />
+            <aside>
+              <PlatformSidebar
+                mobile
+                email={account?.email}
+                name={account?.name}
+                onNavigate={() => setDrawer(false)}
+                onSignOut={handleSignOut}
+              />
+            </aside>
+          </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-bg/95 px-5 py-3 backdrop-blur-xl md:px-8 lg:px-10">
-            <button
-              type="button"
-              className="rounded-full border border-border px-3 py-2 text-sm font-semibold text-ink md:hidden"
-              onClick={() => setOpen(true)}
-            >
-              Menu
-            </button>
-            <div className="hidden min-w-0 items-center gap-2 md:flex">
-              <CampusDeskMark size={28} />
-              <p className="m-0 truncate text-sm font-semibold text-ink">Campus Desk Platform</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden rounded-full border border-border bg-paper px-3 py-1 text-xs font-semibold text-text-muted sm:inline">
-                Super admin
-              </span>
-              <button type="button" className="btn btn-outline py-2.5 text-sm max-md:hidden" onClick={handleSignOut}>
-                Sign out
+        <div className="px-stage">
+          <header className="px-command-bar">
+            <div className="px-command-left">
+              <button type="button" className="px-mobile-menu" onClick={() => setDrawer(true)}>
+                Menu
               </button>
+              <p className="px-breadcrumb">
+                campus desk / <strong>{page}</strong>
+              </p>
+              <span className="px-command-status max-sm:hidden">
+                <Pulse on tone="live" />
+                Online
+              </span>
+            </div>
+            <div className="px-command-right">
+              <span className="px-command-clock max-md:hidden">
+                <LiveClock />
+              </span>
+              <span className="px-command-chip max-sm:hidden">Super admin</span>
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-8 md:px-8 md:py-10 lg:px-10">
-            <Outlet />
+          <main className="px-main">
+            <AnimatePresence mode="wait">
+              <PageEnter key={location.pathname}>
+                <Outlet />
+              </PageEnter>
+            </AnimatePresence>
           </main>
         </div>
       </div>

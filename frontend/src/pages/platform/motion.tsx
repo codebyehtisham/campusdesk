@@ -3,22 +3,108 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 export const ease = [0.22, 1, 0.36, 1] as const;
+export const easeOut = [0.16, 1, 0.3, 1] as const;
 
 export const fadeUp = {
   hidden: { opacity: 0, y: 24, scale: 0.98 },
   show: { opacity: 1, y: 0, scale: 1 },
 };
 
+const NODES = [
+  { x: 18, y: 22, delay: 0 },
+  { x: 72, y: 18, delay: 0.4 },
+  { x: 48, y: 55, delay: 0.8 },
+  { x: 82, y: 68, delay: 1.1 },
+  { x: 28, y: 78, delay: 0.6 },
+];
+
 export function PlatformBackdrop() {
   const reduce = useReducedMotion();
   if (reduce) return null;
 
   return (
-    <div className="pc-backdrop pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+    <div className="pc-backdrop pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
       <div className="pc-orb pc-orb-a" />
       <div className="pc-orb pc-orb-b" />
       <div className="pc-orb pc-orb-c" />
       <div className="pc-grid-drift" />
+    </div>
+  );
+}
+
+export function PxBackdrop() {
+  const reduce = useReducedMotion();
+  if (reduce) return null;
+
+  return (
+    <div className="px-backdrop" aria-hidden="true">
+      <div className="px-backdrop-grid" />
+      <div className="px-backdrop-orb is-a" />
+      <div className="px-backdrop-orb is-b" />
+    </div>
+  );
+}
+
+export function PlatformLoginBackdrop() {
+  const reduce = useReducedMotion();
+  if (reduce) return <div className="platform-login-mesh" aria-hidden="true" />;
+
+  return (
+    <div className="platform-login-mesh" aria-hidden="true">
+      <div className="platform-login-grid" />
+      {NODES.map((node) => (
+        <motion.span
+          key={`${node.x}-${node.y}`}
+          className="platform-login-node"
+          style={{ left: `${node.x}%`, top: `${node.y}%` }}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 + node.delay, duration: 0.6, ease }}
+        />
+      ))}
+      <motion.div
+        className="platform-login-scan"
+        initial={{ y: '-100%' }}
+        animate={{ y: '200%' }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: 'linear', repeatDelay: 2 }}
+      />
+    </div>
+  );
+}
+
+export function RevealLines({
+  lines,
+  className = '',
+}: {
+  lines: { text: string; accent?: boolean }[];
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  if (reduce) {
+    return (
+      <div className={className}>
+        {lines.map((line) => (
+          <span key={line.text} className={line.accent ? 'text-white/95' : ''}>
+            {line.text}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {lines.map((line, i) => (
+        <motion.span
+          key={line.text}
+          className={`block ${line.accent ? 'platform-login-headline-accent' : ''}`}
+          initial={{ opacity: 0, y: 28, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ delay: 0.15 + i * 0.12, duration: 0.65, ease: easeOut }}
+        >
+          {line.text}
+        </motion.span>
+      ))}
     </div>
   );
 }
@@ -30,9 +116,10 @@ export function PageEnter({ children, className = '' }: { children: ReactNode; c
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease }}
+      initial={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
+      transition={{ duration: 0.42, ease }}
     >
       {children}
     </motion.div>
@@ -50,7 +137,7 @@ export function StaggerGrid({ children, className = '', delay = 0 }: { children:
       animate="show"
       variants={{
         hidden: {},
-        show: { transition: { staggerChildren: 0.07, delayChildren: delay } },
+        show: { transition: { staggerChildren: 0.08, delayChildren: delay } },
       }}
     >
       {children}
@@ -66,8 +153,8 @@ export function StaggerCard({ children, className = '' }: { children: ReactNode;
     <motion.div
       className={className}
       variants={fadeUp}
-      transition={{ duration: 0.45, ease }}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.5, ease }}
+      whileHover={{ y: -5, scale: 1.01, transition: { duration: 0.22 } }}
     >
       {children}
     </motion.div>

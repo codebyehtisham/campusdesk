@@ -190,7 +190,7 @@ export function Panel({ children, className = '', title, action }: { children: R
     <motion.section
       className={`pc-panel pc-glow-panel ${className}`}
       initial={false}
-      whileHover={reduce ? undefined : { borderColor: 'rgba(109, 147, 255, 0.28)' }}
+      whileHover={reduce ? undefined : { borderColor: 'rgba(45, 212, 191, 0.28)' }}
     >
       {(title || action) && (
         <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">

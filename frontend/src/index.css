@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './styles/platform-console.css';
 
 @theme {
   /* Campus Desk product palette — matches teal icon mark */
@@ -3233,8 +3234,8 @@ html:has(.platform-shell),
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(109, 147, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(109, 147, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(15, 92, 92, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 92, 92, 0.05) 1px, transparent 1px);
   background-size: 52px 52px;
   animation: pc-grid-pan 40s linear infinite;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent);
@@ -4605,7 +4606,441 @@ html:has(.platform-shell),
   .platform-shell .pc-hero::after,
   .platform-shell .pc-shimmer,
   .platform-shell .pc-login-glow::before,
-  .platform-shell .pc-table-row-animated {
+  .platform-shell .pc-table-row-animated,
+  .platform-login-mesh,
+  .platform-login-scan,
+  .platform-login-node,
+  .platform-dash-banner::after,
+  .platform-shell .pc-dash-mesh,
+  .platform-shell .pc-dash-orb {
     animation: none !important;
   }
+}
+
+/* —— Platform super-admin login (distinct from org admin) —— */
+.platform-login {
+  display: grid;
+  min-height: 100svh;
+  background: #f4f7f6;
+}
+
+@media (min-width: 1024px) {
+  .platform-login {
+    grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+  }
+}
+
+.platform-login-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+  color: #ecfdf5;
+  background:
+    radial-gradient(520px 280px at 12% 8%, rgba(94, 234, 212, 0.22), transparent 58%),
+    radial-gradient(480px 260px at 88% 92%, rgba(251, 191, 36, 0.12), transparent 55%),
+    linear-gradient(155deg, #042f2e 0%, #0f5c5c 38%, #0d9488 72%, #115e59 100%);
+}
+
+.platform-login-mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.platform-login-grid {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: platform-grid-drift 32s linear infinite;
+  mask-image: radial-gradient(ellipse 75% 65% at 40% 45%, black, transparent);
+}
+
+.platform-login-node {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.95);
+  box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.12), 0 0 24px rgba(94, 234, 212, 0.45);
+  animation: platform-node-pulse 3.2s ease-in-out infinite;
+}
+
+.platform-login-node:nth-child(odd) {
+  animation-delay: 0.8s;
+}
+
+.platform-login-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, transparent, rgba(94, 234, 212, 0.08), transparent);
+  pointer-events: none;
+}
+
+.platform-login-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  min-height: 100%;
+}
+
+.platform-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.platform-login-brand strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.platform-login-brand span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(236, 253, 245, 0.65);
+}
+
+.platform-login-mark {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
+}
+
+.platform-login .pc-pulse {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.platform-login .pc-pulse-live {
+  background: #5eead4;
+}
+
+.platform-login .pc-pulse-live::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1px solid #5eead4;
+  animation: pc-ping 1.8s ease-out infinite;
+  opacity: 0.7;
+}
+
+.platform-login .pc-pulse-warn {
+  background: #fbbf24;
+}
+
+.platform-login-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(236, 253, 245, 0.9);
+}
+
+.platform-login-headline {
+  margin: 0;
+  max-width: 12ch;
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4.5vw, 3.15rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.platform-login-headline-accent {
+  background: linear-gradient(115deg, #fff 0%, #99f6e4 55%, #5eead4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.platform-login-lead {
+  margin: 1.1rem 0 0;
+  max-width: 36ch;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(236, 253, 245, 0.78);
+}
+
+.platform-login-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin: 1.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.platform-login-features li {
+  position: relative;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: rgba(236, 253, 245, 0.88);
+}
+
+.platform-login-features li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #5eead4;
+  box-shadow: 0 0 10px rgba(94, 234, 212, 0.6);
+}
+
+.platform-login-ticker {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(236, 253, 245, 0.55);
+}
+
+.platform-login-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.platform-login-panel-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(360px 200px at 80% 10%, rgba(15, 92, 92, 0.08), transparent 60%),
+    radial-gradient(280px 180px at 10% 90%, rgba(251, 191, 36, 0.06), transparent 55%);
+  pointer-events: none;
+}
+
+.platform-login-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 26rem);
+  border-radius: 1.35rem;
+  border: 1px solid rgba(15, 92, 92, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  padding: clamp(1.35rem, 3vw, 1.85rem);
+  box-shadow:
+    0 24px 60px rgba(15, 92, 92, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  backdrop-filter: blur(16px);
+}
+
+.platform-login-card-glow {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(15, 92, 92, 0.55), rgba(94, 234, 212, 0.35), rgba(251, 191, 36, 0.25));
+  opacity: 0.55;
+  filter: blur(12px);
+  animation: pc-border-glow 4s ease-in-out infinite;
+}
+
+.platform-login-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #92400e;
+}
+
+.platform-login-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.platform-login-sub {
+  margin: 0 0 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.platform-login-field {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.platform-login-field:focus {
+  border-color: rgba(15, 92, 92, 0.45);
+  box-shadow: 0 0 0 3px rgba(15, 92, 92, 0.12);
+}
+
+.platform-login-submit {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-login-submit:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: platform-btn-shimmer 3.5s ease-in-out infinite;
+}
+
+.platform-login-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.platform-login-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: platform-spin 0.7s linear infinite;
+}
+
+/* Platform shell layout polish */
+.platform-shell .platform-rail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 120% 40% at 0% 0%, rgba(255, 255, 255, 0.1), transparent 55%);
+  pointer-events: none;
+}
+
+.platform-shell .platform-rail {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-shell .platform-topbar {
+  border-bottom-color: rgba(15, 92, 92, 0.12);
+}
+
+.platform-shell .platform-badge {
+  animation: platform-badge-glow 3s ease-in-out infinite;
+}
+
+.platform-shell .platform-main {
+  isolation: isolate;
+}
+
+.platform-shell .platform-dash-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.18) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: platform-banner-sweep 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.platform-shell .pc-dash-mesh {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+  animation: platform-grid-drift 24s linear infinite;
+  mask-image: radial-gradient(ellipse 80% 80% at 70% 30%, black, transparent);
+}
+
+.platform-shell .pc-dash-orb {
+  animation: platform-orb-float 6s ease-in-out infinite;
+}
+
+.platform-shell .pc-dash-orb.is-2 {
+  animation: platform-orb-float 7.5s ease-in-out infinite reverse;
+}
+
+.platform-shell .pc-dash-orb.is-3 {
+  right: 1.2rem;
+  top: 3.8rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  opacity: 0.45;
+  animation: platform-orb-float 5s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+@keyframes platform-grid-drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(48px, 48px); }
+}
+
+@keyframes platform-node-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
+@keyframes platform-btn-shimmer {
+  0%, 70%, 100% { transform: translateX(-120%); }
+  85% { transform: translateX(120%); }
+}
+
+@keyframes platform-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes platform-badge-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(15, 92, 92, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(15, 92, 92, 0.08); }
+}
+
+@keyframes platform-banner-sweep {
+  0%, 65%, 100% { transform: translateX(-120%); }
+  80% { transform: translateX(120%); }
+}
+
+@keyframes platform-orb-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.03); }
 }

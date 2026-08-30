@@ -58,51 +58,13 @@ function pingTone(ms, up) {
 }
 
 const ACTIONS = [
-  {
-    to: `${SUPER_BASE}/organizations`,
-    label: 'Provision tenant',
-    hint: 'Spin up a campus or hospital org',
-    icon: IconBuildings,
-    tone: 'primary',
-  },
-  {
-    to: `${SUPER_BASE}/organizations`,
-    label: 'Manage tenants',
-    hint: 'Lock, theme, admins, modules',
-    icon: IconBuildings,
-    tone: 'default',
-  },
-  {
-    to: `${SUPER_BASE}/modules`,
-    label: 'Catalog',
-    hint: 'Departments & sellable modules',
-    icon: IconSwitches,
-    tone: 'default',
-  },
-  {
-    to: `${SUPER_BASE}/billing`,
-    label: 'Billing',
-    hint: 'MRR, invoices, past due',
-    icon: IconCard,
-    tone: 'default',
-  },
-  {
-    to: `${SUPER_BASE}/audit`,
-    label: 'Traffic log',
-    hint: 'API requests & error traces',
-    icon: IconPulse,
-    tone: 'default',
-  },
-  {
-    to: `${SUPER_BASE}/settings`,
-    label: 'Operator access',
-    hint: 'Rotate platform password',
-    icon: IconKey,
-    tone: 'default',
-  },
+  { to: `${SUPER_BASE}/organizations`, label: 'Provision tenant', hint: 'Spin up a new campus', icon: IconBuildings, primary: true },
+  { to: `${SUPER_BASE}/organizations`, label: 'Manage tenants', hint: 'Lock, theme, modules', icon: IconBuildings },
+  { to: `${SUPER_BASE}/modules`, label: 'Module catalog', hint: 'Departments & SKUs', icon: IconSwitches },
+  { to: `${SUPER_BASE}/billing`, label: 'Billing', hint: 'MRR & invoices', icon: IconCard },
+  { to: `${SUPER_BASE}/audit`, label: 'Traffic log', hint: 'API & errors', icon: IconPulse },
+  { to: `${SUPER_BASE}/settings`, label: 'Operator access', hint: 'Rotate password', icon: IconKey },
 ];
-
-const KPI_TONES = ['teal', 'amber', 'mint', 'rose', 'sky', 'violet'] as const;
 
 export default function PlatformDashboard() {
   const navigate = useNavigate();
@@ -153,79 +115,51 @@ export default function PlatformDashboard() {
   const upCount = services.filter((s) => s.status === 'up').length;
   const healthPct = Math.round((upCount / Math.max(services.length, 1)) * 100);
 
-  const kpis = [
-    {
-      label: 'Total revenue',
-      value: formatMoney(billing.totalPaidCents, billing.currency),
-      hint: 'Paid invoices',
-      icon: IconCard,
-      delta: '+revenue',
-    },
-    {
-      label: 'MRR',
-      value: formatMoney(billing.mrrCents, billing.currency),
-      hint: `${billing.activeSubscriptions} active`,
-      icon: IconPulse,
-      delta: 'Recurring',
-    },
+  const metrics = [
+    { label: 'Total revenue', value: formatMoney(billing.totalPaidCents, billing.currency), tag: 'Paid', icon: IconCard },
+    { label: 'MRR', value: formatMoney(billing.mrrCents, billing.currency), tag: `${billing.activeSubscriptions} subs`, icon: IconPulse },
     {
       label: 'Outstanding',
       value: formatMoney(billing.outstandingCents, billing.currency),
-      hint: billing.pastDue ? `${billing.pastDue} past due` : 'Open invoices',
+      tag: billing.pastDue ? `${billing.pastDue} past due` : 'Clear',
       icon: IconCard,
       warn: billing.outstandingCents > 0,
-      delta: billing.outstandingCents > 0 ? 'Due' : 'Clear',
     },
-    {
-      label: 'Tenants',
-      value: counts.organizations,
-      n: counts.organizations,
-      hint: 'Live orgs',
-      icon: IconBuildings,
-      delta: 'Fleet',
-    },
-    {
-      label: 'Students',
-      value: counts.applicants,
-      n: counts.applicants,
-      hint: 'Applicants',
-      icon: IconSwitches,
-      delta: 'Pipeline',
-    },
+    { label: 'Tenants', n: counts.organizations, tag: 'Fleet', icon: IconBuildings },
+    { label: 'Applicants', n: counts.applicants, tag: 'Pipeline', icon: IconSwitches },
     {
       label: 'Errors 24h',
-      value: traffic.errors24h,
       n: traffic.errors24h,
-      hint: `${traffic.last24h} requests`,
+      tag: `${traffic.last24h} req`,
       icon: IconPulse,
       warn: traffic.errors24h > 0,
-      delta: traffic.errors24h > 0 ? 'Watch' : 'Stable',
     },
   ];
 
   return (
-    <div className="pc-dash">
+    <div className="px-mission">
       <Banner>{error}</Banner>
 
       <motion.header
-        className="pc-dash-banner"
-        initial={{ opacity: 0, y: 14 }}
+        className="px-mission-hero"
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease }}
+        transition={{ duration: 0.5, ease }}
       >
-        <div className="pc-dash-banner-copy">
-          <p className="pc-dash-banner-kicker">Welcome back, operator</p>
-          <h1>Explore Campus Desk platform</h1>
-          <p>
-            Provision tenants, manage entitlements, and watch billing — redesigned control surface with your live stack.
+        <div>
+          <p className="px-mission-kicker">Mission control</p>
+          <h1>Fleet overview</h1>
+          <p className="px-mission-lead">
+            Live telemetry across tenants, billing, and infrastructure — provision orgs and ship modules from one dark
+            console.
           </p>
-          <div className="pc-dash-banner-actions">
-            <Link to={`${SUPER_BASE}/organizations`} className="pc-dash-banner-btn">
+          <div className="px-mission-actions">
+            <Link to={`${SUPER_BASE}/organizations`} className="px-mission-btn is-solid">
               Provision tenant
             </Link>
             <button
               type="button"
-              className={`pc-dash-banner-btn is-ghost ${refreshing ? 'is-spinning' : ''}`}
+              className="px-mission-btn"
               onClick={() => load(true)}
               disabled={loading || refreshing}
             >
@@ -233,67 +167,62 @@ export default function PlatformDashboard() {
             </button>
           </div>
         </div>
-        <div className="pc-dash-banner-art" aria-hidden="true">
-          <div className="pc-dash-orb" />
-          <div className="pc-dash-orb is-2" />
-          <div className={`pc-dash-banner-status ${allUp ? 'is-live' : 'is-warn'}`}>
+        <div className="px-mission-status">
+          <div className="px-mission-status-head">
             <Pulse on={allUp} tone={allUp ? 'live' : 'warn'} />
-            <div>
-              <strong>{allUp ? 'All systems nominal' : 'Attention required'}</strong>
-              <span>
-                {upCount}/{services.length} up · <LiveClock />
-              </span>
-            </div>
+            {allUp ? 'All systems nominal' : 'Attention required'}
           </div>
+          <p className="px-mission-status-meta">
+            {upCount}/{services.length} services up · uptime {formatUptime(data.uptime?.seconds)} · <LiveClock />
+          </p>
         </div>
       </motion.header>
 
-      <StaggerGrid className="pc-kpi-row">
-        {kpis.map((m, i) => (
+      <StaggerGrid className="px-bento">
+        {metrics.map((m) => (
           <StaggerCard key={m.label}>
-            <article className={`pc-kpi is-${KPI_TONES[i % KPI_TONES.length]} ${m.warn ? 'is-warn' : ''}`}>
-              <div className="pc-kpi-top">
-                <span className="pc-kpi-icon">
+            <article className={`px-metric ${m.warn ? 'is-warn' : ''}`}>
+              <div className="px-metric-top">
+                <span className="px-metric-icon">
                   <m.icon className="h-4 w-4" />
                 </span>
-                <span className="pc-kpi-delta">{m.delta}</span>
+                <span className="px-metric-tag">{m.tag}</span>
               </div>
-              <p className="pc-kpi-value">
+              <p className="px-metric-value">
                 {m.n != null ? <AnimatedNumber value={m.n} format={(v) => String(Math.round(v))} /> : m.value}
               </p>
-              <p className="pc-kpi-label">{m.label}</p>
-              <p className="pc-kpi-hint">{m.hint}</p>
-              <span className="pc-kpi-spark" aria-hidden="true" />
+              <p className="px-metric-label">{m.label}</p>
+              <span className="px-metric-glow" aria-hidden="true" />
             </article>
           </StaggerCard>
         ))}
       </StaggerGrid>
 
-      <div className="pc-ops-grid">
-        <section className="pc-ops-actions">
-          <div className="pc-section-head">
+      <div className="px-grid-2">
+        <section className="px-panel">
+          <div className="px-panel-head">
             <div>
-              <p className="pc-kicker m-0">Quick actions</p>
-              <h2 className="m-0">Operator moves</h2>
+              <p className="px-panel-kicker">Quick actions</p>
+              <h2>Operator moves</h2>
             </div>
           </div>
-          <div className="pc-action-grid">
+          <div className="px-action-list">
             {ACTIONS.map((action, i) => (
               <motion.div
                 key={action.label}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 + i * 0.04, duration: 0.35, ease }}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.04 * i, duration: 0.35, ease }}
               >
-                <Link to={action.to} className={`pc-action-card ${action.tone === 'primary' ? 'is-primary' : ''}`}>
-                  <span className="pc-action-icon">
-                    <action.icon />
+                <Link to={action.to} className={`px-action-item ${action.primary ? 'is-primary' : ''}`}>
+                  <span className="px-action-icon">
+                    <action.icon className="h-4 w-4" />
                   </span>
-                  <span className="pc-action-copy">
+                  <span className="px-action-copy">
                     <strong>{action.label}</strong>
                     <small>{action.hint}</small>
                   </span>
-                  <span className="pc-action-go" aria-hidden="true">
+                  <span className="px-action-go" aria-hidden="true">
                     →
                   </span>
                 </Link>
@@ -302,82 +231,82 @@ export default function PlatformDashboard() {
           </div>
         </section>
 
-        <aside className="pc-ops-side">
-          <section className="pc-glass-card">
-            <div className="pc-section-head is-tight">
-              <p className="pc-kicker m-0">Revenue</p>
-              <span className="pc-chip-mini">Monthly</span>
+        <div className="flex flex-col gap-3">
+          <section className="px-panel">
+            <div className="px-panel-head">
+              <div>
+                <p className="px-panel-kicker">Revenue</p>
+                <h3>Monthly</h3>
+              </div>
+              <span className="px-chip">MRR</span>
             </div>
             <BarChart data={billing.monthly || []} compact />
           </section>
 
-          <section className="pc-glass-card pc-project-card">
-            <div className="pc-section-head is-tight">
+          <section className="px-panel">
+            <div className="px-panel-head">
               <div>
-                <p className="pc-kicker m-0">Infrastructure</p>
-                <h3 className="m-0 mt-1">Campus Desk stack</h3>
+                <p className="px-panel-kicker">Infrastructure</p>
+                <h3>Stack health</h3>
               </div>
-              <span className="pc-chip-mini">v{versions.backend}</span>
+              <span className="px-chip">v{versions.backend}</span>
             </div>
-            <p className="pc-project-meta">
-              Release health · uptime {formatUptime(data.uptime?.seconds)}
-            </p>
-            <div className="pc-progress">
-              <div className="pc-progress-track">
-                <div className="pc-progress-fill" style={{ width: `${healthPct}%` }} />
+            <div className="px-progress">
+              <div className="px-progress-track">
+                <div className="px-progress-fill" style={{ width: `${healthPct}%` }} />
               </div>
               <span>{healthPct}%</span>
             </div>
-            <ul className="pc-infra-list">
+            <div className="flex flex-col gap-2">
               {services.map((service) => {
                 const up = service.status === 'up';
                 return (
-                  <li key={service.name} className={up ? 'is-up' : 'is-down'}>
-                    <div className="pc-infra-meta">
+                  <div key={service.name} className={`px-infra-row ${up ? '' : 'is-down'}`}>
+                    <span className="px-infra-name">
                       <Pulse on={up} tone={pingTone(service.latencyMs, up)} />
-                      <strong>{service.name}</strong>
-                    </div>
-                    <div className="pc-infra-ping">
-                      <span>
-                        {up && service.latencyMs != null ? `${Math.round(service.latencyMs)} ms` : up ? 'Up' : 'Down'}
-                      </span>
+                      {service.name}
+                    </span>
+                    <span className="px-infra-ping">
+                      {up && service.latencyMs != null ? `${Math.round(service.latencyMs)} ms` : up ? 'Up' : 'Down'}
                       <PingBar ms={service.latencyMs} up={up} />
-                    </div>
-                  </li>
+                    </span>
+                  </div>
                 );
               })}
-            </ul>
-            <p className="pc-infra-foot">RSS {memory.rssMb} MB · Node {versions.node}</p>
+            </div>
+            <p className="m-0 mt-3 font-mono text-[0.62rem] text-text-muted">
+              RSS {memory.rssMb} MB · Node {versions.node}
+            </p>
           </section>
-        </aside>
+        </div>
       </div>
 
       {data.recent?.length > 0 && (
-        <section className="pc-glass-card pc-recent">
-          <div className="pc-section-head">
+        <section className="px-panel">
+          <div className="px-panel-head">
             <div>
-              <p className="pc-kicker m-0">Fleet</p>
-              <h2 className="m-0">Recent tenants</h2>
+              <p className="px-panel-kicker">Fleet</p>
+              <h2>Recent tenants</h2>
             </div>
-            <Link to={`${SUPER_BASE}/organizations`} className="pc-text-link">
+            <Link to={`${SUPER_BASE}/organizations`} className="px-link">
               View all →
             </Link>
           </div>
-          <div className="pc-tenant-strip">
+          <div className="px-tenant-grid">
             {data.recent.slice(0, 6).map((org, i) => (
               <motion.div
                 key={org.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04, duration: 0.3, ease }}
               >
-                <Link to={`${SUPER_BASE}/organizations/${org.id}`} className="pc-tenant-tile">
-                  <span className="pc-tenant-mark">{String(org.name || '?').slice(0, 2).toUpperCase()}</span>
-                  <span className="pc-tenant-copy">
+                <Link to={`${SUPER_BASE}/organizations/${org.id}`} className="px-tenant-card">
+                  <span className="px-tenant-avatar">{String(org.name || '?').slice(0, 2).toUpperCase()}</span>
+                  <span className="px-tenant-meta">
                     <strong>{org.name}</strong>
                     <small>{org.slug}</small>
                   </span>
-                  <span className={`pc-tenant-status ${org.status === 'active' ? 'is-live' : 'is-warn'}`}>
+                  <span className={`px-tenant-pill ${org.status === 'active' ? 'is-live' : 'is-warn'}`}>
                     {org.status}
                   </span>
                 </Link>
