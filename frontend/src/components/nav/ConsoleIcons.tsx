@@ -157,6 +157,7 @@ export function IconKey({ className = 'h-4 w-4' }: IconProps) {
 
 const ADMIN_ICON_BY_SUFFIX: Record<string, typeof IconDashboard> = {
   dashboard: IconDashboard,
+  portals: IconKey,
   admissions: IconClipboard,
   users: IconUsers,
   access: IconShield,

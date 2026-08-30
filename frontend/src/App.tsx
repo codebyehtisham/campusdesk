@@ -31,6 +31,8 @@ import AdminTimetable from './pages/admin/AdminTimetable';
 import AdminBrand from './pages/admin/AdminBrand';
 import AdminUnits from './pages/admin/AdminUnits';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminPortals from './pages/admin/AdminPortals';
+import AdminHrRedirect from './pages/admin/AdminHrRedirect';
 import FacultyLayout from './pages/faculty/FacultyLayout';
 import FacultyAdmissions from './pages/faculty/FacultyAdmissions';
 import ApplicationReview from './pages/admissions/ApplicationReview';
@@ -115,14 +117,15 @@ function App() {
             <Route path="admissions/review/:id" element={<ApplicationReview portal="admin" />} />
             <Route element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="portals" element={<AdminPortals />} />
               <Route path="admissions" element={<RequireModule slug="admissions"><AdminAdmissions /></RequireModule>} />
               <Route path="admissions/form" element={<RequireModule slug="admissions"><AdminAdmissionForm /></RequireModule>} />
-              <Route path="careers" element={<RequireModule slug="careers"><AdminCareers /></RequireModule>} />
+              <Route path="careers" element={<AdminHrRedirect />} />
               <Route path="attendance/students" element={<RequireModule slug="student-attendance"><AdminAttendance kind="student" /></RequireModule>} />
               <Route path="attendance/insights" element={<RequireModule slug="student-attendance"><AdminAttendanceInsights /></RequireModule>} />
               <Route path="attendance/location" element={<RequireModule slug="student-attendance"><AdminAttendanceLocation /></RequireModule>} />
               <Route path="attendance/sessions/:sessionId" element={<RequireModule slug="student-attendance"><AdminAttendanceSession /></RequireModule>} />
-              <Route path="attendance/staff" element={<RequireModule slug="staff-attendance"><AdminAttendance kind="staff" /></RequireModule>} />
+              <Route path="attendance/staff" element={<AdminHrRedirect />} />
               <Route path="users" element={<RequireModule slug="faculty"><AdminUsers /></RequireModule>} />
               <Route path="access" element={<RequireModule slug="faculty"><AdminAccess /></RequireModule>} />
               <Route path="classes" element={<RequireModule slug="faculty"><AdminClasses /></RequireModule>} />

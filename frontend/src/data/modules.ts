@@ -1,87 +1,69 @@
 import { ADMIN_BASE } from '../admin/paths';
 
+/** Org-admin sidebar only — operational work lives in staff portals. */
 export const MODULE_NAV = {
   admissions: [
-    { to: 'admissions', label: 'Admissions' },
-    { to: 'admissions/form', label: 'Admission portal' },
+    { to: 'admissions', label: 'Admissions settings' },
+    { to: 'admissions/form', label: 'Application form' },
   ],
   faculty: [
-    { to: 'users', label: 'Users' },
-    { to: 'access', label: 'Access' },
+    { to: 'users', label: 'Staff users' },
+    { to: 'access', label: 'Access control' },
     { to: 'classes', label: 'Classes' },
     { to: 'timetable', label: 'Timetable' },
   ],
-  careers: [{ to: 'careers', label: 'HR' }],
-  'hr-payroll': [{ to: 'careers', label: 'HR & payroll' }],
   'student-attendance': [
     { to: 'attendance/students', label: 'Student attendance' },
     { to: 'attendance/insights', label: 'Attendance insights' },
   ],
-  'staff-attendance': [{ to: 'attendance/staff', label: 'Staff attendance' }],
-  timetable: [{ to: 'timetable', label: 'Timetable' }],
-  fees: [{ to: 'dashboard', label: 'Fees & finance' }],
-  examinations: [{ to: 'dashboard', label: 'Examinations' }],
-  library: [{ to: 'dashboard', label: 'Library' }],
-  'compliance-vault': [{ to: 'dashboard', label: 'Compliance vault' }],
-  inventory: [{ to: 'dashboard', label: 'Inventory' }],
 };
 
-const MODULE_ORDER = [
-  'admissions',
-  'faculty',
-  'timetable',
-  'examinations',
-  'fees',
-  'careers',
-  'hr-payroll',
-  'student-attendance',
-  'staff-attendance',
-  'library',
-  'compliance-vault',
-  'inventory',
+const MODULE_ORDER = ['admissions', 'faculty', 'student-attendance'];
+
+const CORE_NAV = [
+  { to: `${ADMIN_BASE}/dashboard`, label: 'Dashboard' },
+  { to: `${ADMIN_BASE}/portals`, label: 'Team portals' },
 ];
 
+const CAMPUS_NAV = [
+  { to: `${ADMIN_BASE}/units`, label: 'Departments' },
+  { to: `${ADMIN_BASE}/brand`, label: 'Brand' },
+];
+
+const ACCOUNT_NAV = [{ to: `${ADMIN_BASE}/settings`, label: 'Password' }];
+
 export const orgAdminNav = (modules = []) => {
-  const items = [{ to: `${ADMIN_BASE}/dashboard`, label: 'Dashboard' }];
+  const items = [...CORE_NAV];
   for (const slug of MODULE_ORDER) {
     if (!modules.includes(slug)) continue;
     for (const item of MODULE_NAV[slug] || []) {
       items.push({ to: `${ADMIN_BASE}/${item.to}`, label: item.label, slug });
     }
   }
-  items.push({ to: `${ADMIN_BASE}/units`, label: 'Departments' });
-  items.push({ to: `${ADMIN_BASE}/brand`, label: 'Brand' });
-  items.push({ to: `${ADMIN_BASE}/settings`, label: 'Password' });
+  items.push(...CAMPUS_NAV, ...ACCOUNT_NAV);
   return items;
 };
 
 export const orgAdminNavGroups = (modules = []) => {
   const flat = orgAdminNav(modules);
-  const bySuffix = (suffix: string) => flat.filter((item) => item.to.endsWith(`/${suffix}`) || item.to.endsWith(suffix));
-  const byLabels = (labels: string[]) => flat.filter((item) => labels.includes(item.label));
+  const pick = (labels: string[]) => flat.filter((item) => labels.includes(item.label));
 
   const groups = [
-    { title: 'Overview', items: bySuffix('dashboard') },
+    { title: 'Overview', items: pick(['Dashboard', 'Team portals']) },
     {
-      title: 'Operations',
-      items: byLabels([
-        'Admissions',
-        'Admission portal',
-        'HR',
-        'HR & payroll',
-        'Student attendance',
-        'Attendance insights',
-        'Staff attendance',
-        'Fees & finance',
-        'Examinations',
-        'Library',
-        'Compliance vault',
-        'Inventory',
-      ]),
+      title: 'People & structure',
+      items: pick(['Staff users', 'Access control', 'Classes', 'Timetable']),
     },
-    { title: 'Teaching', items: byLabels(['Users', 'Access', 'Classes', 'Timetable']) },
-    { title: 'Campus', items: [...bySuffix('units'), ...bySuffix('brand')] },
-    { title: 'Account', items: bySuffix('settings') },
+    {
+      title: 'Admissions setup',
+      items: pick(['Admissions settings', 'Application form']),
+    },
+    {
+      title: 'Campus oversight',
+      items: pick(['Student attendance', 'Attendance insights']),
+    },
+    { title: 'Campus', items: pick(['Departments', 'Brand']) },
+    { title: 'Account', items: pick(['Password']) },
   ];
 
   return groups.filter((group) => group.items.length > 0);

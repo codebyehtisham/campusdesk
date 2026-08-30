@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
-import { roleLabel, rolesForKind } from '../../data/roles';
+import { roleLabel, rolesForKind, portalPathForRole } from '../../data/roles';
 import { signOutAdmin, getAdmin } from '../../auth/adminSession';
 import { ADMIN_BASE } from '../../admin/paths';
 import { CheckRow, PasswordField, StrengthMeter } from '../../components/ChangePasswordForm';
@@ -130,8 +130,11 @@ export default function AdminUsers() {
           <span className="eyebrow">Users</span>
           <h1 className="mb-2 text-[clamp(2rem,4vw,3.2rem)]">Staff roles</h1>
           <p className="m-0 max-w-xl text-text-muted">
-            Create accounts for faculty, admissions, HR, finance, exams, and library staff. Each role signs in at its
-            own portal. Use Access to block an account or reset a password.
+            Create accounts for each role owner. Daily work happens in their team portal — see{' '}
+            <Link to={`${ADMIN_BASE}/portals`} className="font-semibold text-cardinal">
+              Team portals
+            </Link>{' '}
+            for sign-in URLs.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -179,6 +182,7 @@ export default function AdminUsers() {
                   </div>
                   <h3 className="mt-3 mb-1">{user.name}</h3>
                   <p className="m-0 text-text-muted">{user.email}</p>
+                  <code className="mt-2 inline-block text-xs font-mono text-cardinal">{portalPathForRole(user.role)}</code>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button type="button" className="btn btn-outline py-2.5 text-sm" onClick={() => openEdit(user)}>
@@ -227,7 +231,7 @@ export default function AdminUsers() {
               className="h-full w-full max-w-lg overflow-y-auto border-l border-border bg-white p-7 md:p-9"
             >
               <span className="eyebrow">{panel.mode === 'edit' ? 'Edit user' : 'New user'}</span>
-              <h2 className="text-[1.8rem]">{panel.mode === 'edit' ? 'Update faculty access' : 'Add faculty access'}</h2>
+              <h2 className="text-[1.8rem]">{panel.mode === 'edit' ? 'Update staff account' : 'Add staff account'}</h2>
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                 <label className={labelClass}>
                   Full name

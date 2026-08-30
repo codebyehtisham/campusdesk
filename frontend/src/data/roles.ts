@@ -38,7 +38,7 @@ export const STAFF_ROLES = [
   {
     key: 'hr_manager',
     label: 'HR manager',
-    hint: 'Manages job openings, staff records, and staff attendance.',
+    hint: 'Manages careers, staff attendance, leave allowances, and leave approvals.',
     portal: 'hr',
     portalPath: HR_PORTAL_BASE,
     portalLabel: 'HR portal',

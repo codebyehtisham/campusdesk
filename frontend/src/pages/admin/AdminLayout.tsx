@@ -158,6 +158,9 @@ export default function AdminLayout() {
               <p className="m-0 truncate text-sm font-semibold text-ink">{orgLabel}</p>
             </div>
             <div className="flex items-center gap-3">
+              <Link to={`${ADMIN_BASE}/portals`} className="hidden text-sm font-semibold text-cardinal sm:inline">
+                Team portals
+              </Link>
               {admin?.modules?.includes('careers') && (
                 <a
                   href="/careers"
