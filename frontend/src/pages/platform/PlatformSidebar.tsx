@@ -29,8 +29,6 @@ const GROUPS = [
   },
 ];
 
-const DOCK_ITEMS = GROUPS.flatMap((g) => g.items);
-
 function initials(email?: string, name?: string) {
   const source = (name || email || 'SA').split('@')[0];
   const parts = source.replace(/[^a-zA-Z0-9]/g, ' ').trim().split(/\s+/);
@@ -43,90 +41,24 @@ type Props = {
   name?: string;
   onNavigate: () => void;
   onSignOut: () => void;
-  mobile?: boolean;
 };
 
-export default function PlatformSidebar({ email, name, onNavigate, onSignOut, mobile }: Props) {
-  if (mobile) {
-    return (
-      <>
-        <div className="px-nav-title">Control plane</div>
-        <p className="px-nav-sub">Campus Desk platform</p>
-        {GROUPS.map((group) => (
-          <div key={group.title} className="px-nav-group">
-            <p className="px-nav-label">{group.title}</p>
-            <nav className="px-nav-links">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={Boolean(item.end)}
-                    onClick={onNavigate}
-                    className={({ isActive }) => `px-nav-link ${isActive ? 'is-active' : ''}`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </NavLink>
-                );
-              })}
-            </nav>
-          </div>
-        ))}
-        <Link to={`${SUPER_BASE}/organizations`} className="px-nav-cta" onClick={onNavigate}>
-          + Provision tenant
-        </Link>
-        <button type="button" className="px-dock-signout mt-4" onClick={onSignOut}>
-          Sign out
-        </button>
-      </>
-    );
-  }
-
+export default function PlatformSidebar({ email, name, onNavigate, onSignOut }: Props) {
   return (
     <>
-      <nav className="px-dock" aria-label="Platform navigation">
-        <Link to={`${SUPER_BASE}/dashboard`} className="px-dock-brand" title="Campus Desk Platform" onClick={onNavigate}>
-          <CampusDeskMark size={36} />
-        </Link>
+      <Link to={`${SUPER_BASE}/dashboard`} className="staff-rail-brand platform-rail-brand" onClick={onNavigate}>
+        <CampusDeskMark size={48} className="ring-2 ring-white/20 platform-mark-float" />
+        <span>
+          <strong>Campus Desk</strong>
+          <small>Platform console</small>
+        </span>
+      </Link>
 
-        <div className="px-dock-nav">
-          {DOCK_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={Boolean(item.end)}
-                title={item.label}
-                onClick={onNavigate}
-                className={({ isActive }) => `px-dock-link ${isActive ? 'is-active' : ''}`}
-              >
-                <Icon className="h-[1.15rem] w-[1.15rem]" />
-              </NavLink>
-            );
-          })}
-        </div>
-
-        <div className="px-dock-foot">
-          <span className="px-dock-avatar" title={email || 'Operator'}>
-            {initials(email, name)}
-          </span>
-          <button type="button" className="px-dock-signout" onClick={onSignOut}>
-            Exit
-          </button>
-        </div>
-      </nav>
-
-      <aside className="px-nav-panel" aria-label="Platform sections">
-        <p className="px-nav-title">Control plane</p>
-        <p className="px-nav-sub">Campus Desk platform</p>
-
+      <div className="staff-nav-scroll">
         {GROUPS.map((group) => (
-          <div key={group.title} className="px-nav-group">
-            <p className="px-nav-label">{group.title}</p>
-            <nav className="px-nav-links">
+          <div key={group.title} className="staff-nav-group">
+            <p className="staff-nav-label">{group.title}</p>
+            <nav className="staff-nav platform-nav-animated">
               {group.items.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -135,9 +67,11 @@ export default function PlatformSidebar({ email, name, onNavigate, onSignOut, mo
                     to={item.to}
                     end={Boolean(item.end)}
                     onClick={onNavigate}
-                    className={({ isActive }) => `px-nav-link ${isActive ? 'is-active' : ''}`}
+                    className={({ isActive }) => `platform-nav-item ${isActive ? 'is-active' : ''}`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <span className="staff-nav-icon">
+                      <Icon className="h-4 w-4" />
+                    </span>
                     {item.label}
                   </NavLink>
                 );
@@ -145,11 +79,29 @@ export default function PlatformSidebar({ email, name, onNavigate, onSignOut, mo
             </nav>
           </div>
         ))}
+      </div>
 
-        <Link to={`${SUPER_BASE}/organizations`} className="px-nav-cta" onClick={onNavigate}>
-          + Provision tenant
+      <div className="staff-rail-foot">
+        <Link
+          to={`${SUPER_BASE}/organizations`}
+          className="staff-rail-cta platform-rail-cta mb-3 block text-center"
+          onClick={onNavigate}
+        >
+          Provision tenant
         </Link>
-      </aside>
+        <div className="staff-rail-user">
+          <span className="staff-rail-avatar platform-avatar-pulse" aria-hidden="true">
+            {initials(email, name)}
+          </span>
+          <div className="staff-rail-user-meta">
+            <strong>{email || 'Platform admin'}</strong>
+            <small>Super admin</small>
+          </div>
+        </div>
+        <button type="button" className="staff-rail-signout" onClick={onSignOut}>
+          Sign out
+        </button>
+      </div>
     </>
   );
 }

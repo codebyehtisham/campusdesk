@@ -33,16 +33,7 @@ export function PlatformBackdrop() {
 }
 
 export function PxBackdrop() {
-  const reduce = useReducedMotion();
-  if (reduce) return null;
-
-  return (
-    <div className="px-backdrop" aria-hidden="true">
-      <div className="px-backdrop-grid" />
-      <div className="px-backdrop-orb is-a" />
-      <div className="px-backdrop-orb is-b" />
-    </div>
-  );
+  return <PlatformBackdrop />;
 }
 
 export function PlatformLoginBackdrop() {
@@ -97,7 +88,7 @@ export function RevealLines({
       {lines.map((line, i) => (
         <motion.span
           key={line.text}
-          className={`block ${line.accent ? 'platform-login-headline-accent' : ''}`}
+          className={`block ${line.accent ? 'text-cardinal' : ''}`}
           initial={{ opacity: 0, y: 28, filter: 'blur(6px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ delay: 0.15 + i * 0.12, duration: 0.65, ease: easeOut }}

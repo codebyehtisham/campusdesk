@@ -1,24 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SUPER_BASE } from '../../admin/paths';
 import { getPlatform, signOutPlatform } from '../../auth/platformSession';
+import CampusDeskMark from '../../components/CampusDeskMark';
 import PlatformSidebar from './PlatformSidebar';
-import { AnimatePresence, LiveClock, PageEnter, PxBackdrop } from './motion';
+import { AnimatePresence, LiveClock, PageEnter, PlatformBackdrop } from './motion';
 import { Pulse } from './ui';
-
-const ROUTE_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  organizations: 'Tenants',
-  modules: 'Catalog',
-  billing: 'Billing',
-  audit: 'Traffic',
-  settings: 'Access',
-};
-
-function breadcrumb(pathname: string) {
-  const segment = pathname.replace(`${SUPER_BASE}/`, '').split('/')[0] || 'dashboard';
-  return ROUTE_LABELS[segment] || 'Console';
-}
 
 export function RequirePlatform() {
   const account = getPlatform();
@@ -30,12 +17,11 @@ export default function PlatformLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [account, setAccount] = useState(() => getPlatform());
-  const [drawer, setDrawer] = useState(false);
-  const page = useMemo(() => breadcrumb(location.pathname), [location.pathname]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setAccount(getPlatform());
-    setDrawer(false);
+    setOpen(false);
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -45,56 +31,67 @@ export default function PlatformLayout() {
   };
 
   return (
-    <div className="platform-console platform-shell">
-      <PxBackdrop />
-      <div className="px-shell">
-        <PlatformSidebar
-          email={account?.email}
-          name={account?.name}
-          onNavigate={() => setDrawer(false)}
-          onSignOut={handleSignOut}
-        />
+    <div className="staff-shell platform-shell min-h-svh bg-bg-alt">
+      <div className="noise" aria-hidden="true" />
+      <div className="relative z-1 flex min-h-svh w-full">
+        <aside
+          className={`platform-rail staff-rail fixed inset-y-0 left-0 z-40 flex w-72 flex-col p-5 text-white transition-transform md:static md:min-h-svh md:translate-x-0 ${
+            open ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <PlatformSidebar
+            email={account?.email}
+            name={account?.name}
+            onNavigate={() => setOpen(false)}
+            onSignOut={handleSignOut}
+          />
+        </aside>
 
-        {drawer ? (
-          <div className="px-mobile-drawer">
-            <button type="button" className="flex-1" aria-label="Close menu" onClick={() => setDrawer(false)} />
-            <aside>
-              <PlatformSidebar
-                mobile
-                email={account?.email}
-                name={account?.name}
-                onNavigate={() => setDrawer(false)}
-                onSignOut={handleSignOut}
-              />
-            </aside>
-          </div>
+        {open ? (
+          <button
+            type="button"
+            className="staff-mobile-scrim fixed inset-0 z-30 backdrop-blur-sm md:hidden"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          />
         ) : null}
 
-        <div className="px-stage">
-          <header className="px-command-bar">
-            <div className="px-command-left">
-              <button type="button" className="px-mobile-menu" onClick={() => setDrawer(true)}>
-                Menu
-              </button>
-              <p className="px-breadcrumb">
-                campus desk / <strong>{page}</strong>
-              </p>
-              <span className="px-command-status max-sm:hidden">
-                <Pulse on tone="live" />
-                Online
-              </span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="platform-topbar sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-bg/95 px-5 py-3 backdrop-blur-xl md:px-8 lg:px-10">
+            <button
+              type="button"
+              className="rounded-full border border-border px-3 py-2 text-sm font-semibold text-ink md:hidden"
+              onClick={() => setOpen(true)}
+            >
+              Menu
+            </button>
+            <div className="hidden min-w-0 items-center gap-3 md:flex">
+              <CampusDeskMark size={28} className="platform-mark-float" />
+              <div className="min-w-0 leading-tight">
+                <p className="m-0 truncate text-sm font-semibold text-ink">Campus Desk Platform</p>
+                <p className="m-0 flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-text-muted">
+                  <Pulse on tone="live" />
+                  Control plane
+                </p>
+              </div>
             </div>
-            <div className="px-command-right">
-              <span className="px-command-clock max-md:hidden">
+            <div className="flex items-center gap-3">
+              <span className="platform-live-clock hidden font-mono text-xs font-semibold text-text-muted lg:inline">
                 <LiveClock />
               </span>
-              <span className="px-command-chip max-sm:hidden">Super admin</span>
+              <span className="platform-badge hidden rounded-full border border-cardinal/25 bg-cardinal-pale px-3 py-1 text-xs font-bold text-cardinal sm:inline">
+                Super admin
+              </span>
+              <button type="button" className="btn btn-outline py-2.5 text-sm max-md:hidden" onClick={handleSignOut}>
+                Sign out
+              </button>
             </div>
           </header>
 
-          <main className="px-main">
+          <main className="platform-main relative mx-auto w-full max-w-[1600px] flex-1 px-5 py-8 md:px-8 md:py-10 lg:px-10">
+            <PlatformBackdrop />
             <AnimatePresence mode="wait">
-              <PageEnter key={location.pathname}>
+              <PageEnter key={location.pathname} className="relative z-1">
                 <Outlet />
               </PageEnter>
             </AnimatePresence>
