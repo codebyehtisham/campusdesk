@@ -28,6 +28,7 @@ import {
   instituteRoutes,
   admissionFormRoutes,
 } from './routes/publicRoutes.js';
+import studentRoutes from './routes/studentRoutes.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -152,6 +153,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/student', studentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/institutes', instituteRoutes);
 app.use('/api/admission-form', admissionFormRoutes);

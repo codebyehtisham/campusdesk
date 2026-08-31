@@ -118,6 +118,11 @@ model Organization {
   libraryLoans       LibraryLoan[]
   leaveRequests      LeaveRequest[]
   leaveQuotas        LeaveQuota[]
+  assignments        Assignment[]
+  assignmentSubmissions AssignmentSubmission[]
+  classQuizzes       ClassQuiz[]
+  classQuizMarks     ClassQuizMark[]
+  studentLeaveRequests StudentLeaveRequest[]
   notifications      Notification[]
 
   @@index([status])
@@ -275,6 +280,9 @@ model User {
   leaveRequests      LeaveRequest[]
   leaveReviews       LeaveRequest[] @relation("LeaveReviewer")
   leaveQuota         LeaveQuota?
+  assignments        Assignment[]
+  classQuizzes       ClassQuiz[]
+  studentLeaveReviews StudentLeaveRequest[] @relation("StudentLeaveTeacher")
   notifications      Notification[]
 
   @@index([organizationId])
@@ -432,6 +440,9 @@ model AttendancePerson {
   studentFees    StudentFee[]
   examMarks      ExamMark[]
   libraryLoans   LibraryLoan[]
+  assignmentSubmissions AssignmentSubmission[]
+  classQuizMarks ClassQuizMark[]
+  studentLeaves  StudentLeaveRequest[]
   unitId         String?
   unit           OrgUnit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
 
@@ -526,6 +537,9 @@ model ClassSection {
   contents       CourseContent[]
   sessions       AttendanceSession[]
   exams          Exam[]
+  assignments    Assignment[]
+  classQuizzes   ClassQuiz[]
+  studentLeaves  StudentLeaveRequest[]
 
   @@index([organizationId])
   @@index([teacherId])
@@ -812,6 +826,114 @@ model LeaveQuota {
 
   @@unique([organizationId, userId])
   @@index([organizationId])
+}
+
+model Assignment {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  classId        String
+  class          ClassSection @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title          String
+  description    String       @default("")
+  dueAt          DateTime?
+  maxMarks       Int          @default(100)
+  published      Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  submissions    AssignmentSubmission[]
+
+  @@index([organizationId, classId])
+  @@index([teacherId])
+}
+
+model AssignmentSubmission {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignmentId   String
+  assignment     Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  body           String           @default("")
+  fileUrl        String           @default("")
+  fileName       String           @default("")
+  fileMime       String           @default("")
+  fileSize       Int              @default(0)
+  submittedAt    DateTime         @default(now())
+  marksObtained  Int?
+  feedback       String           @default("")
+  gradedAt       DateTime?
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([assignmentId, personId])
+  @@index([organizationId])
+  @@index([personId])
+}
+
+model ClassQuiz {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  classId        String
+  class          ClassSection @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title          String
+  quizDate       DateTime?
+  maxMarks       Int          @default(10)
+  notes          String       @default("")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  marks          ClassQuizMark[]
+
+  @@index([organizationId, classId])
+  @@index([teacherId])
+}
+
+model ClassQuizMark {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  quizId         String
+  quiz           ClassQuiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  marksObtained  Int?
+  notes          String           @default("")
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([quizId, personId])
+  @@index([organizationId])
+  @@index([personId])
+}
+
+model StudentLeaveRequest {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  personId       String
+  person         AttendancePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  classId        String
+  class          ClassSection     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User             @relation("StudentLeaveTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  type           LeaveType
+  startDate      DateTime
+  endDate        DateTime
+  reason         String           @default("")
+  status         LeaveStatus      @default(pending)
+  reviewNotes    String           @default("")
+  reviewedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, status])
+  @@index([personId])
+  @@index([classId])
+  @@index([teacherId])
 }
 
 model Notification {

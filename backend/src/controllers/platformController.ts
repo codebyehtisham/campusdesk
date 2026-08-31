@@ -18,6 +18,7 @@ import { overdueOrgIds, resolveServiceLock } from '../lib/serviceLock.js';
 import { billingOverview } from '../lib/billing.js';
 import { sanitizeTheme } from '../lib/theme.js';
 import { hashPassword } from '../middleware/auth.js';
+import { handlePasswordTransportError, plaintextPassword } from '../lib/passwordTransport.js';
 import { getScheme, parseOrgKind, publicSchemes, seedOrgUnits } from '../lib/schemes.js';
 import { ensureOrgProgrammes } from '../lib/seedProgrammes.js';
 import { logPlatformEvent } from '../lib/platformEvents.js';
@@ -538,7 +539,7 @@ export const createOrgAdmin = async (req: Request, res: Response) => {
     if (!org) return res.status(404).json({ message: 'Organisation not found' });
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     if (!name || !email || password.length < 6) {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
     }
@@ -560,6 +561,7 @@ export const createOrgAdmin = async (req: Request, res: Response) => {
     });
     res.status(201).json(toAdmin(admin));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     if (isUniqueError(err)) return res.status(409).json({ message: 'An account with this email already exists.' });
     res.status(400).json({ message: 'Failed to create admin', error: (err as Error).message });
   }
@@ -587,7 +589,7 @@ export const setOrgAdminPassword = async (req: Request, res: Response) => {
       where: { id: req.params.adminId, organizationId: req.params.id, role: 'admin' },
     });
     if (!admin) return res.status(404).json({ message: 'Admin not found' });
-    const newPassword = String(req.body.newPassword || '').trim();
+    const newPassword = plaintextPassword(req.body.newPassword);
     if (newPassword.length < 6) {
       return res.status(400).json({ message: 'New password must be at least 6 characters.' });
     }
@@ -597,6 +599,7 @@ export const setOrgAdminPassword = async (req: Request, res: Response) => {
     });
     res.json({ message: 'Password updated.', admin: toAdmin(updated) });
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     res.status(400).json({ message: 'Could not update password.', error: (err as Error).message });
   }
 };

@@ -18,6 +18,8 @@ import { normalizeStaffRole, portalForRole } from '../lib/roles.js';
 import { parsePortalSlug, portalLoginAllowed } from '../middleware/staffAuth.js';
 import { createNotification } from '../lib/notifications.js';
 import { resolveServiceLock, SUSPENDED_MESSAGE } from '../lib/serviceLock.js';
+import { getPasswordPublicKey, passwordEncryptionVersion } from '../lib/passwordCrypto.js';
+import { handlePasswordTransportError, plaintextPassword } from '../lib/passwordTransport.js';
 
 const USE_MOBILE_APP_MESSAGE =
   'Campus tools are available in the Campus Desk mobile app. Download Campus Desk from the Play Store or the App Store and sign in with the same credentials.';
@@ -81,11 +83,15 @@ async function enforceApplicantClientGate(
   return true;
 }
 
+export const getPasswordKey = async (_req: Request, res: Response) => {
+  res.json({ version: passwordEncryptionVersion(), publicKey: getPasswordPublicKey() });
+};
+
 export const registerApplicant = async (req: Request, res: Response) => {
   try {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
 
     if (!name || !email || password.length < 6) {
       return res.status(400).json({ message: 'Name, email, and a password of at least 6 characters are required.' });
@@ -128,6 +134,7 @@ export const registerApplicant = async (req: Request, res: Response) => {
     }
     return res.status(201).json(await authPayloadForOrg(user, org));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     if (isUniqueError(err)) {
       return res.status(409).json({ message: 'An account with this email already exists. Sign in instead.' });
     }
@@ -138,7 +145,7 @@ export const registerApplicant = async (req: Request, res: Response) => {
 export const loginApplicant = async (req: Request, res: Response) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || user.role !== 'applicant') {
@@ -205,6 +212,7 @@ export const loginApplicant = async (req: Request, res: Response) => {
     if (!(await enforceApplicantClientGate(req, res, user))) return;
     return res.json(await authPayloadForOrg(user, org));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
   }
 };
@@ -263,7 +271,7 @@ export const selectApplicantInstitute = async (req: Request, res: Response) => {
 export const loginPlatform = async (req: Request, res: Response) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await matchPassword(password, user.password))) {
@@ -277,6 +285,7 @@ export const loginPlatform = async (req: Request, res: Response) => {
 
     return res.json(await authPayloadForOrg(user, null));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
   }
 };
@@ -284,7 +293,7 @@ export const loginPlatform = async (req: Request, res: Response) => {
 export const loginAdmin = async (req: Request, res: Response) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || user.role !== 'admin' || !(await matchPassword(password, user.password))) {
@@ -299,6 +308,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     return res.json(await authPayloadForOrg(user, org));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
   }
 };
@@ -306,7 +316,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
 export const loginStaff = async (req: Request, res: Response) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     const portal = parsePortalSlug(req.body.portal) || 'faculty';
     const user = await prisma.user.findUnique({ where: { email } });
 
@@ -336,14 +346,15 @@ export const loginStaff = async (req: Request, res: Response) => {
       portalPath: portalForRole(user.role),
     });
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     return res.status(500).json({ message: 'Could not sign in.', error: (err as Error).message });
   }
 };
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const currentPassword = String(req.body.currentPassword || '').trim();
-    const newPassword = String(req.body.newPassword || '').trim();
+    const currentPassword = plaintextPassword(req.body.currentPassword);
+    const newPassword = plaintextPassword(req.body.newPassword);
     if (!currentPassword) {
       return res.status(400).json({ message: 'Enter your current password.' });
     }
@@ -368,6 +379,7 @@ export const changePassword = async (req: Request, res: Response) => {
     });
     return res.json({ message: 'Password updated.' });
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     return res.status(400).json({ message: 'Could not update password.', error: (err as Error).message });
   }
 };

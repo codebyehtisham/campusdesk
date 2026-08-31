@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerApplicant, loginApplicant, selectApplicantInstitute, getMe, loginStaff, changePassword } from '../controllers/authController.js';
+import { registerApplicant, loginApplicant, selectApplicantInstitute, getMe, loginStaff, changePassword, getPasswordKey } from '../controllers/authController.js';
 import { scanStudentAttendance } from '../controllers/studentAttendanceController.js';
 import { getMine, saveMine, submitMine, listAll, getOne, decide, streamApplicationFile, replaceApplicationFile } from '../controllers/applicationController.js';
 import {
@@ -29,6 +29,20 @@ import {
   markSession,
   closeSession,
 } from '../controllers/teachingController.js';
+import {
+  listClassAssignments,
+  createClassAssignment,
+  updateAssignment,
+  getAssignmentSubmissions,
+  gradeAssignmentSubmission,
+  listClassQuizzes,
+  createClassQuiz,
+  getQuizMarks,
+  saveQuizMarks,
+  listFacultyStudentLeaves,
+  getFacultyStudentLeave,
+  decideFacultyStudentLeave,
+} from '../controllers/facultyLmsController.js';
 import {
   protect,
   applicantOnly,
@@ -103,6 +117,7 @@ import {
 } from '../controllers/notificationController.js';
 
 export const authRoutes = Router();
+authRoutes.get('/password-key', getPasswordKey);
 authRoutes.post('/register', registerApplicant);
 authRoutes.post('/login', loginApplicant);
 authRoutes.post('/select-institute', protect, applicantOnly, selectApplicantInstitute);
@@ -144,6 +159,19 @@ staffRoutes.get('/sessions/:id', ...teaching, getSession);
 staffRoutes.put('/sessions/:id/qr', ...teaching, refreshQr);
 staffRoutes.put('/sessions/:id/marks', ...teaching, markSession);
 staffRoutes.put('/sessions/:id/close', ...teaching, closeSession);
+
+staffRoutes.get('/classes/:classId/assignments', ...teaching, listClassAssignments);
+staffRoutes.post('/classes/:classId/assignments', ...teaching, createClassAssignment);
+staffRoutes.put('/assignments/:id', ...teaching, updateAssignment);
+staffRoutes.get('/assignments/:id/submissions', ...teaching, getAssignmentSubmissions);
+staffRoutes.put('/assignments/:id/submissions/:personId/grade', ...teaching, gradeAssignmentSubmission);
+staffRoutes.get('/classes/:classId/quizzes', ...teaching, listClassQuizzes);
+staffRoutes.post('/classes/:classId/quizzes', ...teaching, createClassQuiz);
+staffRoutes.get('/quizzes/:id/marks', ...teaching, getQuizMarks);
+staffRoutes.put('/quizzes/:id/marks', ...teaching, saveQuizMarks);
+staffRoutes.get('/student-leaves', ...teaching, listFacultyStudentLeaves);
+staffRoutes.get('/student-leaves/:id', ...teaching, getFacultyStudentLeave);
+staffRoutes.put('/student-leaves/:id/decision', ...teaching, decideFacultyStudentLeave);
 
 const hrStaff = [protect, requireActiveOrg, staffOnly, hrManagerOnly];
 staffRoutes.get('/hr/scheme', ...hrStaff, getSchemeDesk);

@@ -3,6 +3,7 @@ import { getAdmin } from '../auth/adminSession';
 import { getApplicant, signOutApplicant } from '../auth/session';
 import { getStaff } from '../auth/staffSession';
 import { getPlatform } from '../auth/platformSession';
+import { encryptPasswordPayload } from '../lib/passwordCrypto';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -17,7 +18,7 @@ const api = axios.create({
   timeout: 15000,
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const scope = config.authScope;
   const token =
     scope === 'admin'
@@ -32,6 +33,9 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+    config.data = await encryptPasswordPayload({ ...config.data });
   }
   return config;
 });

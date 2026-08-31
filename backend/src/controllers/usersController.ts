@@ -6,6 +6,7 @@ import { ASSIGNABLE_STAFF_ROLES, isRoleAssignable, normalizeStaffRole, portalFor
 import { createNotification } from '../lib/notifications.js';
 import { assertTrialAllows, TrialLimitError } from '../lib/trial.js';
 import { hashPassword } from '../middleware/auth.js';
+import { handlePasswordTransportError, plaintextPassword } from '../lib/passwordTransport.js';
 
 const EDITABLE_ROLES: Role[] = [...ASSIGNABLE_STAFF_ROLES];
 
@@ -40,7 +41,7 @@ export const createUser = async (req: Request, res: Response) => {
   try {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '').trim();
+    const password = plaintextPassword(req.body.password);
     const role = normalizeStaffRole(String(req.body.role || '')) as Role;
 
     if (!name || !email || password.length < 6) {
@@ -80,6 +81,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     res.status(201).json(toUser(user));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     if (isUniqueError(err)) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
@@ -99,7 +101,7 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(400).json(roleDenied());
     }
     if (req.body.password) {
-      const password = String(req.body.password).trim();
+      const password = plaintextPassword(req.body.password);
       if (password.length < 6) {
         return res.status(400).json({ message: 'Password must be at least 6 characters.' });
       }
@@ -111,11 +113,12 @@ export const updateUser = async (req: Request, res: Response) => {
         name: req.body.name != null ? String(req.body.name).trim() : undefined,
         email: req.body.email != null ? String(req.body.email).trim().toLowerCase() : undefined,
         role: req.body.role ? (normalizeStaffRole(String(req.body.role)) as Role) : undefined,
-        password: req.body.password ? await hashPassword(String(req.body.password).trim()) : undefined,
+        password: req.body.password ? await hashPassword(plaintextPassword(req.body.password)) : undefined,
       },
     });
     res.json(toUser(updated));
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     if (isUniqueError(err)) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
@@ -141,7 +144,7 @@ export const setUserPassword = async (req: Request, res: Response) => {
   try {
     const user = await findFaculty(req);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    const newPassword = String(req.body.newPassword || '').trim();
+    const newPassword = plaintextPassword(req.body.newPassword);
     if (newPassword.length < 6) {
       return res.status(400).json({ message: 'New password must be at least 6 characters.' });
     }
@@ -159,6 +162,7 @@ export const setUserPassword = async (req: Request, res: Response) => {
     });
     res.json({ message: 'Password updated.', user: toUser(updated) });
   } catch (err) {
+    if (handlePasswordTransportError(res, err)) return;
     res.status(400).json({ message: 'Could not update password.', error: (err as Error).message });
   }
 };
